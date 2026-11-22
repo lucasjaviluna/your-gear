@@ -1,20 +1,25 @@
 import { lstatSync, realpathSync } from 'node:fs';
-import { isAbsolute, relative, resolve, sep, dirname, basename } from 'node:path';
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 
-type Decision = { type: 'allow' | 'ask' | 'deny'; reason: string };
+export type Decision = { type: 'allow' | 'ask' | 'deny'; reason: string };
 export type ToolCall = { toolName: string; input: unknown; cwd: string };
 export type Approval = (description: string) => Promise<boolean>;
 
-const PROTECTED = new Set(['.git', '.ssh', '.pi', '.env', '.your-gear', 'auth.json']);
+// Initial conservative list. This is NOT a sandbox or a complete DLP system.
+const PROTECTED = new Set([
+  '.git', '.ssh', '.pi', '.your-gear', '.aws', '.config',
+  '.env', '.npmrc', '.netrc', '.pypirc', 'auth.json', 'credentials',
+]);
 
 function isProtected(path: string, cwd: string): boolean {
-  const parts = relative(cwd, path).split(sep);
-  return parts.some(part => PROTECTED.has(part) || part.startsWith('.env.'));
+  return relative(cwd, path).split(sep).some(
+    part => PROTECTED.has(part.toLowerCase()) || part.toLowerCase().startsWith('.env.'),
+  );
 }
 
-function safelyResolve(cwd: string, requested: string): string | undefined {
+function safeWorkspacePath(cwd: string, requested: string): string | undefined {
   try {
-    const realCwd = realpathSync(cwd);
+    const root = realpathSync(cwd);
     const absolute = resolve(cwd, requested);
     let existing = absolute;
     while (true) {
@@ -28,50 +33,48 @@ function safelyResolve(cwd: string, requested: string): string | undefined {
         existing = parent;
       }
     }
-    const realExisting = realpathSync(existing);
-    const candidate = resolve(realExisting, relative(existing, absolute));
-    const rel = relative(realCwd, candidate);
+    const candidate = resolve(realpathSync(existing), relative(existing, absolute));
+    const rel = relative(root, candidate);
     if (isAbsolute(rel) || rel === '..' || rel.startsWith(`..${sep}`)) return undefined;
-    if (isProtected(candidate, realCwd)) return undefined;
+    if (isProtected(candidate, root)) return undefined;
     return candidate;
   } catch {
-    return undefined; // fail closed: inaccessible path, broken symlink, etc.
+    return undefined;
   }
 }
 
-export function decideTool(call: ToolCall): Decision {
-  const { toolName, input, cwd } = call;
+export function decideTool({ toolName, input, cwd }: ToolCall): Decision {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
-    return { type: 'deny', reason: 'Argumentos de herramienta inválidos' };
+    return { type: 'deny', reason: 'Argumentos inválidos' };
   }
   const args = input as Record<string, unknown>;
-  if (toolName === 'read' || toolName === 'write' || toolName === 'edit') {
+  if (['read', 'write', 'edit'].includes(toolName)) {
     if (typeof args.path !== 'string' || !args.path.trim()) {
       return { type: 'deny', reason: 'Ruta inválida' };
     }
-    const canonical = safelyResolve(cwd, args.path);
-    if (!canonical) return { type: 'deny', reason: 'Ruta fuera del workspace, protegida o inaccesible' };
-    return toolName === 'read'
-      ? { type: 'allow', reason: 'Lectura dentro del workspace' }
-      : { type: 'ask', reason: `${toolName} sobre ${canonical}` };
+    const path = safeWorkspacePath(cwd, args.path);
+    if (!path) return { type: 'deny', reason: 'Ruta protegida, inaccesible o fuera del workspace' };
+    if (toolName === 'read') return { type: 'allow', reason: 'Lectura dentro del workspace' };
+    return { type: 'ask', reason: `${toolName}: ${JSON.stringify(path)}` };
   }
   if (toolName === 'bash') {
     if (typeof args.command !== 'string' || !args.command.trim()) {
       return { type: 'deny', reason: 'Comando inválido' };
     }
-    return { type: 'ask', reason: `Shell en ${cwd}: ${args.command}` };
+    return { type: 'ask', reason: `bash (cwd=${JSON.stringify(cwd)}): ${JSON.stringify(args.command)}` };
   }
-  return { type: 'deny', reason: `Herramienta no habilitada: ${toolName}` };
+  return { type: 'deny', reason: `Herramienta no autorizada: ${toolName}` };
 }
 
-/** Returned value matches Pi's pre-execution tool_call block contract. */
 export async function authorizeTool(call: ToolCall, approve: Approval): Promise<{ block: true; reason: string } | undefined> {
   const decision = decideTool(call);
   if (decision.type === 'allow') return undefined;
   if (decision.type === 'deny') return { block: true, reason: decision.reason };
   try {
-    return (await approve(decision.reason)) ? undefined : { block: true, reason: 'Operación no aprobada' };
+    return (await approve(decision.reason))
+      ? undefined
+      : { block: true, reason: 'El usuario rechazó la operación' };
   } catch {
-    return { block: true, reason: 'No fue posible obtener autorización' };
+    return { block: true, reason: 'No fue posible solicitar aprobación' };
   }
 }

@@ -13,9 +13,11 @@
 - [ ] Ejecutar spike **integrado** Pi SDK; las 9 pruebas locales de la política ya pasaron (ver [resultado parcial](../spikes/pi-sdk-smoke.md)).
 - [ ] Validar namespace y versiones concretas de dependencias del MVP.
 - [ ] Decidir ADR-001 luego del spike; cerrar preguntas de ADR-003.
-- [x] Agregar scaffolding TypeScript/Node, política inicial, 9 pruebas locales y .gitignore.
+- [x] Agregar scaffolding TypeScript/Node, política inicial, pruebas locales y .gitignore.
 - [ ] Ejecutar typecheck y smoke Pi SDK con npm instalado; completar integración y pruebas Windows.
-- [ ] Agregar CI mínima cuando el SDK y las dependencias se validen.
+- [x] Agregar workflow CI mínimo (pendiente observar su ejecución real en GitHub).
+- [x] Ejecutar **17/17** pruebas locales de política, gate simulado y configuración (Node 22.16.0).
+- [ ] Validar npm, typecheck y tests en CI con Node 22.19.0; confirmar nombre y publicación del paquete SDK.
 - [ ] Verificar los criterios y declarar Hito 0 completado.
 
 ## Entregables

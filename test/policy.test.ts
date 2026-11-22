@@ -87,10 +87,10 @@ test('archivos adicionales de credenciales se deniegan', t => {
 
 test('comandos muestran argumentos completos sin caracteres de control', t => {
   const cwd = workspace(t);
-  const result = decideTool({ cwd, toolName: 'bash', input: { command: 'echo ok\\x1b[31m\\nrm foo' } });
+  const result = decideTool({ cwd, toolName: 'bash', input: { command: 'echo ok\x1b[31m\nrm foo' } });
   assert.equal(result.type, 'ask');
-  assert.equal(result.reason.includes('\\x1b'), false);
-  assert.match(result.reason, /\\\\u001b/);
+  assert.equal(result.reason.includes('\x1b'), false);
+  assert.match(result.reason, /\\u001b/);
   assert.match(result.reason, /rm foo/);
 });
 
