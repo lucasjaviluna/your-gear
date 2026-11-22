@@ -10,10 +10,12 @@
 - [x] Documentar alternativas para runtime y seleccionar Pi SDK para el *primer spike*.
 - [x] Identificar políticas de autenticación y restricciones de suscripción Claude.
 - [x] Plantear arquitectura modular y límites de seguridad.
-- [ ] Ejecutar spike Pi SDK, con pruebas de gate y sesiones (ver [spike](../spikes/pi-sdk.md)).
+- [ ] Ejecutar spike **integrado** Pi SDK; las 9 pruebas locales de la política ya pasaron (ver [resultado parcial](../spikes/pi-sdk-smoke.md)).
 - [ ] Validar namespace y versiones concretas de dependencias del MVP.
 - [ ] Decidir ADR-001 luego del spike; cerrar preguntas de ADR-003.
-- [ ] Crear scaffolding TypeScript/Node, lint/test base, .gitignore, CI mínima si el spike lo avala.
+- [x] Agregar scaffolding TypeScript/Node, política inicial, 9 pruebas locales y .gitignore.
+- [ ] Ejecutar typecheck y smoke Pi SDK con npm instalado; completar integración y pruebas Windows.
+- [ ] Agregar CI mínima cuando el SDK y las dependencias se validen.
 - [ ] Verificar los criterios y declarar Hito 0 completado.
 
 ## Entregables
