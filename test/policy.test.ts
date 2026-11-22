@@ -77,3 +77,26 @@ test('escritura debajo de symlink externo se deniega', t => {
   symlinkSync(tmpdir(), join(cwd, 'link'), 'dir');
   assert.equal(decideTool({ cwd, toolName: 'write', input: { path: 'link/new.txt' } }).type, 'deny');
 });
+
+test('archivos adicionales de credenciales se deniegan', t => {
+  const cwd = workspace(t);
+  for (const path of ['.npmrc', '.netrc', '.aws/credentials', '.pypirc', '.config/token', '.ENV.LOCAL']) {
+    assert.equal(decideTool({ cwd, toolName: 'read', input: { path } }).type, 'deny');
+  }
+});
+
+test('comandos muestran argumentos completos sin caracteres de control', t => {
+  const cwd = workspace(t);
+  const result = decideTool({ cwd, toolName: 'bash', input: { command: 'echo ok\\x1b[31m\\nrm foo' } });
+  assert.equal(result.type, 'ask');
+  assert.equal(result.reason.includes('\\x1b'), false);
+  assert.match(result.reason, /\\\\u001b/);
+  assert.match(result.reason, /rm foo/);
+});
+
+test('symlink interno a archivo protegido se deniega', t => {
+  const cwd = workspace(t);
+  writeFileSync(join(cwd, '.env'), 'secret=1');
+  symlinkSync(join(cwd, '.env'), join(cwd, 'alias'));
+  assert.equal(decideTool({ cwd, toolName: 'read', input: { path: 'alias' } }).type, 'deny');
+});
