@@ -9,6 +9,7 @@ import { createToolCallHandler } from './gate.ts';
 import { selectModel } from './model-selection.ts';
 import { createResponseOutput, redactError } from './response-output.ts';
 import { createSessionManager, parseSessionArgs } from './sessions.ts';
+import { createToolTrace, traceApproval, traceSession } from './tool-trace.ts';
 
 async function main(): Promise<void> {
   if (Number(process.versions.node.split('.')[0]) < 22 ||
@@ -61,7 +62,7 @@ async function main(): Promise<void> {
 
   const cwd = resolve(process.cwd());
   const settingsManager = SettingsManager.inMemory({ defaultTools: ['read', 'write', 'edit', 'bash'] });
-  const authorize = createToolCallHandler(cwd, requestApproval);
+  const authorize = createToolCallHandler(cwd, traceApproval(requestApproval, text => stderr.write(text)));
   const loader = new DefaultResourceLoader({
     cwd, agentDir, settingsManager,
     noExtensions: true, noSkills: true, noPromptTemplates: true,
@@ -73,17 +74,23 @@ async function main(): Promise<void> {
     }); }],
   });
   await loader.reload();
+  const sessionManager = await createSessionManager(cwd, agentDir, sessionArgs.mode);
   const { session, extensionsResult } = await createAgentSession({
     cwd, agentDir, modelRuntime, model, settingsManager,
-    sessionManager: await createSessionManager(cwd, agentDir, sessionArgs.mode),
+    sessionManager,
     resourceLoader: loader, tools: ['read', 'write', 'edit', 'bash'],
   });
   if (extensionsResult.errors.length > 0) {
     session.dispose();
     throw new Error(`Error cargando extensiones de seguridad (${extensionsResult.errors.length}).`);
   }
+  traceSession(sessionArgs.mode, text => stderr.write(text));
   const output = createResponseOutput((text) => stdout.write(text));
-  const unsubscribe = session.subscribe((event) => output.onEvent(event));
+  const traceTool = createToolTrace((text) => stderr.write(text));
+  const unsubscribe = session.subscribe((event) => {
+    output.onEvent(event);
+    if (event.type === 'tool_execution_start' || event.type === 'tool_execution_end') traceTool(event);
+  });
   const onSigint = () => { void session.abort(); };
   process.on('SIGINT', onSigint);
   try {
