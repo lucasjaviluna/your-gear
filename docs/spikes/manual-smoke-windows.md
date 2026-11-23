@@ -1,49 +1,100 @@
-# Smoke manual Windows — Your Gear (pendiente de ejecución)
+# Smoke manual Windows — ChatGPT subscription con Pi
+
+**Estado:** pendiente de ejecución por el usuario. **No realizar sobre un proyecto real o con secretos.**
 
 ## Objetivo
-Comprobar que el prototipo puede invocar Pi SDK con un proveedor permitido, recibir streaming y exigir autorización antes de escribir un archivo. Esta prueba **no garantiza** sandboxing ni reemplaza los tests de integración automatizados.
 
-**Requisitos:** Windows con PowerShell, Node.js >=22.19.0, npm y una API key válida de un proveedor compatible. Usar credenciales de API oficialmente autorizadas, **no tokens de suscripciones Claude.ai**. Ejecutar sobre un directorio temporal sin información sensible. **No copiar la clave ni trazas con secretos en issues o chats.**
+Validar que Your Gear reutiliza el **login autorizado de ChatGPT en Pi** sin API key, que el streaming responde y que bloquea o aprueba operaciones sensibles antes de sus efectos. **No** es una certificación de aislamiento: el prototipo no es sandbox.
 
-## Preparación
-Desde el repositorio:
+## Preparación en Windows PowerShell
+
+Con Node.js >=22.19.0 instalado, ubicarse en la carpeta del repositorio **de la rama del PR #2, hasta que se fusione**:
+
 ```powershell
-git pull origin main
-node --version
+git fetch origin
+git checkout feat/pi-chatgpt-subscription-auth
+git pull origin feat/pi-chatgpt-subscription-auth
 npm install --ignore-scripts
 npm run typecheck
 npm test
 $repo = (Get-Location).Path
 ```
 
-Configurar un proveedor/modelo admitidos por Pi y una API key válida para API. El ejemplo usa OpenAI únicamente como referencia; elegir un modelo habilitado en tu cuenta.
+No es necesaria una API key. Ejecutar Pi y en su interfaz abrir `/login` → **OpenAI** → **Sign in with ChatGPT**. Completar el consentimiento en el navegador. Si la cuenta estaba autenticada en `openai-codex`, esta prueba requiere conectarla también al proveedor `openai`.
+
 ```powershell
-$env:YOUR_GEAR_PROVIDER = "openai"
-$env:YOUR_GEAR_MODEL = "MODELO_DISPONIBLE"
-$env:YOUR_GEAR_API_KEY = Read-Host "Introducí la API key (no la compartas)"
+Remove-Item Env:YOUR_GEAR_API_KEY -ErrorAction SilentlyContinue
+Remove-Item Env:YOUR_GEAR_MODEL -ErrorAction SilentlyContinue
+Remove-Item Env:YOUR_GEAR_AUTH_MODE -ErrorAction SilentlyContinue
+Remove-Item Env:YOUR_GEAR_PROVIDER -ErrorAction SilentlyContinue
+node src/cli.ts auth status
+node src/cli.ts models
+```
+
+El status debe indicar **ChatGPT conectado** y `models` debe listar IDs de modelos disponibles. Si no, verificar que Pi instaló/actualizó la sesión OAuth bajo `openai` y que el plan/consentimiento son elegibles.
+
+Crear un workspace descartable:
+
+```powershell
 $workspace = Join-Path $env:TEMP "your-gear-smoke"
 New-Item -ItemType Directory -Force -Path $workspace | Out-Null
 Push-Location $workspace
 ```
 
-**Nota:** `Read-Host` evita escribir el valor literal en el historial de comandos, pero muestra lo tecleado en la consola. Para mayor seguridad, usar un gestor de secretos y trasladar el valor al proceso sin imprimirlo. La ejecución mediante API puede tener coste.
+## Pruebas
 
-## Pruebas con resultados esperados
-1. **Streaming:** `node "$repo/src/cli.ts" "Respondé hola en una frase y no uses herramientas"`. Debe aparecer texto; ningún archivo debe modificarse. Registrar si el output es gradual.
-2. **Deny:** `node "$repo/src/cli.ts" "Creá prueba-smoke.txt con el texto OK usando la herramienta write. No uses bash"`. Responder **N** al prompt. `Test-Path .\prueba-smoke.txt` debe ser `False`. Si no se presenta aprobación, tratar como fallo.
-3. **Approve:** repetir el mismo comando y responder **s** solo después de revisar ruta y operación. `Test-Path .\prueba-smoke.txt` debe ser `True`. Revisar contenido con `Get-Content .\prueba-smoke.txt`.
-4. **Cancelación:** pedir una tarea larga y probar Ctrl+C. Confirmar salida controlada sin operaciones posteriores. Los detalles de cancelación son exploratorios, no una prueba automatizada.
-5. **Credenciales y errores:** probar con modelo inexistente después de resguardar la configuración y comprobar que el mensaje no revela la API key.
+1. **Streaming:** `node "$repo/src/cli.ts" "Respondé hola en una frase y no uses herramientas"`. Verificar que aparece respuesta y el modelo elegido en stderr.
+2. **Deny:** `node "$repo/src/cli.ts" "Creá prueba-smoke.txt con OK utilizando write; no uses bash"`. Responder **N**. `Test-Path .\prueba-smoke.txt` debe ser `False`.
+3. **Approve:** repetir el prompt; responder **s** después de revisar la ruta. `Test-Path .\prueba-smoke.txt` debe ser `True`.
+4. **Cancelación:** pedir respuesta larga y presionar `Ctrl+C`, comprobando que la ejecución termine sin operaciones posteriores.
+5. **Selección:** opcionalmente definir `$env:YOUR_GEAR_MODEL = "ID_DE_LA_LISTA"` y verificar que se utiliza ese modelo.
+6. **Seguridad:** definir `$env:YOUR_GEAR_PROVIDER = "anthropic"` en modo de suscripción y confirmar que Your Gear lo rechaza. Luego limpiar la variable.
 
 ## Finalizar
+
 ```powershell
 Pop-Location
-Remove-Item Env:YOUR_GEAR_API_KEY -ErrorAction SilentlyContinue
+Remove-Item Env:YOUR_GEAR_MODEL -ErrorAction SilentlyContinue
 Remove-Item Env:YOUR_GEAR_PROVIDER -ErrorAction SilentlyContinue
+```
+
+Compartir **solo**: versión Node, resultados de typecheck/test, resultado de `auth status` sin tokens, modelo elegido, streaming sí/no, deny sí/no, approve sí/no, Ctrl+C sí/no, y errores redactados. No enviar `auth.json`, capturas del código OAuth, URLs de callback, cookies ni tokens.
+
+## Limitaciones
+
+El gate de herramientas es experimental, no es sandbox OS; las rutas tienen riesgo TOCTOU y la lectura de archivos sensibles puede no detectarse siempre. Una autorización de shell puede producir efectos fuera del workspace. El Hito 0 no estará cerrado hasta validar la integración real y ADR-001.
+
+Referencia: https://github.com/lucasjaviluna/agent-harness-lab
+
+## Si solo aparece `Your Gear: openai/chat-latest (pi-subscription)`
+
+En la primera versión el CLI únicamente imprimía los eventos `text_delta` y podía salir silenciosamente si el proveedor devolvía un mensaje de error o la respuesta final no llegaba por streaming.
+
+Desde la corrección del PR #2, se muestran los errores `stopReason=error` de Pi y se recupera el contenido final cuando falta el streaming. Para probarla:
+
+```powershell
+# Desde el repo Your Gear
+git checkout feat/pi-chatgpt-subscription-auth
+git pull origin feat/pi-chatgpt-subscription-auth
+npm run typecheck
+npm test
+node src/cli.ts auth status
+node src/cli.ts models
+
+# Ejecutar desde un workspace temporal, con $repo apuntando al checkout:
+Push-Location $workspace
+node "$repo/src/cli.ts" "Respondé hola y no uses herramientas"
+Pop-Location
+```
+
+Si el CLI sigue mostrando errores sobre el modelo `chat-latest`, copiá un ID exacto de `models` y ejecutá:
+
+```powershell
+$env:YOUR_GEAR_MODEL = "ID_REAL_DE_LA_LISTA"
+Push-Location $workspace
+node "$repo/src/cli.ts" "Respondé hola y no uses herramientas"
+Pop-Location
 Remove-Item Env:YOUR_GEAR_MODEL -ErrorAction SilentlyContinue
 ```
 
-**Reporte solicitado:** versión de Node, `npm test` / `typecheck`, streaming sí/no, deny sí/no, approve sí/no, Ctrl+C sí/no y texto de errores **sin secretos**. No subir el directorio temporal ni archivos de credenciales.
-
-## Contexto de referencia
-El repositorio [agent-harness-lab](https://github.com/lucasjaviluna/agent-harness-lab) contiene experiencias separadas con Pi CLI, SDK y RPC, tests de políticas, sesiones y manejo de Windows. Sirve como evidencia comparativa para ADR-001, no como código que deba copiarse automáticamente.
+El mensaje de error (sin credenciales ni URLs OAuth) y el modelo elegido permiten distinguir si el problema está en permisos, cuotas, un modelo incompatible o el request. `auth status` confirma que Pi detecta una suscripción, **no** que la inferencia esté autorizada ni que el endpoint funcione.

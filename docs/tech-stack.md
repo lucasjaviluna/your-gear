@@ -24,6 +24,10 @@ Pi mantiene un SDK documentado en la ruta [packages/coding-agent/docs/sdk.md](ht
 
 **Nota importante:** la documentación actual consultada usa el paquete `@earendil-works/pi-coding-agent` (en documentación anterior aparece `@mariozechner/pi-coding-agent`). No fijar imports ni dependencias hasta verificar el nombre y la versión publicados en npm en el momento del spike.
 
+## Autenticación del prototipo (revisado 2026-11-23)
+
+Se eligió provisionalmente reutilizar el proveedor `openai` de Pi 1.6.0 y el **Sign in with ChatGPT** oficial de OpenAI, que utiliza la API pública Responses mediante OAuth. El runtime se resuelve con `ModelRuntime.create()` y credenciales administradas por Pi, sin copiar tokens en Your Gear. `openai-codex` es otro proveedor y no se usa en este camino. El modo API key es explícito y separado. Claude OAuth está bloqueado para este harness de terceros. Consultar [ADR-002](decisions/ADR-002-model-auth.md) y el [smoke Windows](spikes/manual-smoke-windows.md).
+
 ## Librerías complementarias (candidatas, no decisiones)
 - CLI: comandos mínimos con Node; elegir parser solo si evita código relevante.
 - TUI: validar con prototipo después del CLI; no acoplar el core a un renderer.
