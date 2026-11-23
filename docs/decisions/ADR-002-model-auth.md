@@ -1,30 +1,42 @@
-# ADR-002 — Proveedores y autenticación
+# ADR-002 — Modos de autenticación autorizados
 
-**Estado:** Aceptado como política base; conectores concretos pendientes
-**Fecha:** 2026-11-22
+**Estado:** Aceptado para el prototipo de Hito 0; pruebas manuales pendientes.
+**Actualización:** 2026-11-23.
 
 ## Decisión
-- El usuario configura su proveedor y su mecanismo de autenticación **expresamente autorizado** por ese proveedor.
-- API keys personales (BYOK), inferencia local y credenciales cloud admitidas son opciones base.
-- No se promete que una suscripción de una aplicación equivalga a créditos API ni se eluden restricciones de terceros.
-- No crear almacenamiento propio de OAuth si el SDK oficial proporciona uno seguro; no imprimir tokens.
-- La disponibilidad técnica de login en una librería no demuestra permiso de uso contractual.
 
-## Caso Claude / Anthropic
-La documentación oficial indica que los desarrolladores de productos de terceros deben usar API keys o proveedores cloud soportados y no deben ofrecer login Claude.ai en sus propias apps ni encaminar credenciales Pro/Max de sus usuarios como medio de consumo. El uso del binario **Claude Code sin modificar** puede estar sujeto a una excepción separada y condiciones de distribución/autenticación: se evaluará como integración distinta y no como forma de compartir tokens con Pi o Your Gear.
+- **Predeterminado:** `pi-subscription`, exclusivamente `openai`, usando la implementación oficial **Sign in with ChatGPT** de Pi 1.6.0.
+- Your Gear llama a `ModelRuntime.create()` con los defaults de Pi. **No lee, copia ni exporta** los tokens guardados por Pi, ni implementa un flujo OAuth propio.
+- Para continuar, el runtime verifica `isUsingSubscription('openai')`; si no hay sesión de suscripción, **falla** con instrucciones para iniciar sesión en Pi.
+- API key: solo con `YOUR_GEAR_AUTH_MODE=api-key` y `YOUR_GEAR_API_KEY`; sin fallback silencioso. Se usa un runtime separado bajo `~/.your-gear`.
+- La selección de modelo en suscripción se limita a `getAvailable('openai')`; el usuario puede fijar `YOUR_GEAR_MODEL` o usar el primer disponible.
+- No se registran tokens, códigos ni API keys en archivos del proyecto; no imprimir el resultado bruto de auth.
 
-Esto significa que **Your Gear con Pi SDK no debe ofrecer usar el plan Claude Pro/Max mediante OAuth de Claude**.
+## Fundamento
 
-## Otros proveedores
-OpenAI, GitHub Copilot y otros: validar expresamente términos y flujos autorizados por producto/plan antes de anunciar compatibilidad con suscripciones. El soporte de API keys no implica consumo de suscripción.
+OpenAI documenta Sign in with ChatGPT para aplicaciones open-source/locales, con permiso explícito para usar el plan ChatGPT mediante la API pública Responses. Pi implementa este flujo en el proveedor `openai` y lo expone a su SDK. No hace falta fabricar un cliente OAuth adicional.
 
-## Protección de secretos
-- Priorizar variables de entorno/almacenes seguros cuando estén disponibles.
-- `auth.json` y archivos equivalentes nunca se comitean ni se envían a logs.
-- Redactar headers, env vars y argumentos sensibles.
-- Denegar por defecto acceso de herramientas a rutas secretas.
+**No se reutiliza el proveedor `openai-codex`:** el modo que implementamos usa el proveedor `openai` y la autorización oficial de Responses. Que una suscripción esté configurada en Pi bajo otro proveedor no demuestra que esté disponible para `openai`.
 
-## Fuentes (consultadas 2026-11-22)
+## Claude y otros proveedores
+
+Anthropic no autoriza integrar login Claude.ai ni encaminar credenciales Pro/Max mediante un harness de terceros. **Prohibido `anthropic` en modo `pi-subscription`**. El binario oficial Claude Code podría integrarse de forma separada bajo condiciones específicas; API keys Anthropic son otra vía explícita con facturación API.
+
+GitHub Copilot, modelos locales y otros proveedores requieren evaluación técnica y contractual independiente antes de habilitarlos en el modo de suscripción. No afirmar soporte de suscripción por compartir nombre de proveedor.
+
+## Riesgos y limitaciones
+
+- Solo el propietario de la sesión de Pi puede autorizar la integración; debe tener una cuenta y permisos elegibles.
+- `~/.pi/agent/auth.json` (o el directorio de configuración real de Pi) puede contener credenciales de otros proveedores; no usarlo como archivo de configuración editable de Your Gear.
+- El orden de modelos de Pi puede variar. El CLI informa el modelo usado; se recomienda `YOUR_GEAR_MODEL` para reproducibilidad.
+- El flujo depende de Pi y de cambios en las restricciones del proveedor. Revalidar al actualizar dependencias.
+- Verificar manualmente la resolución real del token OAuth y la inferencia, sin exponer credenciales.
+
+## Fuentes oficiales
+
+- https://developers.openai.com/siwc/token-sharing-open-source
+- https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference
+- https://developers.openai.com/cookbook/articles/sign-in-with-chatgpt
+- https://github.com/earendil-works/pi/blob/main/packages/ai/src/providers/openai.ts
+- https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/sdk.md
 - https://code.claude.com/docs/en/legal-and-compliance
-- https://support.claude.com/en/articles/18467148-use-your-claude-platform-account-in-a-third-party-app
-- https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/providers.md

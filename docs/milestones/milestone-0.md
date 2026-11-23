@@ -19,6 +19,8 @@
 - [x] Agregar workflow CI mínimo y observar ejecución exitosa en GitHub Actions.
 - [x] Ejecutar **17/17** pruebas locales de política, gate simulado y configuración (Node 22.16.0).
 - [x] Validar `npm install`, `typecheck` y 17/17 tests en CI con Node 22.19.0 y el paquete SDK declarado.
+- [x] Implementar dos modos explícitos: Pi/OpenAI Sign in with ChatGPT por defecto y API key opcional; sin fallback silencioso.
+- [ ] Validar manualmente autenticación ChatGPT real en Windows, sin API key.
 - [ ] Verificar los criterios y declarar Hito 0 completado.
 
 ## Entregables
@@ -26,7 +28,7 @@
 - [Arquitectura candidata](../architecture.md)
 - [Evaluación tecnológica](../tech-stack.md)
 - [ADR-001: runtime](../decisions/ADR-001-runtime.md)
-- [ADR-002: auth](../decisions/ADR-002-model-auth.md)
+- [ADR-002: auth](../decisions/ADR-002-model-auth.md) — actualizado para Sign in with ChatGPT
 - [ADR-003: extensibilidad](../decisions/ADR-003-extensibility.md)
 - [Seguridad](../security.md)
 - [Roadmap](../roadmap.md)
