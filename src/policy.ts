@@ -55,7 +55,24 @@ export function decideTool({ toolName, input, cwd }: ToolCall): Decision {
     const path = safeWorkspacePath(cwd, args.path);
     if (!path) return { type: 'deny', reason: 'Ruta protegida, inaccesible o fuera del workspace' };
     if (toolName === 'read') return { type: 'allow', reason: 'Lectura dentro del workspace' };
-    return { type: 'ask', reason: `${toolName}: ${JSON.stringify(path)}` };
+    if (toolName === 'write') {
+      if (typeof args.content !== 'string') return { type: 'deny', reason: 'Contenido inválido' };
+      return { type: 'ask', reason: `write: ${JSON.stringify(path)}\nContenido propuesto: ${JSON.stringify(args.content)}` };
+    }
+    if (args.edits !== undefined && (args.oldText !== undefined || args.newText !== undefined)) {
+      return { type: 'deny', reason: 'Contenido de edición ambiguo' };
+    }
+    const edits = Array.isArray(args.edits) ? args.edits :
+      typeof args.oldText === 'string' && typeof args.newText === 'string'
+        ? [{ oldText: args.oldText, newText: args.newText }] : [];
+    if (!edits.length || !edits.every(edit => edit && typeof edit === 'object' &&
+        typeof edit.oldText === 'string' && typeof edit.newText === 'string')) {
+      return { type: 'deny', reason: 'Contenido de edición inválido' };
+    }
+    const preview = edits.map((edit, index) =>
+      `Cambio ${index + 1}:\nTexto a reemplazar: ${JSON.stringify(edit.oldText)}\nTexto propuesto: ${JSON.stringify(edit.newText)}`,
+    ).join('\n');
+    return { type: 'ask', reason: `edit: ${JSON.stringify(path)}\n${preview}` };
   }
   if (toolName === 'bash') {
     if (typeof args.command !== 'string' || !args.command.trim()) {
