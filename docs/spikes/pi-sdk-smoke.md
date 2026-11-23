@@ -1,6 +1,6 @@
 # Pi SDK — evidencia incremental
 
-**Actualización:** 2026-11-23. El Hito 0 y ADR-001 siguen abiertos.
+**Actualización:** 2026-11-23. Hito 0 y ADR-001 aceptados para el alcance validado; ver [seguimiento](../milestones/milestone-0.md).
 
 ## Pruebas automatizadas
 
@@ -12,8 +12,7 @@
 
 ## Pendientes
 
-- Smoke manual Windows con un usuario autenticado por el flujo oficial de Pi: [guía](manual-smoke-windows.md).
-- Validar streaming, errores, cancelación y aprobación/denegación **dentro del loop real de Pi**.
+- El usuario reportó exitosas las pruebas manuales de streaming, errores, cancelación, herramientas, rutas externas y escritura sin TTY en Windows: [registro y guía](manual-smoke-windows.md). No se registraron modelo ni versión exacta de Node.
 - Probar persistencia y reanudación (el SDK sigue configurado con `SessionManager.inMemory`).
 - Verificar exhaustivamente los límites de permisos de extensiones y MCP cuando se activen.
 
@@ -32,4 +31,4 @@ Se agregó `src/response-output.ts` y su suite aislada:
 - Distingue cancelación, respuesta truncada y finalización sin contenido.
 - Falla con código distinto de cero ante una respuesta vacía.
 
-Se verificó `33/33` tests y typecheck en GitHub Actions del PR #2 (run `45196845910`). **Aún falta repetir el smoke con el login real en Windows** para identificar el error concreto de inferencia, si lo hubiera.
+Se verificó `33/33` tests y typecheck en GitHub Actions del PR #2 (run `45196845910`). Luego el usuario reportó inferencia real exitosa en Windows. Una verificación local posterior pasó 35 tests y typecheck; ese resultado no implica CI para los cambios posteriores.

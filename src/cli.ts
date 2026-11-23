@@ -2,8 +2,8 @@
 import { mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { stdin, stdout, stderr } from 'node:process';
-import { createInterface } from 'node:readline/promises';
+import { stdout, stderr } from 'node:process';
+import { requestApproval } from './approval.ts';
 import { readConfiguration } from './config.ts';
 import { createToolCallHandler } from './gate.ts';
 import { selectModel } from './model-selection.ts';
@@ -58,21 +58,17 @@ async function main(): Promise<void> {
   stderr.write(`Your Gear: ${model.provider}/${model.id} (${config.authMode})\n`);
 
   const cwd = resolve(process.cwd());
-  const approve = async (operation: string): Promise<boolean> => {
-    if (!stdin.isTTY || !stdout.isTTY) return false;
-    const rl = createInterface({ input: stdin, output: stdout });
-    try {
-      return (await rl.question(`\n¿Autorizar ${operation}? [s/N] `)).trim().toLowerCase() === 's';
-    } finally {
-      rl.close();
-    }
-  };
   const settingsManager = SettingsManager.inMemory({ defaultTools: ['read', 'write', 'edit', 'bash'] });
+  const authorize = createToolCallHandler(cwd, requestApproval);
   const loader = new DefaultResourceLoader({
     cwd, agentDir, settingsManager,
     noExtensions: true, noSkills: true, noPromptTemplates: true,
     noThemes: true, noContextFiles: true,
-    extensionFactories: [(pi) => { pi.on('tool_call', createToolCallHandler(cwd, approve)); }],
+    extensionFactories: [(pi) => { pi.on('tool_call', async (event) => {
+      const result = await authorize(event);
+      if (result?.block) stderr.write(`Your Gear: herramienta ${event.toolName} bloqueada: ${result.reason}\n`);
+      return result;
+    }); }],
   });
   await loader.reload();
   const { session, extensionsResult } = await createAgentSession({

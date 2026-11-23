@@ -1,6 +1,15 @@
 # Seguridad y ejecución — principios iniciales
 
-**Estado:** política conceptual Hito 0; falta implementación y pruebas.
+**Estado:** política inicial implementada para las herramientas habilitadas; no es un sandbox.
+
+El usuario reportó pruebas manuales en Windows de bloqueo de rutas externas y escritura sin TTY. Las pruebas automatizadas cubren el gate y un proceso sin TTY, no todas las vías de ejecución del SDK. Las garantías no se extienden a futuras extensiones/MCP.
+
+## Riesgos conocidos
+- La comprobación de rutas puede quedar desactualizada antes del uso (TOCTOU); la lista de rutas protegidas no cubre todos los secretos.
+- Un comando shell aprobado puede acceder o modificar recursos fuera del workspace.
+- La redacción de errores es parcial; no garantiza eliminar todos los secretos.
+- Las pruebas reales reportadas son de Windows; macOS y Linux requieren validación. La disponibilidad de modelos depende de Pi, proveedor y cuenta.
+- Persistencia, aislamiento de sesiones y comportamiento ante cancelación durante efectos requieren pruebas adicionales en Hito 1.
 
 ## Modelo de amenazas mínimo
 - Prompt injection a través de archivos, instrucciones y herramientas.

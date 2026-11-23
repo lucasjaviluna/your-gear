@@ -2,7 +2,7 @@
 
 **Your Gear** es un harness de agentes de IA configurable y extensible con una experiencia CLI terminal-first.
 
-> **Estado:** Hito 0 en progreso. Hay un prototipo de runtime, política de herramientas y pruebas automatizadas; falta validar la ejecución real con un modelo y terminar el ADR de runtime.
+> **Estado:** Hito 0 completado para el alcance validado. Hay un prototipo con Pi SDK, política de herramientas y smoke real reportado en Windows; la persistencia y reanudación corresponden al Hito 1.
 
 ## Inicio rápido: suscripción ChatGPT a través de Pi
 
@@ -38,7 +38,7 @@ En PowerShell, definir variables con `$env:NOMBRE='valor'`. No publicar, compart
 
 ## Seguridad
 
-Las lecturas se restringen de manera conservadora al workspace; las escrituras y comandos shell requieren confirmación interactiva y se deniegan en modos sin TTY. **El prototipo no es un sandbox** y la interceptación real de todas las herramientas aún requiere pruebas con Pi en ejecución. Usar proyectos descartables para el smoke.
+Las lecturas se restringen de manera conservadora al workspace; las escrituras y comandos shell requieren confirmación interactiva y se deniegan en modos sin TTY. El usuario reportó pruebas reales de las herramientas habilitadas en Windows. **El prototipo no es un sandbox**; extensiones y MCP requieren validación propia antes de habilitarse. Usar proyectos descartables para el smoke.
 
 ## Documentación
 
