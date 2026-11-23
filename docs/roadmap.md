@@ -12,6 +12,8 @@ CLI ejecutable localmente; configuración de un proveedor permitido; prompt con 
 
 **Primer incremento en curso:** persistencia nativa de Pi optativa con `--persist` y reanudación de la más reciente con `--continue`. Tests locales ejercitan el almacenamiento real de Pi y el aislamiento por workspace. El usuario reportó que recuperó la palabra guardada tras cancelar una generación y, en otra prueba, un comando aprobado que esperaba antes de escribir: se mostró `La ejecución fue cancelada`, el archivo no apareció y la sesión se reanudó. Esto no garantiza cancelación de todos los procesos ni reversión de efectos ya ocurridos. La privacidad depende de permisos y ACL del sistema; quedan pendientes su verificación en instalaciones reales y la compatibilidad multiplataforma.
 
+**Trazabilidad inicial:** el CLI muestra en stderr el modo de sesión, el resultado de cada solicitud de aprobación y eventos de solicitud, bloqueo y finalización para herramientas integradas, sin argumentos ni resultados en esa traza. El usuario reportó lectura y escritura exitosas dentro del workspace, bloqueo de operaciones sobre un archivo externo y visualización de los mensajes de solicitud y finalización. También comprobó los mensajes de sesión en memoria, persistente y reanudada, y los resultados de aprobación rechazada y concedida.
+
 ## Hito 2 — Extensiones y distribución
 Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramientas, empaquetado `your-gear` con npm, docs de uso para Windows/macOS/Linux. TUI simple si mejora la UX sin acoplar al core.
 

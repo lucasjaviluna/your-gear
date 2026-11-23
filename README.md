@@ -57,6 +57,8 @@ En PowerShell, definir variables con `$env:NOMBRE='valor'`. No publicar, compart
 
 Las lecturas se restringen de manera conservadora al workspace; las escrituras y comandos shell requieren confirmación interactiva y se deniegan en modos sin TTY. El usuario reportó pruebas reales de las herramientas habilitadas en Windows. **El prototipo no es un sandbox**; extensiones y MCP requieren validación propia antes de habilitarse. Usar proyectos descartables para el smoke.
 
+El CLI informa en stderr el modo de sesión, el resultado de cada solicitud de aprobación y cuándo una herramienta integrada se solicita, se bloquea o finaliza, sin registrar argumentos ni resultados en esa traza. La solicitud de aprobación puede mostrar la ruta o el comando para que el usuario pueda revisarlos. Las sesiones persistidas pueden contener el detalle de las herramientas.
+
 ## Documentación
 
 - [Visión](docs/vision.md)
