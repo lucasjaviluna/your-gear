@@ -2,7 +2,7 @@
 
 **Your Gear** es un harness de agentes de IA configurable y extensible con una experiencia CLI terminal-first.
 
-> **Estado:** Hito 0 completado para el alcance validado. Hay un prototipo con Pi SDK, política de herramientas y smoke real reportado en Windows; la persistencia y reanudación corresponden al Hito 1.
+> **Estado:** Hitos 0 y 1 completados para el alcance validado. El prototipo usa Pi SDK, persistencia optativa y una política de herramientas; el flujo de aceptación fue comprobado en Windows. El siguiente es el Hito 2.
 
 ## Inicio rápido: suscripción ChatGPT a través de Pi
 
