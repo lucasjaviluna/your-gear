@@ -22,6 +22,23 @@ Requiere **Node.js >=22.19.0**, npm y `@earendil-works/pi-coding-agent@1.6.0`. Y
 
 Por defecto se usa `YOUR_GEAR_AUTH_MODE=pi-subscription`, el proveedor `openai` y el primer modelo disponible que también figura en el catálogo Codex de Pi. Para fijar uno, definir `YOUR_GEAR_MODEL` con un ID de `models`. La disponibilidad real depende de la cuenta y del backend. El CLI informa el modelo seleccionado y muestra los errores del proveedor sin imprimir tokens. El uso está sujeto a los límites y condiciones de la suscripción y al permiso aprobado en el login.
 
+### Continuar una sesión
+
+Las ejecuciones son efímeras por defecto. Para guardar una conversación y luego continuar la más reciente del mismo directorio de trabajo:
+
+```sh
+node /ruta/a/your-gear/src/cli.ts --persist "Recordá la palabra faro"
+node /ruta/a/your-gear/src/cli.ts --continue "¿Qué palabra te pedí recordar?"
+```
+
+`--continue` informa un error si no existe una sesión guardada para ese workspace. Pi guarda los mensajes y resultados de herramientas en archivos JSONL bajo `~/.your-gear/sessions/`, separados por ruta de workspace. Pueden contener información sensible y no están cifrados por Your Gear; usá un workspace descartable para la prueba. El usuario reportó que recuperó contexto después de cancelar una generación y un comando en espera; una prueba puntual no garantiza la cancelación de todos los procesos ni revierte efectos ya realizados.
+
+Las opciones se indican antes del prompt y se rechazan si son desconocidas. Si el prompt comienza con un guion, usá `--` para separar las opciones del texto: `node src/cli.ts -- "--texto literal"`.
+
+Al reanudar, si el archivo más reciente contiene JSONL inválido o no pertenece al workspace, el CLI informa el problema y no descarta líneas ni cambia a una sesión anterior. Si el directorio o archivo no se puede leer, informa un error de acceso. Conservá una copia antes de intentar reparar una sesión dañada.
+
+La carpeta de sesiones nueva se solicita con permisos `0700` en sistemas POSIX, sujetos al sistema y a la configuración existente; Pi crea los archivos usando los permisos predeterminados del proceso. En Windows el control de acceso depende de las ACL heredadas. Your Gear no verifica ni ajusta ACL existentes: revisá los permisos de `~/.your-gear` si compartís el equipo. Las sesiones pueden incluir el historial completo, rutas y resultados de herramientas; el hash del directorio no cifra esos datos ni los anonimiza.
+
 ### Modo API key opcional
 
 El uso de API **no** es un fallback automático: requiere habilitarlo deliberadamente y puede facturarse por separado.

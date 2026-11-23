@@ -8,6 +8,7 @@ import { readConfiguration } from './config.ts';
 import { createToolCallHandler } from './gate.ts';
 import { selectModel } from './model-selection.ts';
 import { createResponseOutput, redactError } from './response-output.ts';
+import { createSessionManager, parseSessionArgs } from './sessions.ts';
 
 async function main(): Promise<void> {
   if (Number(process.versions.node.split('.')[0]) < 22 ||
@@ -18,9 +19,10 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const showStatus = args.length === 2 && args[0] === 'auth' && args[1] === 'status';
   const listModels = args.length === 1 && args[0] === 'models';
-  const config = showStatus || listModels ? undefined : readConfiguration(args, process.env);
+  const sessionArgs = parseSessionArgs(args);
+  const config = showStatus || listModels ? undefined : readConfiguration(sessionArgs.promptArgs, process.env);
 
-  const { createAgentSession, DefaultResourceLoader, ModelRuntime, SessionManager, SettingsManager } =
+  const { createAgentSession, DefaultResourceLoader, ModelRuntime, SettingsManager } =
     await import('@earendil-works/pi-coding-agent');
 
   // Subscription mode intentionally uses Pi's own credential store. No token
@@ -73,7 +75,7 @@ async function main(): Promise<void> {
   await loader.reload();
   const { session, extensionsResult } = await createAgentSession({
     cwd, agentDir, modelRuntime, model, settingsManager,
-    sessionManager: SessionManager.inMemory(cwd),
+    sessionManager: await createSessionManager(cwd, agentDir, sessionArgs.mode),
     resourceLoader: loader, tools: ['read', 'write', 'edit', 'bash'],
   });
   if (extensionsResult.errors.length > 0) {

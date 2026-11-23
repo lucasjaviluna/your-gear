@@ -10,7 +10,7 @@ CLI ejecutable localmente; configuración de un proveedor permitido; prompt con 
 
 **Criterio de aceptación:** una persona resuelve una tarea sobre un workspace temporal, inspecciona y aprueba cambios, y puede continuar la sesión con trazabilidad básica.
 
-**Primer incremento propuesto:** evaluar el mecanismo de sesiones de Pi con creación y reanudación en un workspace temporal. Verificar continuidad, aislamiento por workspace, cierre, cancelación y privacidad antes de definir la mínima interfaz CLI necesaria. El prototipo actual usa sesiones en memoria.
+**Primer incremento en curso:** persistencia nativa de Pi optativa con `--persist` y reanudación de la más reciente con `--continue`. Tests locales ejercitan el almacenamiento real de Pi y el aislamiento por workspace. El usuario reportó que recuperó la palabra guardada tras cancelar una generación y, en otra prueba, un comando aprobado que esperaba antes de escribir: se mostró `La ejecución fue cancelada`, el archivo no apareció y la sesión se reanudó. Esto no garantiza cancelación de todos los procesos ni reversión de efectos ya ocurridos. La privacidad depende de permisos y ACL del sistema; quedan pendientes su verificación en instalaciones reales y la compatibilidad multiplataforma.
 
 ## Hito 2 — Extensiones y distribución
 Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramientas, empaquetado `your-gear` con npm, docs de uso para Windows/macOS/Linux. TUI simple si mejora la UX sin acoplar al core.

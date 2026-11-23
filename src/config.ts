@@ -14,7 +14,7 @@ export type Configuration = {
 export function readConfiguration(args: readonly string[], env: NodeJS.ProcessEnv): Configuration {
   const prompt = args.join(' ').trim();
   if (!prompt || prompt === '--help' || prompt === '-h') {
-    throw new Error('Uso: your-gear "tu instrucción" | your-gear auth status | your-gear models');
+    throw new Error('Uso: your-gear [--persist|--continue] "tu instrucción" | your-gear auth status | your-gear models');
   }
   const authMode = env.YOUR_GEAR_AUTH_MODE?.trim() || 'pi-subscription';
   if (authMode !== 'pi-subscription' && authMode !== 'api-key') {
