@@ -65,3 +65,36 @@ Compartir **solo**: versión Node, resultados de typecheck/test, resultado de `a
 El gate de herramientas es experimental, no es sandbox OS; las rutas tienen riesgo TOCTOU y la lectura de archivos sensibles puede no detectarse siempre. Una autorización de shell puede producir efectos fuera del workspace. El Hito 0 no estará cerrado hasta validar la integración real y ADR-001.
 
 Referencia: https://github.com/lucasjaviluna/agent-harness-lab
+
+## Si solo aparece `Your Gear: openai/chat-latest (pi-subscription)`
+
+En la primera versión el CLI únicamente imprimía los eventos `text_delta` y podía salir silenciosamente si el proveedor devolvía un mensaje de error o la respuesta final no llegaba por streaming.
+
+Desde la corrección del PR #2, se muestran los errores `stopReason=error` de Pi y se recupera el contenido final cuando falta el streaming. Para probarla:
+
+```powershell
+# Desde el repo Your Gear
+git checkout feat/pi-chatgpt-subscription-auth
+git pull origin feat/pi-chatgpt-subscription-auth
+npm run typecheck
+npm test
+node src/cli.ts auth status
+node src/cli.ts models
+
+# Ejecutar desde un workspace temporal, con $repo apuntando al checkout:
+Push-Location $workspace
+node "$repo/src/cli.ts" "Respondé hola y no uses herramientas"
+Pop-Location
+```
+
+Si el CLI sigue mostrando errores sobre el modelo `chat-latest`, copiá un ID exacto de `models` y ejecutá:
+
+```powershell
+$env:YOUR_GEAR_MODEL = "ID_REAL_DE_LA_LISTA"
+Push-Location $workspace
+node "$repo/src/cli.ts" "Respondé hola y no uses herramientas"
+Pop-Location
+Remove-Item Env:YOUR_GEAR_MODEL -ErrorAction SilentlyContinue
+```
+
+El mensaje de error (sin credenciales ni URLs OAuth) y el modelo elegido permiten distinguir si el problema está en permisos, cuotas, un modelo incompatible o el request. `auth status` confirma que Pi detecta una suscripción, **no** que la inferencia esté autorizada ni que el endpoint funcione.

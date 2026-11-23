@@ -19,7 +19,7 @@ export function redactError(value: string): string {
     .replace(/\bBearer\s+\S+/gi, 'Bearer [REDACTED]')
     .replace(/\bsk-[A-Za-z0-9_-]+/g, '[REDACTED]')
     .replace(/\b[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/g, '[REDACTED]')
-    .replace(/\b(access_token|refresh_token|api[_-]?key|authorization|password)\s*[:=]\s*["']?[^"',\s}]+/gi, '$1=[REDACTED]')
+    .replace(/\b(access_token|refresh_token|id_token|token|api[_-]?key|authorization|password|secret)\s*[:=]\s*["']?[^"',\s}]+/gi, '$1=[REDACTED]')
     .replace(/https?:\/\/[^\s)]+/gi, '[URL REDACTED]')
     .slice(0, 700);
 }
