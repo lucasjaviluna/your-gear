@@ -40,7 +40,7 @@ async function main(): Promise<void> {
     cwd, agentDir, settingsManager,
     noExtensions: true, noSkills: true, noPromptTemplates: true,
     noThemes: true, noContextFiles: true,
-    extensionFactories: [(pi) => pi.on('tool_call', createToolCallHandler(cwd, approve))],
+    extensionFactories: [(pi) => { pi.on('tool_call', createToolCallHandler(cwd, approve)); }],
   });
   await loader.reload();
   const { session, extensionsResult } = await createAgentSession({
