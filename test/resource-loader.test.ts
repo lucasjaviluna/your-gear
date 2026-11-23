@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DefaultResourceLoader, SettingsManager } from '@earendil-works/pi-coding-agent';
@@ -44,7 +44,7 @@ test('selección explícita limita skills a archivos SKILL.md dentro del workspa
   writeFileSync(join(cwd, 'SKILL.md'), 'example');
   writeFileSync(join(outside, 'SKILL.md'), 'outside');
   symlinkSync(outside, join(cwd, 'link'), 'junction');
-  assert.equal(resolveSkill(cwd, 'SKILL.md'), join(cwd, 'SKILL.md'));
+  assert.equal(resolveSkill(cwd, 'SKILL.md'), realpathSync(join(cwd, 'SKILL.md')));
   assert.throws(() => resolveSkill(cwd, '../outside/SKILL.md'), /workspace/);
   assert.throws(() => resolveSkill(cwd, 'link/SKILL.md'), /workspace/);
   assert.throws(() => resolveSkill(cwd, '.your-gear/SKILL.md'), /workspace/);
