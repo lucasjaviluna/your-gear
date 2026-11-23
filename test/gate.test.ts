@@ -21,7 +21,7 @@ test('gate bloquea efectos antes de invocar execute', async t => {
     executions++;
     return true;
   }
-  assert.equal(await fakeExecute({ toolName: 'write', input: { path: 'write.txt' } }), false);
+  assert.equal(await fakeExecute({ toolName: 'write', input: { path: 'write.txt', content: 'hello' } }), false);
   assert.equal(await fakeExecute({ toolName: 'bash', input: { command: 'echo hello' } }), false);
   assert.equal(await fakeExecute({ toolName: 'custom_plugin', input: {} }), false);
   assert.equal(executions, 0);
@@ -40,6 +40,6 @@ test('gate permite write únicamente con aprobación explícita', async t => {
   const cwd = workspace(t);
   let prompt = '';
   const handler = createToolCallHandler(cwd, async (description) => { prompt = description; return true; });
-  assert.equal(await handler({ toolName: 'write', input: { path: 'demo.txt' } }), undefined);
+  assert.equal(await handler({ toolName: 'write', input: { path: 'demo.txt', content: 'hello' } }), undefined);
   assert.match(prompt, /write: /);
 });

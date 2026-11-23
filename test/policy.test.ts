@@ -57,10 +57,25 @@ test('desconocidas y argumentos inválidos se deniegan', t => {
 
 test('rechazo, ausencia de UI y error bloquean antes de ejecutar', async t => {
   const cwd = workspace(t);
-  const req = { cwd, toolName: 'write', input: { path: 'test.txt' } };
+  const req = { cwd, toolName: 'write', input: { path: 'test.txt', content: 'test' } };
   assert.equal((await authorizeTool(req, async () => false))?.block, true);
   assert.equal((await authorizeTool(req, async () => { throw new Error('no ui'); }))?.block, true);
   assert.equal(await authorizeTool(req, async () => true), undefined);
+});
+
+test('la aprobación muestra el contenido propuesto sin caracteres de control', t => {
+  const cwd = workspace(t);
+  const write = decideTool({ cwd, toolName: 'write', input: { path: 'new.txt', content: 'uno\n\x1b[31m' } });
+  assert.equal(write.type, 'ask');
+  assert.match(write.reason, /uno\\n\\u001b/);
+  assert.equal(write.reason.includes('\x1b'), false);
+  const edit = decideTool({ cwd, toolName: 'edit', input: { path: 'hello.txt', edits: [
+    { oldText: 'hola', newText: 'chau' }, { oldText: 'uno', newText: 'dos' },
+  ] } });
+  assert.match(edit.reason, /Texto a reemplazar: "hola"/);
+  assert.match(edit.reason, /Texto propuesto: "chau"/);
+  assert.match(edit.reason, /Cambio 2:[\s\S]*Texto propuesto: "dos"/);
+  assert.equal(decideTool({ cwd, toolName: 'write', input: { path: 'new.txt' } }).type, 'deny');
 });
 
 test('lectura permitida no solicita aprobación', async t => {

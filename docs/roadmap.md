@@ -5,14 +5,16 @@
 ## Hito 0 — Fundaciones (completado para el alcance validado)
 Visión, ADR, opciones de stack, riesgos de auth, seguridad, spike SDK Pi y scaffold mínimo. Entrega: decisiones reproducibles y criterios de aceptación.
 
-## Hito 1 — Vertical slice funcional
+## Hito 1 — Vertical slice funcional (aceptación validada; cierre pendiente de integración)
 CLI ejecutable localmente; configuración de un proveedor permitido; prompt con streaming; sesión persistida; herramientas read/write/shell con gate de aprobación; cancelar/reanudar; logs y tests. No TUI compleja todavía.
 
 **Criterio de aceptación:** una persona resuelve una tarea sobre un workspace temporal, inspecciona y aprueba cambios, y puede continuar la sesión con trazabilidad básica.
 
-**Primer incremento en curso:** persistencia nativa de Pi optativa con `--persist` y reanudación de la más reciente con `--continue`. Tests locales ejercitan el almacenamiento real de Pi y el aislamiento por workspace. El usuario reportó que recuperó la palabra guardada tras cancelar una generación y, en otra prueba, un comando aprobado que esperaba antes de escribir: se mostró `La ejecución fue cancelada`, el archivo no apareció y la sesión se reanudó. Esto no garantiza cancelación de todos los procesos ni reversión de efectos ya ocurridos. La privacidad depende de permisos y ACL del sistema; quedan pendientes su verificación en instalaciones reales y la compatibilidad multiplataforma.
+**Persistencia y cancelación:** persistencia nativa de Pi optativa con `--persist` y reanudación de la más reciente con `--continue`. Tests locales ejercitan el almacenamiento real de Pi y el aislamiento por workspace. El usuario reportó que recuperó la palabra guardada tras cancelar una generación y, en otra prueba, un comando aprobado que esperaba antes de escribir: se mostró `La ejecución fue cancelada`, el archivo no apareció y la sesión se reanudó. Esto no garantiza cancelación de todos los procesos ni reversión de efectos ya ocurridos. La privacidad depende de permisos y ACL del sistema; quedan pendientes su verificación en instalaciones reales y la compatibilidad multiplataforma.
 
 **Trazabilidad inicial:** el CLI muestra en stderr el modo de sesión, el resultado de cada solicitud de aprobación y eventos de solicitud, bloqueo y finalización para herramientas integradas, sin argumentos ni resultados en esa traza. El usuario reportó lectura y escritura exitosas dentro del workspace, bloqueo de operaciones sobre un archivo externo y visualización de los mensajes de solicitud y finalización. También comprobó los mensajes de sesión en memoria, persistente y reanudada, y los resultados de aprobación rechazada y concedida.
+
+**Aceptación:** el usuario confirmó en Windows el flujo de lectura y edición en un workspace temporal, la inspección y aprobación del cambio, el resultado del archivo y la recuperación del contexto al continuar la sesión. El detalle y los límites de la evidencia están en [Hito 1](milestones/milestone-1.md). La vista previa y el registro de cierre aún deben integrarse en `main`.
 
 ## Hito 2 — Extensiones y distribución
 Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramientas, empaquetado `your-gear` con npm, docs de uso para Windows/macOS/Linux. TUI simple si mejora la UX sin acoplar al core.
