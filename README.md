@@ -22,6 +22,20 @@ Requiere **Node.js >=22.19.0**, npm y `@earendil-works/pi-coding-agent@1.6.0`. Y
 
 Por defecto se usa `YOUR_GEAR_AUTH_MODE=pi-subscription`, el proveedor `openai` y el primer modelo disponible que también figura en el catálogo Codex de Pi. Para fijar uno, definir `YOUR_GEAR_MODEL` con un ID de `models`. La disponibilidad real depende de la cuenta y del backend. El CLI informa el modelo seleccionado y muestra los errores del proveedor sin imprimir tokens. El uso está sujeto a los límites y condiciones de la suscripción y al permiso aprobado en el login.
 
+### Configuración por usuario y proyecto
+
+Opcionalmente, crear `~/.your-gear/config.json` o `.your-gear/config.json` dentro del workspace con `provider` y/o `model` como cadenas:
+
+```json
+{ "provider": "openai", "model": "ID_DEL_MODELO" }
+```
+
+El proyecto prevalece sobre el usuario y las variables `YOUR_GEAR_PROVIDER` y `YOUR_GEAR_MODEL` prevalecen sobre ambos. Se rechazan opciones desconocidas y JSON inválido. La autenticación y las claves se configuran mediante las variables de entorno documentadas; los archivos no pueden activar el modo API ni almacenar claves.
+
+### Paquete local
+
+Con las dependencias de desarrollo instaladas, `npm pack` compila el CLI y genera un tarball. Para probarlo, instalá ese archivo con `npm install -g ./your-gear-0.0.0.tgz` y ejecutá `your-gear` en una terminal. En Windows, macOS y Linux se requiere Node.js 22.19 o superior. El paquete sigue marcado como privado; su publicación y licencia están pendientes.
+
 ### Continuar una sesión
 
 Las ejecuciones son efímeras por defecto. Para guardar una conversación y luego continuar la más reciente del mismo directorio de trabajo:
@@ -32,6 +46,16 @@ node /ruta/a/your-gear/src/cli.ts --continue "¿Qué palabra te pedí recordar?"
 ```
 
 `--continue` informa un error si no existe una sesión guardada para ese workspace. Pi guarda los mensajes y resultados de herramientas en archivos JSONL bajo `~/.your-gear/sessions/`, separados por ruta de workspace. Pueden contener información sensible y no están cifrados por Your Gear; usá un workspace descartable para la prueba. El usuario reportó que recuperó contexto después de cancelar una generación y un comando en espera; una prueba puntual no garantiza la cancelación de todos los procesos ni revierte efectos ya realizados.
+
+### Seleccionar una skill
+
+Para usar una skill confiable del workspace, indicá explícitamente su archivo `SKILL.md` antes del prompt:
+
+```sh
+your-gear --skill ./skills/ejemplo/SKILL.md "Aplicá la skill a esta tarea"
+```
+
+Solo se carga la skill indicada. La ruta debe estar dentro del workspace y fuera de rutas protegidas; se rechazan enlaces que salgan del workspace. La skill aporta instrucciones al modelo y las herramientas siguen sujetas a la política y aprobación normales. Revisá el contenido antes de seleccionarla: el proceso no es un sandbox. Para continuar una sesión con esa skill, indicá `--skill` de nuevo junto con `--continue`.
 
 Las opciones se indican antes del prompt y se rechazan si son desconocidas. Si el prompt comienza con un guion, usá `--` para separar las opciones del texto: `node src/cli.ts -- "--texto literal"`.
 
@@ -55,7 +79,7 @@ En PowerShell, definir variables con `$env:NOMBRE='valor'`. No publicar, compart
 
 ## Seguridad
 
-Las lecturas se restringen de manera conservadora al workspace; las escrituras y comandos shell requieren confirmación interactiva y se deniegan en modos sin TTY. El usuario reportó pruebas reales de las herramientas habilitadas en Windows. **El prototipo no es un sandbox**; extensiones y MCP requieren validación propia antes de habilitarse. Usar proyectos descartables para el smoke.
+Las lecturas se restringen de manera conservadora al workspace; las escrituras y comandos shell requieren confirmación interactiva y se deniegan en modos sin TTY. El usuario reportó pruebas reales de las herramientas habilitadas en Windows. **El prototipo no es un sandbox**; las skills se cargan solo por selección explícita y MCP sigue deshabilitado. Usar proyectos descartables para el smoke.
 
 El CLI informa en stderr el modo de sesión, el resultado de cada solicitud de aprobación y cuándo una herramienta integrada se solicita, se bloquea o finaliza, sin registrar argumentos ni resultados en esa traza. La solicitud de aprobación muestra la ruta y el contenido propuesto para escrituras, los textos a reemplazar y propuestos para ediciones, o el comando para shell. Los textos se muestran escapados y pueden incluir información sensible. Las sesiones persistidas pueden contener el detalle de las herramientas.
 
@@ -67,6 +91,7 @@ El CLI informa en stderr el modo de sesión, el resultado de cada solicitud de a
 - [ADR-002: autenticación autorizada](docs/decisions/ADR-002-model-auth.md)
 - [Hito 0: seguimiento](docs/milestones/milestone-0.md)
 - [Hito 1: seguimiento](docs/milestones/milestone-1.md)
+- [Hito 2: seguimiento](docs/milestones/milestone-2.md)
 - [Smoke manual en Windows](docs/spikes/manual-smoke-windows.md)
 - [Roadmap](docs/roadmap.md)
 

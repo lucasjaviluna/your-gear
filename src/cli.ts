@@ -4,11 +4,12 @@ import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { stdout, stderr } from 'node:process';
 import { requestApproval } from './approval.ts';
-import { readConfiguration } from './config.ts';
+import { readConfiguration, readSettings } from './config.ts';
 import { createToolCallHandler } from './gate.ts';
 import { selectModel } from './model-selection.ts';
 import { createResponseOutput, redactError } from './response-output.ts';
 import { createSessionManager, parseSessionArgs } from './sessions.ts';
+import { resolveSkill } from './skills.ts';
 import { createToolTrace, traceApproval, traceSession } from './tool-trace.ts';
 
 async function main(): Promise<void> {
@@ -21,14 +22,14 @@ async function main(): Promise<void> {
   const showStatus = args.length === 2 && args[0] === 'auth' && args[1] === 'status';
   const listModels = args.length === 1 && args[0] === 'models';
   const sessionArgs = parseSessionArgs(args);
-  const config = showStatus || listModels ? undefined : readConfiguration(sessionArgs.promptArgs, process.env);
+  const agentDir = join(homedir(), '.your-gear');
+  const config = showStatus || listModels ? undefined : readConfiguration(sessionArgs.promptArgs, process.env, readSettings(process.cwd(), agentDir));
 
   const { createAgentSession, DefaultResourceLoader, ModelRuntime, SettingsManager } =
     await import('@earendil-works/pi-coding-agent');
 
   // Subscription mode intentionally uses Pi's own credential store. No token
   // reading, exporting, copying, or OAuth implementation is performed here.
-  const agentDir = join(homedir(), '.your-gear');
   const modelRuntime = !config || config.authMode === 'pi-subscription'
     ? await ModelRuntime.create()
     : await (async () => {
@@ -61,12 +62,13 @@ async function main(): Promise<void> {
   stderr.write(`Your Gear: ${model.provider}/${model.id} (${config.authMode})\n`);
 
   const cwd = resolve(process.cwd());
+  const skillPath = sessionArgs.skillPath ? resolveSkill(cwd, sessionArgs.skillPath) : undefined;
   const settingsManager = SettingsManager.inMemory({ defaultTools: ['read', 'write', 'edit', 'bash'] });
   const authorize = createToolCallHandler(cwd, traceApproval(requestApproval, text => stderr.write(text)));
   const loader = new DefaultResourceLoader({
     cwd, agentDir, settingsManager,
     noExtensions: true, noSkills: true, noPromptTemplates: true,
-    noThemes: true, noContextFiles: true,
+    noThemes: true, noContextFiles: true, additionalSkillPaths: skillPath ? [skillPath] : [],
     extensionFactories: [(pi) => { pi.on('tool_call', async (event) => {
       const result = await authorize(event);
       if (result?.block) stderr.write(`Your Gear: herramienta ${event.toolName} bloqueada: ${result.reason}\n`);
@@ -74,6 +76,9 @@ async function main(): Promise<void> {
     }); }],
   });
   await loader.reload();
+  if (skillPath && (loader.getSkills().skills.length !== 1 || loader.getSkills().diagnostics.some(item => item.type === 'error'))) {
+    throw new Error('No se pudo cargar la skill seleccionada. Revisá su formato.');
+  }
   const sessionManager = await createSessionManager(cwd, agentDir, sessionArgs.mode);
   const { session, extensionsResult } = await createAgentSession({
     cwd, agentDir, modelRuntime, model, settingsManager,

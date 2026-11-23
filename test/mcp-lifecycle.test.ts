@@ -1,0 +1,99 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createAssistantMessageEventStream, type AssistantMessage, type Model } from '@earendil-works/pi-ai';
+import { createAgentSession, createMcpExtension, DefaultResourceLoader, ModelRuntime, SessionManager, SettingsManager } from '@earendil-works/pi-coding-agent';
+
+test('MCP inicia la conexión al iniciar sesión, antes de cualquier tool_call', async t => {
+  const cwd = mkdtempSync(join(tmpdir(), 'your-gear-mcp-'));
+  t.after(() => rmSync(cwd, { recursive: true, force: true }));
+  const agentDir = join(cwd, 'agent');
+  const settingsManager = SettingsManager.inMemory();
+  let toolCalls = 0;
+  let attempted!: () => void;
+  const connectionAttempted = new Promise<void>(resolve => { attempted = resolve; });
+  const mcp = createMcpExtension({
+    loadConfig: () => ({ errors: [], servers: [{ name: 'fixture', source: 'test',
+      config: { command: 'fixture', exposure: 'direct' } }] }),
+    createTransport: () => { attempted(); throw new Error('Conexión simulada'); },
+    logPath: join(cwd, 'mcp.log'),
+  });
+  const loader = new DefaultResourceLoader({ cwd, agentDir, settingsManager, noExtensions: true,
+    noSkills: true, noPromptTemplates: true, noThemes: true, noContextFiles: true,
+    extensionFactories: [mcp, pi => { pi.on('tool_call', async () => { toolCalls++; return { block: true }; }); }],
+  });
+  await loader.reload();
+  const runtime = await ModelRuntime.create({ authPath: join(agentDir, 'auth.json'), modelsPath: join(agentDir, 'models.json') });
+  const { session } = await createAgentSession({ cwd, agentDir, settingsManager, modelRuntime: runtime,
+    sessionManager: SessionManager.inMemory(cwd), resourceLoader: loader, tools: ['read', 'write', 'edit', 'bash'] });
+  t.after(() => session.dispose());
+  await session.bindExtensions({});
+  let deadline: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([connectionAttempted, new Promise<never>((_, reject) => {
+      deadline = setTimeout(() => reject(new Error('No se observó el intento de conexión')), 5000);
+    })]);
+  } finally {
+    clearTimeout(deadline);
+  }
+  assert.equal(toolCalls, 0);
+});
+
+test('servidor MCP local conecta, respeta el gate y cierra al terminar', async t => {
+  const cwd = mkdtempSync(join(tmpdir(), 'your-gear-mcp-live-'));
+  const marker = join(cwd, 'events.txt');
+  const agentDir = join(cwd, 'agent');
+  const settingsManager = SettingsManager.inMemory();
+  const fixture = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'mcp-server.cjs');
+  let allow = false;
+  let intercepted = 0;
+  const mcp = createMcpExtension({ loadConfig: () => ({ errors: [], servers: [{ name: 'fixture', source: 'test',
+    config: { command: process.execPath, args: [fixture, marker], exposure: 'direct' } }] }), logPath: join(cwd, 'mcp.log') });
+  const loader = new DefaultResourceLoader({ cwd, agentDir, settingsManager, noExtensions: true, noSkills: true,
+    noPromptTemplates: true, noThemes: true, noContextFiles: true, extensionFactories: [mcp, pi => {
+      pi.on('tool_call', async event => {
+        if (event.toolName !== 'mcp__fixture__effect') return { block: true };
+        intercepted++;
+        return allow ? undefined : { block: true, reason: 'denegado' };
+      });
+    }] });
+  await loader.reload();
+  const runtime = await ModelRuntime.create({ authPath: join(agentDir, 'auth.json'), modelsPath: join(agentDir, 'models.json') });
+  const model = { id: 'fake', name: 'fake', provider: 'openai', api: 'openai-completions', baseUrl: 'http://localhost', reasoning: false, input: ['text'], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 10000, maxTokens: 1000 } as Model<'openai-completions'>;
+  const { session } = await createAgentSession({ cwd, agentDir, settingsManager, modelRuntime: runtime, model,
+    sessionManager: SessionManager.inMemory(cwd), resourceLoader: loader, tools: ['mcp__fixture__effect'] });
+  t.after(async () => {
+    await session.extensionRunner.emit({ type: 'session_shutdown', reason: 'quit' });
+    session.dispose();
+    rmSync(cwd, { recursive: true, force: true });
+  });
+  await session.bindExtensions({});
+  const deadline = Date.now() + 10000;
+  while (!session.agent.state.tools.some(tool => tool.name === 'mcp__fixture__effect')) {
+    if (Date.now() > deadline) throw new Error('El servidor MCP no registró su herramienta');
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  let turn = 0;
+  session.agent.streamFunction = () => {
+    const stream = createAssistantMessageEventStream();
+    const call = turn++ % 2 === 0;
+    const message: AssistantMessage = { role: 'assistant', api: 'openai-completions', provider: 'openai', model: 'fake',
+      content: call ? [{ type: 'toolCall', id: `call-${turn}`, name: 'mcp__fixture__effect', arguments: {} }] : [{ type: 'text', text: 'done' }],
+      usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+      stopReason: call ? 'toolUse' : 'stop', timestamp: Date.now() };
+    stream.push({ type: 'done', reason: call ? 'toolUse' : 'stop', message });
+    return stream;
+  };
+  await session.agent.prompt('blocked');
+  assert.equal(intercepted, 1);
+  assert.doesNotMatch(readFileSync(marker, 'utf8'), /called/);
+  allow = true;
+  await session.agent.prompt('allowed');
+  assert.equal(intercepted, 2);
+  assert.match(readFileSync(marker, 'utf8'), /called/);
+  await session.extensionRunner.emit({ type: 'session_shutdown', reason: 'quit' });
+  assert.match(readFileSync(marker, 'utf8'), /closed/);
+});
