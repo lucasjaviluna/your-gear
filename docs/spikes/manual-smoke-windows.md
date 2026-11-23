@@ -1,6 +1,45 @@
 # Smoke manual Windows — ChatGPT subscription con Pi
 
-**Estado:** pendiente de ejecución por el usuario. **No realizar sobre un proyecto real o con secretos.**
+## Validaciones del Hito 0
+
+**Resultado reportado por el usuario:** las comprobaciones de rutas externas y escritura sin TTY pasaron en Windows. La versión exacta de Node, el modelo y el detalle individual de cada caso no fueron registrados. Las pruebas automatizadas locales del gate y del proceso sin TTY también pasaron; no son una prueba integral del SDK.
+
+Ejecutar con el checkout actual y la sesión ChatGPT de Pi activa. Las dos pruebas automatizadas de `test/validation.test.ts` verifican el gate y la aprobación con pipes, pero no sustituyen este recorrido con el SDK y el modelo real.
+
+En PowerShell, desde el repositorio:
+
+```powershell
+$gearRepo = (Get-Location).Path
+$gearSmokeRoot = Join-Path $env:TEMP ("your-gear-boundary-" + [guid]::NewGuid().ToString())
+$gearWorkspace = Join-Path $gearSmokeRoot "workspace"
+New-Item -ItemType Directory -Path $gearWorkspace -Force | Out-Null
+$gearOutside = Join-Path $gearSmokeRoot "outside.txt"
+Set-Content -LiteralPath $gearOutside -Value "original"
+Push-Location $gearWorkspace
+```
+
+1. Para cada herramienta `read`, `write` y `edit`, pedir explícitamente que use la ruta absoluta `$gearOutside`, y repetir con `../outside.txt`. Por ejemplo:
+
+   ```powershell
+   node "$gearRepo/src/cli.ts" "Usá solo la herramienta read para leer el archivo $gearOutside. No uses bash."
+   node "$gearRepo/src/cli.ts" "Usá solo la herramienta write para reemplazar ../outside.txt con CAMBIADO. No uses bash."
+   node "$gearRepo/src/cli.ts" "Usá solo la herramienta edit para cambiar original por CAMBIADO en ../outside.txt. No uses bash."
+   ```
+
+   En cada uno de los seis casos debe aparecer `herramienta <nombre> bloqueada` y `Get-Content -LiteralPath $gearOutside` debe seguir mostrando `original`. Si el modelo no llama a la herramienta, el caso queda pendiente: no alcanza con su respuesta textual.
+
+2. Probar escritura con stdin y stdout sin TTY:
+
+   ```powershell
+   "s" | node "$gearRepo/src/cli.ts" "Usá solo la herramienta write para crear no-tty.txt con el texto CAMBIADO. No uses bash." | Out-Null
+   Test-Path -LiteralPath (Join-Path $gearWorkspace "no-tty.txt")
+   ```
+
+   Debe aparecer en stderr `herramienta write bloqueada` y `Test-Path` debe devolver `False`. Si no aparece el bloqueo, comprobar si hubo llamada a `write` antes de registrar el resultado; no considerar el caso aprobado solo porque no exista el archivo.
+
+Al terminar, ejecutar `Pop-Location` y registrar por caso el resultado, modelo y versión de Node, sin copiar credenciales ni el contenido de archivos privados. El directorio temporal queda disponible para inspección.
+
+**Estado:** el usuario reportó exitosas las pruebas manuales de lectura, escritura rechazada y aprobada, edición, shell, streaming, cancelación y errores del modelo. No realizar sobre un proyecto real o con secretos.
 
 ## Objetivo
 
@@ -8,12 +47,9 @@ Validar que Your Gear reutiliza el **login autorizado de ChatGPT en Pi** sin API
 
 ## Preparación en Windows PowerShell
 
-Con Node.js >=22.19.0 instalado, ubicarse en la carpeta del repositorio **de la rama del PR #2, hasta que se fusione**:
+Con Node.js >=22.19.0 instalado, ubicarse en la carpeta del repositorio:
 
 ```powershell
-git fetch origin
-git checkout feat/pi-chatgpt-subscription-auth
-git pull origin feat/pi-chatgpt-subscription-auth
 npm install --ignore-scripts
 npm run typecheck
 npm test
@@ -62,7 +98,7 @@ Compartir **solo**: versión Node, resultados de typecheck/test, resultado de `a
 
 ## Limitaciones
 
-El gate de herramientas es experimental, no es sandbox OS; las rutas tienen riesgo TOCTOU y la lectura de archivos sensibles puede no detectarse siempre. Una autorización de shell puede producir efectos fuera del workspace. El Hito 0 no estará cerrado hasta validar la integración real y ADR-001.
+El gate de herramientas es experimental, no es sandbox OS; las rutas tienen riesgo TOCTOU y la lectura de archivos sensibles puede no detectarse siempre. Una autorización de shell puede producir efectos fuera del workspace. La aceptación de ADR-001 está limitada al alcance validado.
 
 Referencia: https://github.com/lucasjaviluna/agent-harness-lab
 
@@ -74,8 +110,6 @@ Desde la corrección del PR #2, se muestran los errores `stopReason=error` de Pi
 
 ```powershell
 # Desde el repo Your Gear
-git checkout feat/pi-chatgpt-subscription-auth
-git pull origin feat/pi-chatgpt-subscription-auth
 npm run typecheck
 npm test
 node src/cli.ts auth status

@@ -2,13 +2,15 @@
 
 **Estado:** propuesto; reevaluar al cerrar cada hito.
 
-## Hito 0 — Fundaciones (actual)
+## Hito 0 — Fundaciones (completado para el alcance validado)
 Visión, ADR, opciones de stack, riesgos de auth, seguridad, spike SDK Pi y scaffold mínimo. Entrega: decisiones reproducibles y criterios de aceptación.
 
 ## Hito 1 — Vertical slice funcional
 CLI ejecutable localmente; configuración de un proveedor permitido; prompt con streaming; sesión persistida; herramientas read/write/shell con gate de aprobación; cancelar/reanudar; logs y tests. No TUI compleja todavía.
 
 **Criterio de aceptación:** una persona resuelve una tarea sobre un workspace temporal, inspecciona y aprueba cambios, y puede continuar la sesión con trazabilidad básica.
+
+**Primer incremento propuesto:** evaluar el mecanismo de sesiones de Pi con creación y reanudación en un workspace temporal. Verificar continuidad, aislamiento por workspace, cierre, cancelación y privacidad antes de definir la mínima interfaz CLI necesaria. El prototipo actual usa sesiones en memoria.
 
 ## Hito 2 — Extensiones y distribución
 Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramientas, empaquetado `your-gear` con npm, docs de uso para Windows/macOS/Linux. TUI simple si mejora la UX sin acoplar al core.

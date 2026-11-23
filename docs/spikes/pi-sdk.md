@@ -1,6 +1,6 @@
 # Spike — Viabilidad del SDK de Pi
 
-**Estado:** planificado, no ejecutado · **Objetivo:** cerrar ADR-001.
+**Estado:** spike ejecutado para el alcance actual; resultados y límites en [evidencia](pi-sdk-smoke.md) y [ADR-001](../decisions/ADR-001-runtime.md). Extensiones/MCP y reanudación siguen pendientes.
 
 ## Preguntas de investigación
 1. ¿Se puede incrustar el SDK y ejecutar un prompt con streaming?
@@ -33,12 +33,12 @@ try {
 > Este ejemplo es ilustrativo, **no** se ha ejecutado en Your Gear.
 
 ## Criterios de aprobación del spike
-- [ ] Ejecución y streaming reales con credenciales autorizadas.
+- [x] Ejecución y streaming reales con credenciales autorizadas, reportados por el usuario en Windows.
 - [ ] Política aplicada a **toda** herramienta antes de ejecutar efectos.
-- [ ] Deny comprobable (sin escritura ni comando).
+- [x] Deny de escritura reportado en Windows; las pruebas automatizadas cubren el gate simulado.
 - [ ] Reanudación y cancelación comprobables.
-- [ ] Registro claro de versión/package y compatibilidad Windows.
-- [ ] Resultado resumido, riesgos y estado actualizado en ADR-001.
+- [x] Versión/package documentados y ejecución en Windows reportada; faltan detalles de versión del entorno manual.
+- [x] Resultado resumido, riesgos y estado actualizado en ADR-001.
 
 ## Evidencia
 - https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/sdk.md

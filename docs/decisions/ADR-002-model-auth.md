@@ -1,6 +1,6 @@
 # ADR-002 — Modos de autenticación autorizados
 
-**Estado:** Aceptado para el prototipo de Hito 0; pruebas manuales pendientes.
+**Estado:** Aceptado para el prototipo de Hito 0; inferencia real reportada en Windows.
 **Actualización:** 2026-11-23.
 
 ## Decisión
@@ -9,7 +9,7 @@
 - Your Gear llama a `ModelRuntime.create()` con los defaults de Pi. **No lee, copia ni exporta** los tokens guardados por Pi, ni implementa un flujo OAuth propio.
 - Para continuar, el runtime verifica `isUsingSubscription('openai')`; si no hay sesión de suscripción, **falla** con instrucciones para iniciar sesión en Pi.
 - API key: solo con `YOUR_GEAR_AUTH_MODE=api-key` y `YOUR_GEAR_API_KEY`; sin fallback silencioso. Se usa un runtime separado bajo `~/.your-gear`.
-- La selección de modelo en suscripción se limita a `getAvailable('openai')`; el usuario puede fijar `YOUR_GEAR_MODEL` o usar el primer disponible.
+- La selección de modelo en suscripción toma la intersección de `getAvailable('openai')` y los IDs del catálogo `openai-codex`; el usuario puede fijar `YOUR_GEAR_MODEL` o usar el primero. Es un filtro conservador, no una garantía de acceso de la cuenta.
 - No se registran tokens, códigos ni API keys en archivos del proyecto; no imprimir el resultado bruto de auth.
 
 ## Fundamento
@@ -30,7 +30,7 @@ GitHub Copilot, modelos locales y otros proveedores requieren evaluación técni
 - `~/.pi/agent/auth.json` (o el directorio de configuración real de Pi) puede contener credenciales de otros proveedores; no usarlo como archivo de configuración editable de Your Gear.
 - El orden de modelos de Pi puede variar. El CLI informa el modelo usado; se recomienda `YOUR_GEAR_MODEL` para reproducibilidad.
 - El flujo depende de Pi y de cambios en las restricciones del proveedor. Revalidar al actualizar dependencias.
-- Verificar manualmente la resolución real del token OAuth y la inferencia, sin exponer credenciales.
+- El usuario reportó inferencia real con la sesión de Pi; la disponibilidad sigue dependiendo de la cuenta y del proveedor.
 
 ## Fuentes oficiales
 
