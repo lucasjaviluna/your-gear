@@ -7,6 +7,7 @@ import { createInterface } from 'node:readline/promises';
 import { readConfiguration } from './config.ts';
 import { createToolCallHandler } from './gate.ts';
 import { selectModel } from './model-selection.ts';
+import { createResponseOutput, redactError } from './response-output.ts';
 
 async function main(): Promise<void> {
   if (Number(process.versions.node.split('.')[0]) < 22 ||
@@ -82,16 +83,13 @@ async function main(): Promise<void> {
     session.dispose();
     throw new Error(`Error cargando extensiones de seguridad (${extensionsResult.errors.length}).`);
   }
-  const unsubscribe = session.subscribe((event) => {
-    if (event.type === 'message_update' && event.assistantMessageEvent.type === 'text_delta') {
-      stdout.write(event.assistantMessageEvent.delta);
-    }
-  });
+  const output = createResponseOutput((text) => stdout.write(text));
+  const unsubscribe = session.subscribe((event) => output.onEvent(event));
   const onSigint = () => { void session.abort(); };
   process.on('SIGINT', onSigint);
   try {
     await session.prompt(config.prompt);
-    stdout.write('\n');
+    output.finish(session.getLastAssistantText());
   } finally {
     process.off('SIGINT', onSigint);
     unsubscribe();
@@ -100,6 +98,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  stderr.write(`Your Gear: ${error instanceof Error ? error.message : String(error)}\n`);
+  stderr.write(`Your Gear: ${redactError(error instanceof Error ? error.message : String(error))}\n`);
   process.exitCode = 1;
 });
