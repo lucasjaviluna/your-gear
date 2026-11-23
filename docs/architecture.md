@@ -2,7 +2,7 @@
 
 **Estado:** arquitectura evolutiva; el prototipo implementa parcialmente el flujo · actualización 2026-11-23
 
-El prototipo usa Pi SDK 1.6.0 y sesiones en memoria por defecto, con persistencia y reanudación optativas. El Hito 1 completó el flujo validado en Windows, incluida la trazabilidad básica; el usuario reportó recuperación de contexto tras cancelar una generación y un comando en espera. No se han validado todas las formas de cancelación ni una auditoría completa. Extensiones externas, skills y MCP no están habilitados. Ver [Hito 1](milestones/milestone-1.md), [ADR-001](decisions/ADR-001-runtime.md) y [ADR-003](decisions/ADR-003-extensibility.md).
+El prototipo usa Pi SDK 1.6.0 y sesiones en memoria por defecto, con persistencia y reanudación optativas. El Hito 1 completó el flujo validado en Windows, incluida la trazabilidad básica; el usuario reportó recuperación de contexto tras cancelar una generación y un comando en espera. No se han validado todas las formas de cancelación ni una auditoría completa. Una skill del workspace puede seleccionarse explícitamente; extensiones externas y MCP siguen deshabilitados. Ver [Hito 1](milestones/milestone-1.md), [Hito 2](milestones/milestone-2.md), [ADR-001](decisions/ADR-001-runtime.md) y [ADR-003](decisions/ADR-003-extensibility.md).
 
 ```text
 Human / terminal

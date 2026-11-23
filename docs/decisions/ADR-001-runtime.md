@@ -20,6 +20,8 @@ Ofrece un punto de partida técnico con sesiones, herramientas, eventos y extens
 ## Alcance y condiciones posteriores
 La propuesta original exigía demostrar gate para extensiones/MCP y reanudación antes de aceptar el runtime. Se acota expresamente la decisión al alcance actual: extensiones externas y skills están deshabilitadas y no se habilita MCP. Antes de habilitar cualquier nueva vía de ejecución debe comprobarse que no evade la política. Persistencia, reanudación y aislamiento por workspace son criterios del Hito 1. El smoke de cancelación reportado no demuestra ausencia de todos los efectos secundarios.
 
+Actualización del Hito 2: se admite la selección explícita de un archivo `SKILL.md` del workspace, con comprobación de ruta antes de cargarlo; la carga automática sigue deshabilitada. MCP y extensiones externas continúan deshabilitados. La aceptación inicial de este ADR y el smoke del Hito 1 preceden a esta ampliación; sus límites y pruebas nuevas se registran en [Hito 2](../milestones/milestone-2.md).
+
 ## Plan B
 Si un gate no puede garantizarse, usar primitivas de nivel inferior y ejecutar herramientas bajo nuestra propia autoridad. Evitar replicar sesiones si las existentes son fiables.
 

@@ -3,11 +3,21 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "your-gear": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "README.md"
+  ],
   "engines": {
     "node": ">=22.19.0"
   },
   "scripts": {
     "start": "node src/cli.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
     "test": "node --experimental-strip-types --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },

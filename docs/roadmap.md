@@ -19,6 +19,8 @@ CLI ejecutable localmente; configuración de un proveedor permitido; prompt con 
 ## Hito 2 — Extensiones y distribución
 Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramientas, empaquetado `your-gear` con npm, docs de uso para Windows/macOS/Linux. TUI simple si mejora la UX sin acoplar al core.
 
+**Inicio:** evaluación de las rutas de recursos y herramientas de Pi antes de habilitarlas; hallazgos y próximo incremento en [Hito 2](milestones/milestone-2.md).
+
 ## Hito 3 — Workflows con humanos en el circuito
 Clasificación simple de tareas, plan opcional, gates por pasos, verificación de resultados y auditoría. Integración futura de especificaciones SDD, sin exigirlas a cada operación.
 

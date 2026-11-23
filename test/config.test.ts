@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { readConfiguration } from '../src/config.ts';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { readConfiguration, readSettings } from '../src/config.ts';
 
 const valid = { YOUR_GEAR_PROVIDER: 'openai', YOUR_GEAR_MODEL: 'example-model', YOUR_GEAR_API_KEY: 'private-key' };
 
@@ -8,6 +11,27 @@ test('el modo por defecto es suscripción Pi sin API key', () => {
   assert.deepEqual(readConfiguration(['Hola', 'mundo'], {}), {
     prompt: 'Hola mundo', provider: 'openai', modelId: undefined, authMode: 'pi-subscription',
   });
+});
+
+test('configuración de entorno prevalece sobre proyecto y usuario sin activar API', t => {
+  const root = mkdtempSync(join(tmpdir(), 'your-gear-config-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const agent = join(root, 'user');
+  const cwd = join(root, 'project');
+  mkdirSync(agent);
+  mkdirSync(join(cwd, '.your-gear'), { recursive: true });
+  writeFileSync(join(agent, 'config.json'), JSON.stringify({ provider: 'openai', model: 'user' }));
+  writeFileSync(join(cwd, '.your-gear', 'config.json'), JSON.stringify({ model: 'project' }));
+  const settings = readSettings(cwd, agent);
+  assert.equal(readConfiguration(['hola'], {}, settings).modelId, 'project');
+  const config = readConfiguration(['hola'], { YOUR_GEAR_MODEL: 'env', YOUR_GEAR_API_KEY: 'secret' }, settings);
+  assert.equal(config.modelId, 'env');
+  assert.equal(config.authMode, 'pi-subscription');
+  assert.equal(config.apiKey, undefined);
+  writeFileSync(join(cwd, '.your-gear', 'config.json'), JSON.stringify({ authMode: 'api-key' }));
+  assert.throws(() => readSettings(cwd, agent), /Opción de configuración inválida/);
+  writeFileSync(join(cwd, '.your-gear', 'config.json'), '{');
+  assert.throws(() => readSettings(cwd, agent), /JSON inválida/);
 });
 
 test('una API key presente no activa facturación por API por accidente', () => {
