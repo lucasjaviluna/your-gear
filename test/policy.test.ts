@@ -33,7 +33,7 @@ test('se deniegan secretos y directorios internos', t => {
 
 test('symlink fuera de workspace se deniega', t => {
   const cwd = workspace(t);
-  symlinkSync(tmpdir(), join(cwd, 'external'), 'dir');
+  symlinkSync(tmpdir(), join(cwd, 'external'), 'junction');
   assert.equal(decideTool({ cwd, toolName: 'read', input: { path: 'external/something' } }).type, 'deny');
 });
 
@@ -74,7 +74,7 @@ test('lectura permitida no solicita aprobación', async t => {
 test('escritura debajo de symlink externo se deniega', t => {
   const cwd = workspace(t);
   mkdirSync(join(cwd, 'inside'));
-  symlinkSync(tmpdir(), join(cwd, 'link'), 'dir');
+  symlinkSync(tmpdir(), join(cwd, 'link'), 'junction');
   assert.equal(decideTool({ cwd, toolName: 'write', input: { path: 'link/new.txt' } }).type, 'deny');
 });
 
@@ -96,7 +96,8 @@ test('comandos muestran argumentos completos sin caracteres de control', t => {
 
 test('symlink interno a archivo protegido se deniega', t => {
   const cwd = workspace(t);
-  writeFileSync(join(cwd, '.env'), 'secret=1');
-  symlinkSync(join(cwd, '.env'), join(cwd, 'alias'));
-  assert.equal(decideTool({ cwd, toolName: 'read', input: { path: 'alias' } }).type, 'deny');
+  mkdirSync(join(cwd, 'protected'));
+  writeFileSync(join(cwd, 'protected', '.env'), 'secret=1');
+  symlinkSync(join(cwd, 'protected'), join(cwd, 'alias'), 'junction');
+  assert.equal(decideTool({ cwd, toolName: 'read', input: { path: 'alias/.env' } }).type, 'deny');
 });

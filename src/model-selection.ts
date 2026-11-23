@@ -6,6 +6,7 @@ export type BasicModel = { id: string; provider: string };
 export interface ModelCatalog<M extends BasicModel> {
   isUsingSubscription(provider: string): boolean;
   getAvailable(provider: string): Promise<readonly M[]>;
+  getModels(provider: string): readonly M[];
   getModel(provider: string, modelId: string): M | undefined;
   setRuntimeApiKey(provider: string, key: string): Promise<void>;
 }
@@ -32,7 +33,13 @@ export async function selectModel<M extends BasicModel>(
     }
   }
 
-  const available = await runtime.getAvailable(config.provider);
+  let available = await runtime.getAvailable(config.provider);
+  if (config.authMode === 'pi-subscription') {
+    // Pi's OpenAI catalog also contains API-only models. The Codex catalog
+    // provides a conservative set of candidates for the ChatGPT backend.
+    const codexIds = new Set(runtime.getModels('openai-codex').map(({ id }) => id));
+    available = available.filter(({ id }) => codexIds.has(id));
+  }
   const model = config.modelId
     ? available.find((candidate) => candidate.id === config.modelId)
     : available[0];

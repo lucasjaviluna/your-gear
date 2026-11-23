@@ -46,8 +46,9 @@ async function main(): Promise<void> {
     if (!modelRuntime.isUsingSubscription('openai')) {
       throw new Error('Primero iniciá sesión en Pi con /login → OpenAI → Sign in with ChatGPT.');
     }
-    const models = await modelRuntime.getAvailable('openai');
-    if (!models.length) throw new Error('No hay modelos ChatGPT disponibles en Pi.');
+    const codexIds = new Set(modelRuntime.getModels('openai-codex').map(({ id }) => id));
+    const models = (await modelRuntime.getAvailable('openai')).filter(({ id }) => codexIds.has(id));
+    if (!models.length) throw new Error('No hay modelos compatibles con Codex disponibles en Pi; actualizá Pi o revisá la sesión de ChatGPT.');
     stdout.write(models.map(({ id }) => id).join('\n') + '\n');
     return;
   }

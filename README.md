@@ -20,7 +20,7 @@ Requiere **Node.js >=22.19.0**, npm y `@earendil-works/pi-coding-agent@1.6.0`. Y
    node /ruta/a/your-gear/src/cli.ts "Respondé hola y no uses herramientas"
    ```
 
-Por defecto se usa `YOUR_GEAR_AUTH_MODE=pi-subscription`, el proveedor `openai` y el primer modelo disponible en la sesión de Pi. Para fijar uno, definir `YOUR_GEAR_MODEL` con un ID de `models`. El CLI informa el modelo seleccionado. Si el modelo no devuelve contenido, ahora explica el estado final de Pi o el error del proveedor (sin imprimir tokens). Si aparece únicamente `openai/chat-latest`, consultar el [diagnóstico Windows](docs/spikes/manual-smoke-windows.md#si-solo-aparece-your-gear-openaichat-latest-pi-subscription). El uso está sujeto a los límites y condiciones de la suscripción y al permiso aprobado en el login.
+Por defecto se usa `YOUR_GEAR_AUTH_MODE=pi-subscription`, el proveedor `openai` y el primer modelo disponible que también figura en el catálogo Codex de Pi. Para fijar uno, definir `YOUR_GEAR_MODEL` con un ID de `models`. La disponibilidad real depende de la cuenta y del backend. El CLI informa el modelo seleccionado y muestra los errores del proveedor sin imprimir tokens. El uso está sujeto a los límites y condiciones de la suscripción y al permiso aprobado en el login.
 
 ### Modo API key opcional
 
