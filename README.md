@@ -66,6 +66,16 @@ your-gear --review-route "Agregar permisos por rol"
 
 En una terminal interactiva muestra recomendación, razones e incógnitas. Permite aceptar, elegir otra ruta o cancelar; si el modelo solicita aclaración no permite saltarla. Devuelve JSON con evaluación y decisión, sin ejecutar ni persistir workflows. Para reevaluar, emitir una nueva solicitud con la aclaración. `npm run eval:classifier` ejecuta 12 casos sintéticos con el modelo real (consume uso; no se ejecuta automáticamente en CI).
 
+### Generar y revisar un plan
+
+```sh
+your-gear --plan "Agregar reintentos HTTP con pruebas"
+```
+
+En una terminal interactiva, clasifica la solicitud y pide confirmar la ruta. Si seleccionás `task`, un Planner Agent genera un plan preliminar con objetivo, alcance, pasos, criterios de aceptación, riesgos, supuestos e incógnitas. Podés aprobar exactamente la versión presentada o cancelar. Si hay incógnitas bloqueantes, no se solicita aprobación. El resultado es JSON; no hay implementación, persistencia ni ejecución de herramientas. El planificador no inspecciona archivos; no confundir un plan propuesto con evidencia real.
+
+Opcionalmente agregá `"planner": { "model": "MODELO_PLANIFICADOR" }` dentro de `agents` o definí `YOUR_GEAR_PLANNER_MODEL`. Usa las mismas reglas de precedencia y autenticación que classifier.
+
 ### Continuar una sesión
 
 Las ejecuciones son efímeras por defecto. Para guardar una conversación y luego continuar la más reciente del mismo directorio de trabajo:
