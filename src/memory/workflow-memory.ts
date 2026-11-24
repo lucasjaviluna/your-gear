@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { isAbsolute, relative, sep } from 'node:path';
+import { decideTool } from '../policy.ts';
 import type { MemoryProvider } from './provider.ts';
 import { readMemoryConfig, type MemoryConfig } from './config.ts';
 import { connectYtk } from './ytk.ts';
@@ -23,6 +25,11 @@ export async function openWorkflowMemory(options:Options,journal:WorkflowJournal
   try{
     check(options.signal);
     const config=await configFor(options);
+    // Keep the database and executable out of the executor's writable scope.
+    for(const path of [config.command,config.database]){
+      const rel=relative(config.cwd,path);
+      if(!isAbsolute(rel)&&rel!=='..'&&!rel.startsWith('..'+sep)&&decideTool({cwd:config.cwd,toolName:'read',input:{path}}).type!=='deny')throw new Error('Memoria debe estar fuera del workspace editable.');
+    }
     const brief=createBrief(plan,files);
     const answer=await options.ask('Memoria experimental: se guardará localmente este resumen del plan y las rutas seleccionadas, junto con estados y contadores posteriores. No se guardan prompts crudos ni salidas de herramientas. Revisá secretos/datos sensibles. YTK puede migrar la base; no es sandbox.\n'+safePreview({config,brief})+'\n¿Autorizar esta sesión y checkpoints automáticos? [s/N] ');
     check(options.signal);
