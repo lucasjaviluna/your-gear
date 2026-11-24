@@ -23,15 +23,22 @@ Inspección estática de la dependencia instalada `@earendil-works/pi-coding-age
 - Se agregó compilación a JavaScript y entrada `your-gear` para un paquete npm privado. En Windows se generó un tarball, se instaló en un directorio temporal y el comando instalado mostró el mensaje de uso. Se agregó una matriz de CI para Windows, Linux y macOS, con CI del PR #8 exitoso en las tres plataformas (run 45281357403). No se ha probado el paquete instalado en Linux ni macOS.
 - El CLI admite seleccionar explícitamente un único `SKILL.md` del workspace con `--skill`; la carga automática sigue deshabilitada. Se validan rutas externas, protegidas y enlaces externos antes de cargar. El usuario confirmó en Windows el uso de la skill con un modelo real y el rechazo de una ruta externa. Las pruebas automatizadas ejercitan la selección y el loader de Pi; la suite local pasó con 50 tests y typecheck.
 
-## Incremento 2.A — MCP explícito (propuesto en PR)
+## Incremento 2.A — MCP explícito (PR #9 integrado)
 
 - Registro de usuario `~/.your-gear/mcp.json`, selección de un servidor local stdio con `--mcp` y ejecutable absoluto. No se carga configuración MCP del workspace.
 - Aprobación previa al arranque, antes de crear la extensión; sin TTY se deniega. Nombres exactos de herramientas autorizadas, con aprobación por llamada y bloqueo por defecto. Las herramientas adicionales que registre el SDK no reciben permisos.
 - Se espera el registro de las herramientas configuradas antes del prompt y se emite `session_shutdown` en el cierre. La prueba de ciclo de vida reutiliza los helpers de producción y el gate.
-- Se agregan tests de validación, opt-in, denegación y disponibilidad, y build a CI. Validación del nuevo PR y smoke manual pendientes; no se afirma aceptación ni aislamiento de procesos.
+- Se agregan tests de validación, opt-in, denegación y disponibilidad, y build a CI. CI del PR #9 exitoso (run 45310044405); smoke manual pendiente; no se afirma aceptación ni aislamiento de procesos.
+
+## Incremento 2.B — Endurecimiento de políticas (propuesto)
+
+- Aprobaciones serializadas para impedir preguntas concurrentes, cancelación de la pregunta activa y rechazo de aprobaciones tardías.
+- Señal de cancelación compartida desde el CLI, bloqueo de operaciones posteriores en el gate, espera de herramientas MCP cancelable y código de salida 130.
+- Pruebas de cola, rechazo posterior a cancelación y herramientas extra con servidor stdio descartable. El cierre continúa utilizando session_shutdown del SDK.
+- Limitaciones: no se garantiza interrumpir bindExtensions o conexiones internas del SDK, detener procesos descendientes ni revertir efectos. CI y smoke manual de este incremento pendientes.
 
 ## Próximo incremento
 
-Investigar por separado la carga y expansión de skills y el ciclo de vida de MCP, incluidos sus efectos fuera de llamadas de herramienta. Ampliar las pruebas con el SDK real y recursos descartables según los riesgos identificados. Registrar evidencia y límites antes de proponer una habilitación explícita y acotada.
+Después de revisar el CI y los límites del incremento 2.B, consolidar empaquetado y smoke multiplataforma (2.C). Mantener las pruebas de aceptación real de MCP, cancelación y cierre como pendientes hasta contar con evidencia. No habilitar servidores arbitrarios ni extensiones externas.
 
 Las extensiones externas siguen deshabilitadas. MCP queda deshabilitado por defecto; la habilitación explícita propuesta requiere revisión y aceptación. El proceso no es un sandbox, y el ADR-003 requiere verificar cada vía nueva antes de incorporarla.
