@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-export const USAGE = 'Uso: your-gear [--persist|--continue] [--skill ruta/SKILL.md] [--mcp servidor] "tu instrucción" | your-gear auth status | your-gear models | your-gear --help | your-gear --version';
+export const USAGE = 'Uso: your-gear [--persist|--continue] [--skill ruta/SKILL.md] [--mcp servidor] "tu instrucción" | your-gear --analyze-only "tu tarea" | your-gear auth status | your-gear models | your-gear --help | your-gear --version';
 
 export type AuthMode = 'pi-subscription' | 'api-key';
 export type Configuration = {
