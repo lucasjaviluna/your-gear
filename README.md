@@ -2,7 +2,7 @@
 
 **Your Gear** es un harness de agentes de IA configurable y extensible con una experiencia CLI terminal-first.
 
-> **Estado:** Hitos 0 y 1 completados para el alcance validado. El prototipo usa Pi SDK, persistencia optativa y una política de herramientas; el flujo de aceptación fue comprobado en Windows. El siguiente es el Hito 2.
+> **Estado:** Hitos 0 y 1 completados para el alcance validado. El prototipo usa Pi SDK, persistencia optativa y una política de herramientas; el flujo de aceptación fue comprobado en Windows. El Hito 2 está en progreso: skills explícitas, MCP experimental y distribución local.
 
 ## Inicio rápido: suscripción ChatGPT a través de Pi
 
@@ -34,7 +34,7 @@ El proyecto prevalece sobre el usuario y las variables `YOUR_GEAR_PROVIDER` y `Y
 
 ### Paquete local
 
-Con las dependencias de desarrollo instaladas, `npm pack` compila el CLI y genera un tarball. Para probarlo, instalá ese archivo con `npm install -g ./your-gear-0.0.0.tgz` y ejecutá `your-gear` en una terminal. En Windows, macOS y Linux se requiere Node.js 22.19 o superior. El paquete sigue marcado como privado; su publicación y licencia están pendientes.
+Con las dependencias de desarrollo instaladas, `npm pack` compila el CLI y genera un tarball. Para probarlo, instalá ese archivo con `npm install -g ./your-gear-0.0.0.tgz` y ejecutá `your-gear` en una terminal. En Windows, macOS y Linux se requiere Node.js 22.19 o superior. `your-gear --help` y `your-gear --version` permiten comprobar la instalación sin credenciales. Para generar e instalar el paquete en un prefijo temporal y verificar su ejecutable sin publicar ni modificar instalaciones globales, ejecutar `npm run pack:check`. El paquete sigue marcado como privado; su publicación y licencia están pendientes.
 
 ### Continuar una sesión
 
@@ -105,6 +105,7 @@ El CLI informa en stderr el modo de sesión, el resultado de cada solicitud de a
 
 ## Documentación
 
+- [Referencias técnicas](docs/references.md)
 - [Visión](docs/vision.md)
 - [Arquitectura](docs/architecture.md)
 - [Evaluación tecnológica](docs/tech-stack.md)
@@ -117,7 +118,7 @@ El CLI informa en stderr el modo de sesión, el resultado de cada solicitud de a
 
 ## Objetivos
 
-Núcleo pequeño, interfaces justificadas, herramientas con human-in-the-loop, CLI primero, sesiones recuperables y providers autorizados. Skills y MCP tienen soporte inicial; TUI y workflows llegarán por hitos, sin sobreingeniería. El laboratorio complementario [agent-harness-lab](https://github.com/lucasjaviluna/agent-harness-lab) sirve de referencia técnica, no se copia su arquitectura automáticamente.
+Núcleo pequeño, interfaces justificadas, herramientas con human-in-the-loop, CLI primero, sesiones recuperables y providers autorizados. Skills y MCP tienen soporte inicial; TUI y workflows llegarán por hitos, sin sobreingeniería. [Your Harness v0](https://github.com/lucasjaviluna/your-harness-v0) y [agent-harness-lab](https://github.com/lucasjaviluna/agent-harness-lab) son referencias técnicas; no se copia su arquitectura automáticamente.
 
 ## Licencia
 
