@@ -1,5 +1,7 @@
 # Aceptación del Hito 2 — Extensiones y distribución
 
+**Estado al PR #22:** aceptación manual pendiente (diferida por acuerdo del usuario). Los escenarios de YTK y workflows tienen su propia [guía del Hito 3](milestone-3-acceptance.md).
+
 ## Evidencia y alcance
 
 No confundir CI con uso real mediante un proveedor. No se requiere publicar el paquete ni habilitar extensiones arbitrarias.
@@ -15,11 +17,11 @@ No confundir CI con uso real mediante un proveedor. No se requiere publicar el p
 | CLI instalado con modelo real, MCP y aprobaciones interactivas | Guía siguiente | Manual pendiente |
 | Ctrl+C durante aprobación y continuidad de sesión | Guía siguiente | Manual pendiente |
 
-CI comprobado: [#9](https://github.com/lucasjaviluna/your-gear/actions/runs/45310044405), [#10](https://github.com/lucasjaviluna/your-gear/actions/runs/45310838794), [#11](https://github.com/lucasjaviluna/your-gear/actions/runs/45311599196), [#12](https://github.com/lucasjaviluna/your-gear/actions/runs/45312487354).
+CI de regresión más reciente: [#22](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165) (Windows/Linux/macOS; sin modelo real). CI histórico comprobado: [#9](https://github.com/lucasjaviluna/your-gear/actions/runs/45310044405), [#10](https://github.com/lucasjaviluna/your-gear/actions/runs/45310838794), [#11](https://github.com/lucasjaviluna/your-gear/actions/runs/45311599196), [#12](https://github.com/lucasjaviluna/your-gear/actions/runs/45312487354).
 
 ## Preparación (Windows PowerShell)
 
-Usar una terminal interactiva, Node >=22.19, Pi autenticado y un checkout limpio de Your Gear con el PR de aceptación integrado. No usar proyectos con datos sensibles.
+Usar una terminal interactiva, Node >=22.19, Pi autenticado y un checkout limpio de Your Gear con los incrementos hasta #22 integrados. No usar proyectos con datos sensibles.
 
 Desde la raíz de Your Gear:
 
