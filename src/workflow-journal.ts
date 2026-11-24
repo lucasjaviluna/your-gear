@@ -17,6 +17,7 @@ const next: Record<Phase, readonly Stage[]> = {
 const terminals = new Set<string>(['accepted','needs-review','inconclusive','cancelled','blocked','failed']);
 const earlyTerminals = new Set<string>(['cancelled','blocked','failed']);
 type Metadata =
+  | { kind: 'recovery'; parentId: string; parentDigest: string }
   | { kind: 'route'; recommended: 'simple'|'task'|'sdd'|'clarify'; decision: 'simple'|'task'|'sdd'|'needs-clarification'|'cancelled' }
   | { kind: 'context'; digest: string; files: number; approved: boolean }
   | { kind: 'plan'; digest: string; version: number; criteria: number; decision: 'approved'|'needs-clarification'|'cancelled' }
@@ -43,6 +44,7 @@ function metadataValid(value: unknown, stage: Stage): value is Metadata {
   const one = (v: unknown, values: string[]) => typeof v === 'string' && values.includes(v);
   const digest = (v: unknown) => typeof v === 'string' && DIGEST.test(v);
   switch (m.kind) {
+    case 'recovery': return stage === 'created' && keys(['kind','parentId','parentDigest']) && typeof m.parentId === 'string' && ID.test(m.parentId) && digest(m.parentDigest);
     case 'route': return stage === 'route-review' && keys(['kind','recommended','decision']) && one(m.recommended,['simple','task','sdd','clarify']) && one(m.decision,['simple','task','sdd','needs-clarification','cancelled']);
     case 'context': return stage === 'context-review' && keys(['kind','digest','files','approved']) && digest(m.digest) && count(m.files) && typeof m.approved === 'boolean';
     case 'plan': return stage === 'plan-review' && keys(['kind','digest','version','criteria','decision']) && digest(m.digest) && count(m.version) && count(m.criteria) && one(m.decision,['approved','needs-clarification','cancelled']);
