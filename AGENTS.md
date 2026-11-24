@@ -7,3 +7,7 @@ Project: `your-gear`. Apply the `ytk-memory` skill for meaningful project work a
 ## Project references
 
 Use [docs/references.md](docs/references.md) to consult Your Harness v0 and Agent Harness Lab before designing equivalent capabilities. Your Gear retains its own architecture, policies and roadmap.
+
+## Documentation maintenance
+
+Use [docs/architecture.md](docs/architecture.md) for implemented architecture, [docs/roadmap.md](docs/roadmap.md) for current progress, and milestone documents for historical evidence. Update usage, ADRs, security boundaries and acceptance guides when changing behavior. Distinguish merged code/CI from real-model and real-YTK acceptance. The managed YTK skill is for contributors using a configured MCP host, not runtime authorization in Your Gear. The portable fallback under `.ytk-memory/` is local/ignored by git; if the tool and fallback are unavailable, continue without memory and disclose the limitation. Do not read the SQLite database directly or invent memory entries.
