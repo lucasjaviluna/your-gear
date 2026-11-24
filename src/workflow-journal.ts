@@ -17,6 +17,7 @@ const next: Record<Phase, readonly Stage[]> = {
 const terminals = new Set<string>(['accepted','needs-review','inconclusive','cancelled','blocked','failed']);
 const earlyTerminals = new Set<string>(['cancelled','blocked','failed']);
 type Metadata =
+  | { kind: 'memory-checkpoint'; phase: 'plan'|'execution'|'verification'; entryId: string; digest: string; scopeDigest: string }
   | { kind: 'recovery'; parentId: string; parentDigest: string }
   | { kind: 'route'; recommended: 'simple'|'task'|'sdd'|'clarify'; decision: 'simple'|'task'|'sdd'|'needs-clarification'|'cancelled' }
   | { kind: 'context'; digest: string; files: number; approved: boolean }
@@ -44,6 +45,7 @@ function metadataValid(value: unknown, stage: Stage): value is Metadata {
   const one = (v: unknown, values: string[]) => typeof v === 'string' && values.includes(v);
   const digest = (v: unknown) => typeof v === 'string' && DIGEST.test(v);
   switch (m.kind) {
+    case 'memory-checkpoint': return keys(['kind','phase','entryId','digest','scopeDigest']) && ((stage==='plan-review' && m.phase==='plan') || (stage==='executing' && m.phase==='execution') || (stage==='verifying' && m.phase==='verification')) && typeof m.entryId==='string' && /^[a-zA-Z0-9_-]{1,200}$/.test(m.entryId) && digest(m.digest) && digest(m.scopeDigest);
     case 'recovery': return stage === 'created' && keys(['kind','parentId','parentDigest']) && typeof m.parentId === 'string' && ID.test(m.parentId) && digest(m.parentDigest);
     case 'route': return stage === 'route-review' && keys(['kind','recommended','decision']) && one(m.recommended,['simple','task','sdd','clarify']) && one(m.decision,['simple','task','sdd','needs-clarification','cancelled']);
     case 'context': return stage === 'context-review' && keys(['kind','digest','files','approved']) && digest(m.digest) && count(m.files) && typeof m.approved === 'boolean';
@@ -121,7 +123,7 @@ export function listWorkflows(cwd: string, agentDir: string) {
       catch { return []; }
     })
     .sort((a,b) => b.mtime-a.mtime).slice(0,50).map(({id}) => {
-      try { const record = inspectWorkflow(cwd,agentDir,id); return { id, stage: record.stage, complete: record.complete, effectsMayHaveOccurred: record.effectsMayHaveOccurred }; }
+      try { const record = inspectWorkflow(cwd,agentDir,id); return { id, stage: record.stage, complete: record.complete, effectsMayHaveOccurred: record.effectsMayHaveOccurred, hasCheckpoint: record.events.some(e => 'metadata' in e && e.metadata.kind === 'memory-checkpoint') }; }
       catch { return { id, stage: 'unreadable', complete: false }; }
     });
 }
