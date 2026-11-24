@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -52,17 +52,18 @@ test('servidor MCP local conecta, respeta el gate y cierra al terminar', async t
   const fixture = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'mcp-server.cjs');
   let allow = false;
   let intercepted = 0;
+  const controller = new AbortController();
   const server = { name: 'fixture', command: process.execPath, args: [fixture, marker], tools: ['effect'] };
   await assert.rejects(approveMcpStart(server, cwd, async () => false), /no autorizado/);
+  assert.equal(existsSync(marker), false);
   await approveMcpStart(server, cwd, async () => true);
   const names = mcpToolNames(server);
   const mcp = controlledMcpExtension(server, cwd);
-  const authorize = createToolCallHandler(cwd, async () => allow, names);
+  const authorize = createToolCallHandler(cwd, async () => allow, names, controller.signal);
   const loader = new DefaultResourceLoader({ cwd, agentDir, settingsManager, noExtensions: true, noSkills: true,
     noPromptTemplates: true, noThemes: true, noContextFiles: true, extensionFactories: [mcp, pi => {
       pi.on('tool_call', async event => {
-        if (event.toolName !== 'mcp__fixture__effect') return { block: true };
-        intercepted++;
+        if (event.toolName === 'mcp__fixture__effect') intercepted++;
         return authorize(event);
       });
     }] });
@@ -79,11 +80,12 @@ test('servidor MCP local conecta, respeta el gate y cierra al terminar', async t
   await session.bindExtensions({});
   await waitForMcpTools(names, () => session.agent.state.tools.map(tool => tool.name));
   let turn = 0;
+  let requested = 'mcp__fixture__effect';
   session.agent.streamFunction = () => {
     const stream = createAssistantMessageEventStream();
     const call = turn++ % 2 === 0;
     const message: AssistantMessage = { role: 'assistant', api: 'openai-completions', provider: 'openai', model: 'fake',
-      content: call ? [{ type: 'toolCall', id: `call-${turn}`, name: 'mcp__fixture__effect', arguments: {} }] : [{ type: 'text', text: 'done' }],
+      content: call ? [{ type: 'toolCall', id: `call-${turn}`, name: requested, arguments: {} }] : [{ type: 'text', text: 'done' }],
       usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
       stopReason: call ? 'toolUse' : 'stop', timestamp: Date.now() };
     stream.push({ type: 'done', reason: call ? 'toolUse' : 'stop', message });
@@ -96,6 +98,13 @@ test('servidor MCP local conecta, respeta el gate y cierra al terminar', async t
   await session.agent.prompt('allowed');
   assert.equal(intercepted, 2);
   assert.match(readFileSync(marker, 'utf8'), /called/);
+  requested = 'mcp__fixture__extra';
+  await session.agent.prompt('extra is not authorized');
+  assert.doesNotMatch(readFileSync(marker, 'utf8'), /tool:extra/);
+  requested = 'mcp__fixture__effect';
+  controller.abort();
+  await session.agent.prompt('cancelled');
+  assert.equal(readFileSync(marker, 'utf8').split('tool:effect').length - 1, 1);
   await session.extensionRunner.emit({ type: 'session_shutdown', reason: 'quit' });
   assert.match(readFileSync(marker, 'utf8'), /closed/);
 });
