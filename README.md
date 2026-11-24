@@ -148,7 +148,29 @@ your-gear memory search "reintentos HTTP"
 your-gear memory get ID
 ```
 
-Las rutas de ejecutable y base deben ser absolutas y existentes. Opcionalmente indicar `area`; si se omite, YTK resuelve su área según su propia configuración. El proceso se inicia tras confirmación interactiva, sin LLM. Puede migrar la base al abrirla y no es sandbox: usar binario confiable. Sin configuración para ese workspace, status devuelve disabled. Por ahora solo consulta, no guarda memorias ni las incorpora a prompts; el adaptador de sesiones y escrituras prepara el siguiente incremento. Los workflows actuales siguen independientes de YTK.
+Las rutas de ejecutable y base deben ser absolutas y existentes. Opcionalmente indicar `area`; si se omite, YTK resuelve su área según su propia configuración. El proceso se inicia tras confirmación interactiva, sin LLM. Puede migrar la base al abrirla y no es sandbox: usar binario confiable. Sin configuración para ese workspace, status devuelve disabled. Los comandos memory solo consultan. Los workflows normales siguen independientes de YTK.
+
+### Checkpoints de memoria y recuperación asistida (experimental)
+
+Primero validar el binario YTK instalado desde el repositorio de Your Gear:
+
+```sh
+npm run smoke:ytk -- /ruta/absoluta/ytk-memory
+```
+
+El smoke usa una base y un workspace descartables, sin LLM. Luego, solo en un proyecto de pruebas con memory.json configurado:
+
+```sh
+your-gear --run-task --memory --context src/retry.js --verify-test test/retry.test.mjs "Agregar reintentos HTTP"
+your-gear --recover
+your-gear --recover UUID
+```
+
+`--memory` implica journal y pide autorización explícita para guardar un resumen del plan aprobado y rutas; los checkpoints siguientes solo agregan estados y contadores. No guarda prompt crudo, código ni salidas de herramientas. Revisá el resumen por datos sensibles. El binario y base deben quedar fuera del alcance editable (por ejemplo base en .ytk-memory). Se degrada a recuperación manual si falla YTK.
+
+`--recover` lista tareas sin cierre y, cuando hay memoria autorizada, objetivos de hasta cinco de ellas. `--recover UUID` sin prompt reconstruye el objetivo desde el último checkpoint por ID y digest. Revisa la información recuperada, selecciona contexto actual y requiere nuevos gates. No reutiliza pruebas ni permisos; seleccionar nuevos tests con `--verify-test`, reemplazar rutas con `--context`. Si se necesita un nuevo checkpoint, agregar `--memory` después del UUID. Si falta memoria válida, proporcionar el trabajo restante de forma explícita como antes.
+
+No reanuda automáticamente efectos ni tareas cerradas, no verifica que el proceso anterior terminó y no guarda cada operación del executor. El checkpoint puede estar desactualizado; inspeccioná el workspace. No usar con datos reales hasta validar interoperabilidad con YTK y aceptación integral.
 
 ### Continuar una sesión
 
