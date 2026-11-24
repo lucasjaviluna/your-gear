@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { MemoryProvider } from './provider.ts';
 import { readMemoryConfig, type MemoryConfig } from './config.ts';
 import { connectYtk } from './ytk.ts';
@@ -56,7 +57,7 @@ export async function openWorkflowMemory(options:Options,journal:WorkflowJournal
 }
 
 /** Read only the exact reference, preview historical data, then use the existing recovery gate. */
-export async function recoverFromMemory(options:Options,id:string,files:readonly string[]):Promise<{remaining:string;files:string[]}|undefined>{
+export async function recoverFromMemory(options:Options,id:string,files:readonly string[]):Promise<{remaining:string;files:string[];parentDigest:string}|undefined>{
   check(options.signal);
   const parent=inspectWorkflow(options.cwd,options.agentDir,id);
   if(parent.complete)throw new Error('El workflow anterior está cerrado; iniciá una tarea nueva.');
@@ -75,6 +76,6 @@ export async function recoverFromMemory(options:Options,id:string,files:readonly
     if(!accepted(review))return undefined;
     // Any change to the original journal during the lookup invalidates this selection.
     if(JSON.stringify(inspectWorkflow(options.cwd,options.agentDir,id))!==JSON.stringify(parent))throw new Error('El registro anterior cambió durante la recuperación.');
-    return {remaining,files:selected};
+    return {remaining,files:selected,parentDigest:createHash('sha256').update(JSON.stringify(parent)).digest('hex')};
   }finally{await provider.close();}
 }
