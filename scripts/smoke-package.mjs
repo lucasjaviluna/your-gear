@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,10 +10,10 @@ const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const npmCli = process.env.npm_execpath;
 if (!npmCli) throw new Error('Ejecutá este smoke mediante npm run pack:check.');
 
-function npm(args, cwd, expectedStatus = 0) {
+function npm(args, cwd, expectedStatus = 0, extraEnv = {}) {
   const result = spawnSync(process.execPath, [npmCli, ...args], {
     cwd, encoding: 'utf8', timeout: 180000, maxBuffer: 4 * 1024 * 1024,
-    env: { ...process.env, NO_COLOR: '1' },
+    env: { ...process.env, NO_COLOR: '1', ...extraEnv },
   });
   if (result.error) throw result.error;
   assert.equal(result.status, expectedStatus,
@@ -55,6 +55,21 @@ try {
   assert.match(invoke(['-h']).stdout, /Uso: your-gear/);
   assert.equal(invoke(['--version']).stdout.trim(), manifest.version);
   assert.match(invoke(['--invalid-option'], 1).stderr, /Opción desconocida/);
+  // Invoke the installed CLI without a TTY, with a registered local server
+  // that would create a marker immediately if it ever started.
+  const home = join(temp, 'isolated-home');
+  const agent = join(home, '.your-gear');
+  mkdirSync(agent, { recursive: true });
+  const marker = join(temp, 'mcp-started.txt');
+  const server = join(temp, 'server.cjs');
+  writeFileSync(server, "require('node:fs').writeFileSync(process.argv[2], 'started');");
+  writeFileSync(join(agent, 'mcp.json'), JSON.stringify({
+    fixture: { command: process.execPath, args: [server, marker], tools: ['effect'] },
+  }));
+  const denied = npm(['run', '--silent', 'smoke', '--', '--mcp', 'fixture', 'hola'], workspace, 1,
+    { HOME: home, USERPROFILE: home });
+  assert.match(denied.stderr, /MCP requiere una terminal interactiva/);
+  assert.equal(existsSync(marker), false, 'El servidor MCP no debe iniciarse sin TTY');
   console.log(`Paquete ${manifest.name}@${manifest.version}: instalación y smoke OK (${process.platform}).`);
 } finally {
   rmSync(temp, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });

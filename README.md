@@ -2,7 +2,7 @@
 
 **Your Gear** es un harness de agentes de IA configurable y extensible con una experiencia CLI terminal-first.
 
-> **Estado:** Hitos 0 y 1 completados para el alcance validado. El prototipo usa Pi SDK, persistencia optativa y una política de herramientas; el flujo de aceptación fue comprobado en Windows. El Hito 2 está en progreso: skills explícitas, MCP experimental y distribución local.
+> **Estado:** Hitos 0 y 1 completados para el alcance validado. El prototipo usa Pi SDK, persistencia optativa y una política de herramientas; el flujo de aceptación fue comprobado en Windows. El Hito 2 está en aceptación: skills explícitas, MCP experimental y distribución local con CI multiplataforma exitoso.
 
 ## Inicio rápido: suscripción ChatGPT a través de Pi
 
@@ -75,7 +75,7 @@ MCP está deshabilitado por defecto. Para seleccionar un único servidor confiab
 your-gear --mcp example "Usá la herramienta search"
 ```
 
-Se exige aprobación del arranque antes de cargar la extensión y aprobación de cada llamada a un nombre exacto permitido. Sin TTY se deniega el arranque. No se admiten transportes remotos, env ni auto-descubrimiento de servidores. El servidor puede tener efectos propios al iniciarse, heredar el entorno del proceso y acceder fuera del workspace: **no es un sandbox**. No uses servidores no confiables ni secretos en argumentos. La salida del servidor puede contener datos sensibles; revisá el log MCP de Pi y la persistencia antes de utilizar datos reales. Al continuar una sesión, volvé a seleccionar y autorizar el servidor. Las aprobaciones se serializan. Ctrl+C cancela las aprobaciones pendientes, la espera de registro de herramientas y bloquea nuevas llamadas a través del gate; el CLI solicita abortar la sesión y ejecuta su cierre MCP. No garantiza interrumpir la inicialización interna del SDK, detener procesos descendientes ni deshacer efectos.
+Se exige aprobación del arranque antes de cargar la extensión y aprobación de cada llamada a un nombre exacto permitido. Sin TTY el CLI rechaza MCP antes de cargar configuración o autenticar. No se admiten transportes remotos, env ni auto-descubrimiento de servidores. El servidor puede tener efectos propios al iniciarse, heredar el entorno del proceso y acceder fuera del workspace: **no es un sandbox**. No uses servidores no confiables ni secretos en argumentos. La salida del servidor puede contener datos sensibles; revisá el log MCP de Pi y la persistencia antes de utilizar datos reales. Al continuar una sesión, volvé a seleccionar y autorizar el servidor. Las aprobaciones se serializan. Ctrl+C cancela las aprobaciones pendientes, la espera de registro de herramientas y bloquea nuevas llamadas a través del gate; el CLI solicita abortar la sesión y ejecuta su cierre MCP. No garantiza interrumpir la inicialización interna del SDK, detener procesos descendientes ni deshacer efectos.
 
 Las opciones se indican antes del prompt y se rechazan si son desconocidas. Si el prompt comienza con un guion, usá `--` para separar las opciones del texto: `node src/cli.ts -- "--texto literal"`.
 
@@ -113,6 +113,8 @@ El CLI informa en stderr el modo de sesión, el resultado de cada solicitud de a
 - [Hito 0: seguimiento](docs/milestones/milestone-0.md)
 - [Hito 1: seguimiento](docs/milestones/milestone-1.md)
 - [Hito 2: seguimiento](docs/milestones/milestone-2.md)
+- [Aceptación del Hito 2](docs/spikes/milestone-2-acceptance.md)
+- [Hito 3: diseño inicial](docs/milestones/milestone-3.md)
 - [Smoke manual en Windows](docs/spikes/manual-smoke-windows.md)
 - [Roadmap](docs/roadmap.md)
 
