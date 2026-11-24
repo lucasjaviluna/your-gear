@@ -71,6 +71,9 @@ try {
   const home = join(temp, 'isolated-home');
   const agent = join(home, '.your-gear');
   mkdirSync(agent, { recursive: true });
+  const history = npm(['run', '--silent', 'smoke', '--', 'workflows'], workspace, 0, { HOME: home, USERPROFILE: home });
+  assert.deepEqual(JSON.parse(history.stdout), []);
+  assert.equal(existsSync(join(agent, 'workflows')), false);
   const marker = join(temp, 'mcp-started.txt');
   const server = join(temp, 'server.cjs');
   writeFileSync(server, "require('node:fs').writeFileSync(process.argv[2], 'started');");
