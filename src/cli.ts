@@ -3,7 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { stdout, stderr } from 'node:process';
-import { requestApproval } from './approval.ts';
+import { requestApproval, serializeApprovals } from './approval.ts';
 import { readConfiguration, readSettings } from './config.ts';
 import { createToolCallHandler } from './gate.ts';
 import { approveMcpStart, controlledMcpExtension, mcpToolNames, readMcpServer, waitForMcpTools } from './mcp.ts';
@@ -13,7 +13,7 @@ import { createSessionManager, parseSessionArgs } from './sessions.ts';
 import { resolveSkill } from './skills.ts';
 import { createToolTrace, traceApproval, traceSession } from './tool-trace.ts';
 
-async function main(): Promise<void> {
+async function main(controller: AbortController): Promise<void> {
   if (Number(process.versions.node.split('.')[0]) < 22 ||
       (Number(process.versions.node.split('.')[0]) === 22 && Number(process.versions.node.split('.')[1]) < 19)) {
     throw new Error('Se requiere Node.js >=22.19.0 (requisito de Pi SDK 1.6.0).');
@@ -64,13 +64,22 @@ async function main(): Promise<void> {
 
   const cwd = resolve(process.cwd());
   const skillPath = sessionArgs.skillPath ? resolveSkill(cwd, sessionArgs.skillPath) : undefined;
-  const approve = traceApproval(requestApproval, text => stderr.write(text));
+  const signal = controller.signal;
+  const checkCancelled = () => { if (signal.aborted) throw new Error('La ejecución fue cancelada.'); };
+  checkCancelled();
+  const approve = traceApproval(serializeApprovals(
+    description => requestApproval(description, signal, () => controller.abort()), signal,
+  ), text => stderr.write(text));
   const mcpServer = sessionArgs.mcpName ? readMcpServer(agentDir, sessionArgs.mcpName) : undefined;
-  if (mcpServer) await approveMcpStart(mcpServer, cwd, approve);
+  if (mcpServer) {
+    try { await approveMcpStart(mcpServer, cwd, approve); }
+    catch (error) { checkCancelled(); throw error; }
+  }
+  checkCancelled();
   const mcpTools = mcpServer ? mcpToolNames(mcpServer) : [];
   const tools = ['read', 'write', 'edit', 'bash', ...mcpTools];
   const settingsManager = SettingsManager.inMemory({ defaultTools: tools });
-  const authorize = createToolCallHandler(cwd, approve, mcpTools);
+  const authorize = createToolCallHandler(cwd, approve, mcpTools, signal);
   const loader = new DefaultResourceLoader({
     cwd, agentDir, settingsManager,
     noExtensions: true, noSkills: true, noPromptTemplates: true,
@@ -86,6 +95,7 @@ async function main(): Promise<void> {
     throw new Error('No se pudo cargar la skill seleccionada. Revisá su formato.');
   }
   const sessionManager = await createSessionManager(cwd, agentDir, sessionArgs.mode);
+  checkCancelled();
   const { session, extensionsResult } = await createAgentSession({
     cwd, agentDir, modelRuntime, model, settingsManager,
     sessionManager,
@@ -98,21 +108,24 @@ async function main(): Promise<void> {
     output.onEvent(event);
     if (event.type === 'tool_execution_start' || event.type === 'tool_execution_end') traceTool(event);
   });
-  const onSigint = () => { void session.abort(); };
-  process.on('SIGINT', onSigint);
+  const onAbort = () => { void session.abort().catch(() => stderr.write('Your Gear: no se pudo cancelar la sesión del SDK.\n')); };
+  signal.addEventListener('abort', onAbort, { once: true });
   try {
+    checkCancelled();
     if (extensionsResult.errors.length > 0) {
       throw new Error(`Error cargando extensiones de seguridad (${extensionsResult.errors.length}).`);
     }
     if (mcpServer) {
       await session.bindExtensions({});
-      await waitForMcpTools(mcpTools, () => session.agent.state.tools.map(tool => tool.name));
+      await waitForMcpTools(mcpTools, () => session.agent.state.tools.map(tool => tool.name), 10000, signal);
       stderr.write(`Your Gear: MCP ${mcpServer.name} listo\n`);
     }
+    checkCancelled();
     await session.prompt(config.prompt);
+    checkCancelled();
     output.finish(session.getLastAssistantText());
   } finally {
-    process.off('SIGINT', onSigint);
+    signal.removeEventListener('abort', onAbort);
     unsubscribe();
     try {
       if (mcpServer) await session.extensionRunner.emit({ type: 'session_shutdown', reason: 'quit' });
@@ -122,7 +135,10 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
+const controller = new AbortController();
+const onSigint = () => controller.abort();
+process.on('SIGINT', onSigint);
+main(controller).catch((error: unknown) => {
   stderr.write(`Your Gear: ${redactError(error instanceof Error ? error.message : String(error))}\n`);
-  process.exitCode = 1;
-});
+  process.exitCode = controller.signal.aborted ? 130 : 1;
+}).finally(() => process.off('SIGINT', onSigint));
