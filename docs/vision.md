@@ -1,6 +1,6 @@
 # Vision — Your Gear
 
-**Estado:** borrador para Hito 0 · **Fecha:** 2026-11-22
+**Estado:** visión vigente · **Origen:** 2026-11-22 · **Revisión:** 2026-11-24 (PR #22)
 
 ## Propósito
 Construir un harness de agentes de IA, terminal-first, robusto, fácil de configurar y extensible. No es un fork de un proyecto previo ni un experimento dedicado a Pi: Your Gear tiene identidad y decisiones propias.
@@ -20,9 +20,13 @@ Construir un harness de agentes de IA, terminal-first, robusto, fácil de config
 7. Documentar los ADR y mantener test verificables por hito.
 
 ## MVP funcional (Hito 1)
-Usuario instala/ejecuta `your-gear`, configura un proveedor permitido, escribe un prompt, ve la salida progresiva, autoriza una acción sensible, recibe resultado y puede reanudar una sesión. En Windows, macOS y Linux; las pruebas de compatibilidad real se verificarán en los hitos siguientes.
+Usuario instala/ejecuta `your-gear`, configura un proveedor permitido, escribe un prompt, ve la salida progresiva, autoriza una acción sensible, recibe resultado y puede reanudar una sesión. Este alcance fue validado manualmente en Windows; CI automatizado de distribución cubre Windows, macOS y Linux. No equivale a inferencia real en los tres sistemas.
 
-## No objetivos del MVP
+## Evolución acordada tras el MVP
+
+Workflows optativos con clasificación semántica y agentes especializados, revisión humana, evidencia y recuperación sin replay. Memoria agéntica opcional mediante YTK para checkpoints recuperables, separada del journal y del contexto conversacional de Pi. SDD/OpenSpec es el próximo incremento, no una obligación para tareas simples. Recall general y RAG documental quedan para Hito 4. Consultar [arquitectura](architecture.md) y [roadmap](roadmap.md) para estado actual.
+
+## No objetivos del MVP inicial (histórico)
 - RAG empresarial, multiagentes, infraestructura cloud, interfaz web.
 - Motor de workflow declarativo complejo, catálogo remoto de plugins.
 - Soportar todos los proveedores o autenticar planes de suscripción por medios no autorizados.
