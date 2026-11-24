@@ -45,7 +45,7 @@ export async function executeApprovedTask(input: ExecutionInput, options: {
   if (!fresh()) return { status: 'blocked', reason: 'El contexto cambió; generá un nuevo plan.' };
   const message = JSON.stringify({ request: input.request, plan: input.plan, context: input.context.entries });
   const answer = await options.ask('Iniciar ejecución experimental del plan ' + approvedDigest +
-    '? Solo read/write/edit, con aprobación por operación. Puede modificar archivos; no hay rollback ni verificación automática todavía. [s/N] ');
+    '? Solo read/write/edit, con aprobación por operación. Puede modificar archivos; no hay rollback; la verificación es parcial y requiere aprobaciones adicionales. [s/N] ');
   checkCancelled();
   if (answer.trim().toLowerCase() !== 's') return { status: 'cancelled', reason: 'Ejecución no autorizada.' };
   if (!valid() || input.plan.digest !== approvedDigest || !fresh()) {
