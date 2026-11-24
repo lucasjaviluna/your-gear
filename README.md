@@ -102,6 +102,18 @@ Seleccioná hasta tres archivos de test Node (.test/.spec.js/.mjs/.cjs), existen
 
 El harness observa el snapshot de contexto posterior y los resultados de los procesos. Tras autorizar el envío de esa evidencia, un Verifier Agent independiente evalúa cada criterio del plan. Opcionalmente configurar `agents.verifier.model` o `YOUR_GEAR_VERIFIER_MODEL`. El reporte del executor no prueba que un criterio se cumpla. El estado `accepted` requiere pruebas seleccionadas con código 0, sin salida truncada ni errores del executor, criterios respaldados y aceptación humana final. Sin tests o con evidencia insuficiente, devuelve `inconclusive`. Código 0 no significa por sí solo que se hayan ejecutado pruebas relevantes. Se verifica solo el contexto seleccionado, no todo el repositorio. La salida incluye estados de tests y criterios, no los extractos completos de stdout/stderr. El flujo con modelo real sigue pendiente de aceptación.
 
+### Registrar y consultar workflows (experimental)
+
+```sh
+your-gear --run-task --record --context src/retry.js --verify-test test/retry.test.mjs "Agregar reintentos HTTP y documentarlos"
+your-gear workflows
+your-gear workflow UUID
+```
+
+`--record` debe ir inmediatamente después de `--run-task`. Activa un registro local de eventos con identificador UUID mostrado al inicio. Guarda etapas, digests del contexto y plan, respuestas de aprobación, contadores y estados de pruebas/verificación, no texto del prompt, contenido de archivos, respuestas del modelo, argumentos de herramientas ni salidas de pruebas. No guarda el plan completo. Se almacena en `~/.your-gear/workflows/<hash del workspace>/<UUID>.jsonl` sin cifrado, con permisos dependientes del sistema operativo. El registro es optativo.
+
+Los comandos de consulta funcionan sin modelo ni credenciales y solo leen registros del directorio de trabajo actual. `complete: false` indica que falta cierre, no que el proceso esté necesariamente detenido. `effectsMayHaveOccurred: true` advierte que se alcanzó una fase con posibles modificaciones o pruebas. No es posible reanudar ni ejecutar desde estos registros todavía. Revisá el proyecto antes de iniciar una tarea nueva; no repitas a ciegas operaciones tras una interrupción. Los permisos anteriores no se reutilizan. La consulta rechaza registros dañados sin modificarlos. No constituye una auditoría inmutable, y no hay limpieza automática.
+
 ### Continuar una sesión
 
 Las ejecuciones son efímeras por defecto. Para guardar una conversación y luego continuar la más reciente del mismo directorio de trabajo:

@@ -11,12 +11,13 @@ import { analysisPrompt } from './assessment.ts';
 import { approveContext, collectContext, parsePlanningArgs } from './context-engine.ts';
 import { parseTaskArgs, runSelectedTest, type TestEvidence } from './verification-evidence.ts';
 import { type VerificationResult } from './verification.ts';
+import { createWorkflowJournal, inspectWorkflow, listWorkflows, type WorkflowJournal } from './workflow-journal.ts';
 import { selectModel } from './model-selection.ts';
 import { createResponseOutput, redactError } from './response-output.ts';
 import { resolveSkill } from './skills.ts';
 import { createToolTrace, traceApproval, traceSession } from './tool-trace.ts';
 
-async function main(controller: AbortController): Promise<void> {
+async function main(controller: AbortController, state: { journal?: WorkflowJournal }): Promise<void> {
   if (Number(process.versions.node.split('.')[0]) < 22 ||
       (Number(process.versions.node.split('.')[0]) === 22 && Number(process.versions.node.split('.')[1]) < 19)) {
     throw new Error('Se requiere Node.js >=22.19.0 (requisito de Pi SDK 1.6.0).');
@@ -32,16 +33,32 @@ async function main(controller: AbortController): Promise<void> {
     stdout.write(manifest.version + '\n');
     return;
   }
+  if (args[0] === 'workflows' && args.length === 1) {
+    stdout.write(JSON.stringify(listWorkflows(process.cwd(), join(homedir(), '.your-gear')), null, 2) + '\n');
+    return;
+  }
+  if (args[0] === 'workflow' && args.length === 2) {
+    stdout.write(JSON.stringify(inspectWorkflow(process.cwd(), join(homedir(), '.your-gear'), args[1]), null, 2) + '\n');
+    return;
+  }
+  if (args[0] === 'workflows' || args[0] === 'workflow') throw new Error('Uso: your-gear workflows | your-gear workflow ID');
   const executing = args[0] === '--run-task';
+  const recording = executing && args[1] === '--record';
   const planning = args[0] === '--plan' || executing;
   const review = args[0] === '--review-route' || planning;
   const classify = args[0] === '--analyze-only' || review;
   if (review && (!stdin.isTTY || !stderr.isTTY)) {
     throw new Error('La revisión de ruta requiere una terminal interactiva.');
   }
-  const taskArgs = executing ? parseTaskArgs(args.slice(1)) : undefined;
+  const taskArgs = executing ? parseTaskArgs(args.slice(recording ? 2 : 1)) : undefined;
   const planningArgs = taskArgs ?? (planning ? parsePlanningArgs(args.slice(1)) : undefined);
   const classificationRequest = classify ? analysisPrompt(planningArgs?.promptArgs ?? args.slice(1)) : undefined;
+  if (recording) {
+    state.journal = createWorkflowJournal(process.cwd(), join(homedir(), '.your-gear'));
+    stderr.write('Your Gear workflow: ' + state.journal.id + '\n');
+    state.journal.transition('classifying');
+  }
+  const journal = state.journal;
   const { createSessionManager, parseSessionArgs } = await import('./sessions.ts');
   const { approveMcpStart, controlledMcpExtension, mcpToolNames, readMcpServer, waitForMcpTools } = await import('./mcp.ts');
   const showStatus = args.length === 2 && args[0] === 'auth' && args[1] === 'status';
@@ -116,39 +133,55 @@ async function main(controller: AbortController): Promise<void> {
       catch { return ''; }
       finally { rl.off('SIGINT', onInterrupt); rl.off('close', onClose); rl.close(); }
     };
+    journal?.transition('route-review');
     const decision = await reviewRoute(assessment, ask, controller.signal);
+    journal?.record({ kind: 'route', recommended: assessment.recommendedRoute, decision: decision.status === 'selected' ? decision.route : decision.status });
     if (executing && (assessment.recommendedRoute !== 'task' || decision.status !== 'selected' || decision.route !== 'task')) {
-      stdout.write(JSON.stringify({ assessment, decision, execution: { status: 'blocked', reason: 'La ejecución experimental requiere recomendación y selección de task.' } }, null, 2) + '\n');
+      stdout.write(JSON.stringify({ workflowId: journal?.id, assessment, decision, execution: { status: 'blocked', reason: 'La ejecución experimental requiere recomendación y selección de task.' } }, null, 2) + '\n');
+      journal?.finish(decision.status === 'cancelled' ? 'cancelled' : 'blocked');
       process.exitCode = 1;
       return;
     }
     if (planning && decision.status === 'selected' && decision.route === 'task' && plannerConfig) {
       if (controller.signal.aborted) throw new Error('La ejecución fue cancelada.');
+      journal?.transition('context-review');
       const context = collectContext(cwd, planningArgs?.files, controller.signal);
       const contextSummary = { paths: context.entries.map(entry => entry.path), bytes: context.bytes, digest: context.digest };
-      if (!await approveContext(context, ask, controller.signal)) {
-        stdout.write(JSON.stringify({ assessment, decision, context: contextSummary, planDecision: { status: 'cancelled' } }, null, 2) + '\n');
+      const contextApproved = await approveContext(context, ask, controller.signal);
+      journal?.record({ kind: 'context', digest: context.digest, files: context.entries.length, approved: contextApproved });
+      if (!contextApproved) {
+        journal?.finish('cancelled');
+        stdout.write(JSON.stringify({ workflowId: journal?.id, assessment, decision, context: contextSummary, planDecision: { status: 'cancelled' } }, null, 2) + '\n');
         process.exitCode = 1;
         return;
       }
+      journal?.transition('planning');
       const plannerModel = await selectModel(plannerConfig, modelRuntime);
       stderr.write(`Your Gear planner: ${plannerModel.provider}/${plannerModel.id}\n`);
       const { createPlannerSession, planWithSession } = await import('./planner-agent.ts');
       const { reviewPlan } = await import('./plan.ts');
       const planner = await createPlannerSession({ cwd, agentDir, modelRuntime, model: plannerModel });
       const plan = await planWithSession(planner, classificationRequest, assessment, controller.signal, context);
+      journal?.transition('plan-review');
       const planDecision = await reviewPlan(plan, ask, controller.signal);
+      journal?.record({ kind: 'plan', digest: plan.digest, version: plan.version, criteria: plan.acceptanceCriteria.length, decision: planDecision.status });
       if (executing && executorConfig) {
         const { executeApprovedTask } = await import('./task-orchestrator.ts');
         const { createExecutorSession, executeWithSession } = await import('./executor-agent.ts');
         const refreshContext = () => collectContext(cwd, planningArgs?.files, controller.signal);
+        journal?.transition('execution-review');
         const execution = await executeApprovedTask({ request: classificationRequest, assessment, decision, context, plan, planDecision }, {
           signal: controller.signal, refreshContext, ask,
           execute: async message => {
+            journal?.transition('executing');
             const executorModel = await selectModel(executorConfig, modelRuntime);
             stderr.write(`Your Gear executor: ${executorModel.provider}/${executorModel.id}\n`);
             const executor = await createExecutorSession({ cwd, agentDir, modelRuntime, model: executorModel },
-              async description => (await ask('¿Autorizar ' + description + '? [s/N] ')).trim().toLowerCase() === 's',
+              async description => {
+                const approved = (await ask('¿Autorizar ' + description + '? [s/N] ')).trim().toLowerCase() === 's';
+                journal?.record({ kind: 'tool-approval', approved });
+                return approved;
+              },
               controller.signal);
             try {
               if (refreshContext().digest !== context.digest) throw new Error('El contexto cambió antes de ejecutar.');
@@ -163,11 +196,18 @@ async function main(controller: AbortController): Promise<void> {
         const tests: TestEvidence[] = [];
         let verification: VerificationResult | undefined;
         if (execution.status === 'awaiting-verification' && verifierConfig) {
+          journal?.record({ kind: 'execution', blockedCalls: execution.report.blockedCalls, toolErrors: execution.report.toolErrors });
+          journal?.transition('verifying');
           try {
             if (!execution.report.blockedCalls && !execution.report.toolErrors) {
               for (const path of taskArgs?.tests ?? []) {
-                const test = await runSelectedTest(cwd, path, ask, controller.signal);
+                const test = await runSelectedTest(cwd, path, async description => {
+                  const answer = await ask(description);
+                  journal?.record({ kind: 'verification-gate', gate: 'test', approved: answer.trim().toLowerCase() === 's' });
+                  return answer;
+                }, controller.signal);
                 tests.push(test);
+                journal?.record({ kind: 'test', status: test.status, exitCode: test.exitCode, outputTruncated: test.outputTruncated });
                 if (test.status !== 'exit-zero') break;
               }
             }
@@ -176,6 +216,7 @@ async function main(controller: AbortController): Promise<void> {
             const { createVerifierSession, verifyWithSession } = await import('./verifier-agent.ts');
             verification = await verifyTask({ request: classificationRequest, plan, report: execution.report, before: context, after, tests }, {
               ask, signal: controller.signal, refreshDigest: () => refreshContext().digest,
+              onDecision: (gate, approved) => journal?.record({ kind: 'verification-gate', gate, approved }),
               complete: async message => {
                 const verifierModel = await selectModel(verifierConfig, modelRuntime);
                 stderr.write(`Your Gear verifier: ${verifierModel.provider}/${verifierModel.id}\n`);
@@ -188,7 +229,13 @@ async function main(controller: AbortController): Promise<void> {
               evidence: [], reason: 'No se pudo completar la verificación; los cambios previos pueden permanecer.' };
           }
         }
-        stdout.write(JSON.stringify({ assessment, decision, context: contextSummary, plan, planDecision, execution,
+        if (verification) {
+          journal?.record({ kind: 'verification', status: verification.status, supported: verification.criteria.filter(c => c.status === 'supported').length, total: plan.acceptanceCriteria.length });
+          journal?.finish(verification.status);
+        } else {
+          journal?.finish(planDecision.status === 'cancelled' ? 'cancelled' : execution.status === 'awaiting-verification' ? 'failed' : execution.status);
+        }
+        stdout.write(JSON.stringify({ workflowId: journal?.id, assessment, decision, context: contextSummary, plan, planDecision, execution,
           tests: tests.map(({ path, status, exitCode, outputTruncated }) => ({ path, status, exitCode, outputTruncated })), verification }, null, 2) + '\n');
         if (controller.signal.aborted) process.exitCode = 130;
         else if (verification?.status !== 'accepted') process.exitCode = 1;
@@ -280,7 +327,14 @@ async function main(controller: AbortController): Promise<void> {
 const controller = new AbortController();
 const onSigint = () => controller.abort();
 process.on('SIGINT', onSigint);
-main(controller).catch((error: unknown) => {
+const workflowState: { journal?: WorkflowJournal } = {};
+main(controller, workflowState).catch((error: unknown) => {
+  try { workflowState.journal?.finish(controller.signal.aborted ? 'cancelled' : 'failed'); }
+  catch { stderr.write('Your Gear: no se pudo cerrar el registro; revisar estado antes de retomar.\n'); }
   stderr.write(`Your Gear: ${redactError(error instanceof Error ? error.message : String(error))}\n`);
   process.exitCode = controller.signal.aborted ? 130 : 1;
-}).finally(() => process.off('SIGINT', onSigint));
+}).finally(() => {
+  process.off('SIGINT', onSigint);
+  try { workflowState.journal?.close(); }
+  catch { stderr.write('Your Gear: no se pudo cerrar el archivo de workflow.\n'); process.exitCode = 1; }
+});

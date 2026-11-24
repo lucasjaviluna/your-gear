@@ -51,7 +51,7 @@ export function parseVerification(output: string, count: number, evidence: reado
 }
 
 export async function verifyTask(input: { request: string; plan: Plan; report: ExecutionReport; before: ContextSnapshot; after: ContextSnapshot; tests: TestEvidence[] },
-  options: { ask: (description: string) => Promise<string>; complete: (message: string) => Promise<string>; signal?: AbortSignal; refreshDigest: () => string }): Promise<VerificationResult> {
+  options: { ask: (description: string) => Promise<string>; complete: (message: string) => Promise<string>; signal?: AbortSignal; refreshDigest: () => string; onDecision?: (gate: 'disclosure'|'final-review', approved: boolean) => void }): Promise<VerificationResult> {
   const check = () => { if (options.signal?.aborted) throw new Error('La ejecución fue cancelada.'); };
   check();
   const evidence: Evidence[] = [
@@ -65,6 +65,7 @@ export async function verifyTask(input: { request: string; plan: Plan; report: E
   const consent = await options.ask('Evidencia y reporte que se enviarán al verificador (revisá posibles datos sensibles):\n' +
     safePreview(JSON.parse(message)) + '\n¿Enviar al modelo? [s/N] ');
   check();
+  options.onDecision?.('disclosure', consent.trim().toLowerCase() === 's');
   if (consent.trim().toLowerCase() !== 's') return { status: 'cancelled', criteria: [], evidence: metadata };
   if (options.refreshDigest() !== input.after.digest) return { status: 'inconclusive', criteria: [], evidence: metadata, reason: 'El contexto observado cambió.' };
   const criteria = parseVerification(await options.complete(message), input.plan.acceptanceCriteria.length, evidence);
@@ -77,6 +78,7 @@ export async function verifyTask(input: { request: string; plan: Plan; report: E
   const answer = await options.ask('Revisión final limitada a la evidencia seleccionada; no certifica todo el repositorio.\n' +
     safePreview(review) + '\n¿Aceptar el resultado de esta tarea? [s/N] ');
   check();
+  options.onDecision?.('final-review', answer.trim().toLowerCase() === 's');
   if (options.refreshDigest() !== input.after.digest) return { status: 'inconclusive', criteria, evidence: metadata, reason: 'El contexto observado cambió durante la revisión.' };
   return { status: answer.trim().toLowerCase() === 's' ? 'accepted' : 'needs-review', criteria, evidence: metadata };
 }
