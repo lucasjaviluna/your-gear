@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { closeSync, constants, fstatSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
+import { closeSync, constants, fstatSync, fsyncSync, lstatSync, mkdirSync, openSync, readSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
@@ -22,11 +22,12 @@ type Metadata =
   | { kind: 'plan'; digest: string; version: number; criteria: number; decision: 'approved'|'needs-clarification'|'cancelled' }
   | { kind: 'tool-approval'; approved: boolean }
   | { kind: 'execution'; blockedCalls: number; toolErrors: number }
+  | { kind: 'verification-gate'; gate: 'test'|'disclosure'|'final-review'; approved: boolean }
   | { kind: 'test'; status: 'exit-zero'|'failed'|'error'|'skipped'|'stale'; exitCode: number|null; outputTruncated: boolean }
   | { kind: 'verification'; status: 'accepted'|'needs-review'|'cancelled'|'inconclusive'; supported: number; total: number };
 type Event = { seq: number; at: string; stage: Stage } | { seq: number; at: string; metadata: Metadata };
 type Header = { schema: 1; id: string; workspace: string };
-export type WorkflowRecord = { id: string; stage: Stage; complete: boolean; events: Event[] };
+export type WorkflowRecord = { id: string; stage: Stage; complete: boolean; effectsMayHaveOccurred: boolean; events: Event[] };
 
 function validTransition(from: Stage, to: Stage): boolean {
   if (terminals.has(from)) return false;
@@ -47,6 +48,7 @@ function metadataValid(value: unknown, stage: Stage): value is Metadata {
     case 'plan': return stage === 'plan-review' && keys(['kind','digest','version','criteria','decision']) && digest(m.digest) && count(m.version) && count(m.criteria) && one(m.decision,['approved','needs-clarification','cancelled']);
     case 'tool-approval': return stage === 'executing' && keys(['kind','approved']) && typeof m.approved === 'boolean';
     case 'execution': return stage === 'executing' && keys(['kind','blockedCalls','toolErrors']) && count(m.blockedCalls) && count(m.toolErrors);
+    case 'verification-gate': return stage === 'verifying' && keys(['kind','gate','approved']) && one(m.gate,['test','disclosure','final-review']) && typeof m.approved === 'boolean';
     case 'test': return stage === 'verifying' && keys(['kind','status','exitCode','outputTruncated']) && one(m.status,['exit-zero','failed','error','skipped','stale']) && (m.exitCode === null || count(m.exitCode)) && typeof m.outputTruncated === 'boolean';
     case 'verification': return stage === 'verifying' && keys(['kind','status','supported','total']) && one(m.status,['accepted','needs-review','cancelled','inconclusive']) && count(m.supported) && count(m.total) && Number(m.supported) <= Number(m.total);
     default: return false;
@@ -73,23 +75,33 @@ function readRecord(path: string, id: string, workspace: string): WorkflowRecord
   try {
     const opened = fstatSync(fd);
     if (!opened.isFile() || opened.nlink !== 1 || opened.ino !== stat.ino || opened.dev !== stat.dev || opened.size > MAX_BYTES) throw new Error('Registro no permitido.');
-    raw = readFileSync(fd, 'utf8');
-    if (Buffer.byteLength(raw) > MAX_BYTES) throw new Error('Registro demasiado grande.');
+    const buffer = Buffer.alloc(MAX_BYTES + 1);
+    let total = 0;
+    while (total < buffer.length) {
+      const size = readSync(fd, buffer, total, buffer.length - total, null);
+      if (!size) break;
+      total += size;
+    }
+    if (total > MAX_BYTES) throw new Error('Registro demasiado grande.');
+    raw = new TextDecoder('utf-8', { fatal: true }).decode(buffer.subarray(0,total));
   } finally { closeSync(fd); }
   if (!raw.endsWith('\n')) throw new Error('Registro incompleto o dañado; no se reutilizará.');
-  const [header, ...events] = raw.trimEnd().split('\n').map(line => JSON.parse(line));
+  let parsed: unknown[];
+  try { parsed = raw.slice(0,-1).split('\n').map(line => JSON.parse(line)); }
+  catch { throw new Error('Registro JSONL dañado; se conserva sin cambios.'); }
+  const [header, ...events] = parsed as [Header, ...Event[]];
   if (!header || header.schema !== 1 || header.id !== id || header.workspace !== workspace ||
       Object.keys(header).length !== 3 || !events.length || events.length > MAX_EVENTS) throw new Error('Registro inválido.');
   let stage: Stage = 'created';
   for (const [i, e] of events.entries()) {
     if (!e || e.seq !== i || typeof e.at !== 'string' || !Number.isFinite(Date.parse(e.at)) || Object.keys(e).length !== 3) throw new Error('Evento inválido.');
-    if (i === 0) { if (e.stage !== 'created') throw new Error('Inicio inválido.'); continue; }
-    if (Object.hasOwn(e,'stage')) {
+    if (i === 0) { if (!('stage' in e) || e.stage !== 'created') throw new Error('Inicio inválido.'); continue; }
+    if ('stage' in e) {
       if (!validTransition(stage, e.stage)) throw new Error('Transición inválida.');
       stage = e.stage;
     } else if (!metadataValid(e.metadata, stage)) throw new Error('Metadatos inválidos.');
   }
-  return { id, stage, complete: terminals.has(stage), events };
+  return { id, stage, complete: terminals.has(stage), effectsMayHaveOccurred: events.some(e => 'stage' in e && (e.stage === 'executing' || e.stage === 'verifying')), events };
 }
 
 export function inspectWorkflow(cwd: string, agentDir: string, id: string): WorkflowRecord {
@@ -102,9 +114,12 @@ export function listWorkflows(cwd: string, agentDir: string) {
   try { dir = directory(cwd, agentDir); }
   catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []; throw error; }
   return readdirSync(dir).filter(name => name.endsWith('.jsonl') && ID.test(name.slice(0,-6)))
-    .map(name => ({ id: name.slice(0,-6), mtime: lstatSync(join(dir,name)).mtimeMs }))
+    .flatMap(name => {
+      try { return [{ id: name.slice(0,-6), mtime: lstatSync(join(dir,name)).mtimeMs }]; }
+      catch { return []; }
+    })
     .sort((a,b) => b.mtime-a.mtime).slice(0,50).map(({id}) => {
-      try { const record = inspectWorkflow(cwd,agentDir,id); return { id, stage: record.stage, complete: record.complete }; }
+      try { const record = inspectWorkflow(cwd,agentDir,id); return { id, stage: record.stage, complete: record.complete, effectsMayHaveOccurred: record.effectsMayHaveOccurred }; }
       catch { return { id, stage: 'unreadable', complete: false }; }
     });
 }
