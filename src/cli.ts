@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { stdin, stdout, stderr } from 'node:process';
+import { createInterface } from 'node:readline/promises';
 import { requestApproval, serializeApprovals } from './approval.ts';
 import { readConfiguration, readSettings, USAGE } from './config.ts';
 import { createToolCallHandler } from './gate.ts';
@@ -28,7 +29,11 @@ async function main(controller: AbortController): Promise<void> {
     stdout.write(manifest.version + '\n');
     return;
   }
-  const classify = args[0] === '--analyze-only';
+  const review = args[0] === '--review-route';
+  const classify = args[0] === '--analyze-only' || review;
+  if (review && (!stdin.isTTY || !stderr.isTTY)) {
+    throw new Error('La revisión de ruta requiere una terminal interactiva.');
+  }
   const classificationRequest = classify ? analysisPrompt(args.slice(1)) : undefined;
   const { createSessionManager, parseSessionArgs } = await import('./sessions.ts');
   const { approveMcpStart, controlledMcpExtension, mcpToolNames, readMcpServer, waitForMcpTools } = await import('./mcp.ts');
@@ -41,7 +46,7 @@ async function main(controller: AbortController): Promise<void> {
     throw new Error('MCP requiere una terminal interactiva para autorizar el inicio.');
   }
   const agentDir = join(homedir(), '.your-gear');
-  const config = showStatus || listModels ? undefined : readConfiguration(sessionArgs.promptArgs, process.env, readSettings(process.cwd(), agentDir));
+  const config = showStatus || listModels ? undefined : readConfiguration(sessionArgs.promptArgs, process.env, readSettings(process.cwd(), agentDir), classify ? 'classifier' : 'default');
 
   const { createAgentSession, DefaultResourceLoader, ModelRuntime, SettingsManager } =
     await import('@earendil-works/pi-coding-agent');
@@ -85,7 +90,21 @@ async function main(controller: AbortController): Promise<void> {
     const { createClassifierSession, classifyWithSession } = await import('./assessment-agent.ts');
     const session = await createClassifierSession({ cwd, agentDir, modelRuntime, model });
     const assessment = await classifyWithSession(session, classificationRequest, controller.signal);
-    stdout.write(JSON.stringify(assessment, null, 2) + '\n');
+    if (!review) {
+      stdout.write(JSON.stringify(assessment, null, 2) + '\n');
+      return;
+    }
+    const { reviewRoute } = await import('./route-review.ts');
+    const decision = await reviewRoute(assessment, async description => {
+      const rl = createInterface({ input: stdin, output: stderr });
+      const onInterrupt = () => { controller.abort(); rl.close(); };
+      rl.on('SIGINT', onInterrupt);
+      try { return await rl.question(description, { signal: controller.signal }); }
+      catch { return ''; }
+      finally { rl.off('SIGINT', onInterrupt); rl.close(); }
+    }, controller.signal);
+    stdout.write(JSON.stringify({ assessment, decision }, null, 2) + '\n');
+    if (decision.status === 'cancelled') process.exitCode = 1;
     return;
   }
   const skillPath = sessionArgs.skillPath ? resolveSkill(cwd, sessionArgs.skillPath) : undefined;

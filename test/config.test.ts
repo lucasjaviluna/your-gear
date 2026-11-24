@@ -63,3 +63,27 @@ test('los errores no imprimen secretos ni permiten un prompt vacío', () => {
     return true;
   });
 });
+
+test('configuración del clasificador hereda y combina usuario y proyecto sin modificar el modelo directo', t => {
+  const root = mkdtempSync(join(tmpdir(), 'your-gear-classifier-config-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const agent = join(root, 'user');
+  const cwd = join(root, 'project');
+  mkdirSync(agent);
+  mkdirSync(join(cwd, '.your-gear'), { recursive: true });
+  writeFileSync(join(agent, 'config.json'), JSON.stringify({ provider: 'openai', model: 'default', agents: { classifier: { provider: 'openai', model: 'user-classifier' } } }));
+  writeFileSync(join(cwd, '.your-gear', 'config.json'), JSON.stringify({ agents: { classifier: { model: 'project-classifier' } } }));
+  const settings = readSettings(cwd, agent);
+  assert.deepEqual(settings.agents?.classifier, { provider: 'openai', model: 'project-classifier' });
+  assert.equal(readConfiguration(['hola'], {}, settings).modelId, 'default');
+  assert.equal(readConfiguration(['hola'], {}, settings, 'classifier').modelId, 'project-classifier');
+  assert.equal(readConfiguration(['hola'], { YOUR_GEAR_MODEL: 'env' }, settings, 'classifier').modelId, 'env');
+  assert.equal(readConfiguration(['hola'], { YOUR_GEAR_MODEL: 'env', YOUR_GEAR_CLASSIFIER_MODEL: 'role-env' }, settings, 'classifier').modelId, 'role-env');
+  assert.equal(readConfiguration(['hola'], { YOUR_GEAR_CLASSIFIER_MODEL: 'role-env' }, settings).modelId, 'default');
+  assert.equal(readConfiguration(['hola'], {}, settings, 'classifier').authMode, 'pi-subscription');
+  assert.throws(() => readConfiguration(['hola'], { YOUR_GEAR_PROVIDER: 'other', YOUR_GEAR_AUTH_MODE: 'api-key', YOUR_GEAR_API_KEY: 'secret' }, settings, 'classifier'), /proveedor de autenticación/);
+  for (const agents of [null, [], { planner: {} }, { classifier: { apiKey: 'secret' } }, { classifier: { authMode: 'api-key' } }, { classifier: { model: 123 } }]) {
+    writeFileSync(join(cwd, '.your-gear', 'config.json'), JSON.stringify({ agents }));
+    assert.throws(() => readSettings(cwd, agent), /Opción de configuración inválida/);
+  }
+});
