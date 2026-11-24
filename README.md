@@ -2,13 +2,13 @@
 
 **Your Gear** es un harness de agentes de IA configurable y extensible con una experiencia CLI terminal-first.
 
-> **Estado:** Hitos 0 y 1 completados para el alcance validado. El prototipo usa Pi SDK, persistencia optativa y una política de herramientas; el flujo de aceptación fue comprobado en Windows. El Hito 2 está en aceptación: skills explícitas, MCP experimental y distribución local con CI multiplataforma exitoso.
+> **Estado al PR #22 (2026-11-24):** Hitos 0/1 aceptados para el alcance probado en Windows; 2.A–3.D.4 integrados con CI exitoso en Windows, Linux y macOS. Workflows task y memoria YTK optativa son experimentales. Quedan pendientes aceptación manual de Hitos 2/3, evaluación semántica y smoke YTK real. Próximo incremento: 3.E, SDD/OpenSpec opcional. Ver [roadmap](docs/roadmap.md), [arquitectura](docs/architecture.md) y [seguridad](docs/security.md).
 
 ## Inicio rápido: suscripción ChatGPT a través de Pi
 
 Requiere **Node.js >=22.19.0**, npm y `@earendil-works/pi-coding-agent@1.6.0`. Your Gear no implementa ni lee tokens OAuth: consulta el **ModelRuntime de Pi** con las credenciales que Pi ya administra.
 
-1. Instalar dependencias: `npm install --ignore-scripts`.
+1. Instalar dependencias del checkout: `npm ci --ignore-scripts`.
 2. Iniciar sesión en **Pi** (ejecutar `pi`, usar `/login`, seleccionar **OpenAI → Sign in with ChatGPT**). El login bajo `openai-codex` es diferente y no se reutiliza como `openai`.
 3. Confirmar desde Your Gear:
    ```sh
@@ -53,12 +53,15 @@ En la configuración de usuario o proyecto:
   "provider": "openai",
   "model": "MODELO_GENERAL",
   "agents": {
-    "classifier": { "provider": "openai", "model": "MODELO_CLASIFICADOR" }
+    "classifier": { "provider": "openai", "model": "MODELO_CLASIFICADOR" },
+    "planner": { "model": "MODELO_PLANIFICADOR" },
+    "executor": { "model": "MODELO_EJECUTOR" },
+    "verifier": { "model": "MODELO_VERIFICADOR" }
   }
 }
 ```
 
-El modelo del clasificador se selecciona en este orden: `YOUR_GEAR_CLASSIFIER_MODEL`, `YOUR_GEAR_MODEL`, configuración del agente (proyecto sobre usuario), modelo general (proyecto sobre usuario) y selección por defecto. Si el agente declara proveedor, debe coincidir con el proveedor efectivo de autenticación; no se comparten claves entre proveedores ni se cambia el modo de facturación. El CLI directo no usa la configuración del clasificador.
+El modelo del clasificador se selecciona en este orden: `YOUR_GEAR_CLASSIFIER_MODEL`, `YOUR_GEAR_MODEL`, configuración del agente (proyecto sobre usuario), modelo general (proyecto sobre usuario) y selección por defecto. Si el agente declara proveedor, debe coincidir con el proveedor efectivo de autenticación; no se comparten claves entre proveedores ni se cambia el modo de facturación. La misma precedencia aplica a planner, executor y verifier con YOUR_GEAR_PLANNER_MODEL, YOUR_GEAR_EXECUTOR_MODEL y YOUR_GEAR_VERIFIER_MODEL. El CLI directo no usa la configuración por rol. No se leen archivos .env automáticamente; .env.example es referencia de variables, no un cargador.
 
 ```sh
 your-gear --review-route "Agregar permisos por rol"
@@ -88,7 +91,7 @@ Opcionalmente agregá `"planner": { "model": "MODELO_PLANIFICADOR" }` dentro de 
 your-gear --run-task --context src/retry.ts "Agregar reintentos HTTP y documentar su comportamiento"
 ```
 
-Usar únicamente un workspace descartable, sin datos sensibles. Requiere terminal interactiva, recomendación y selección de `task`, autorización del contexto, plan aprobado y confirmación adicional de inicio. El harness revalida el snapshot de contexto antes de ejecutar. El Executor Agent recibe el plan y dispone únicamente de read/write/edit, cada llamada con autorización humana. No admite shell, skills, MCP ni sesiones persistidas en este modo. Opcionalmente configurar `agents.executor.model` o `YOUR_GEAR_EXECUTOR_MODEL` siguiendo la misma precedencia que classifier/planner.
+Usar únicamente un workspace descartable, sin datos sensibles. Requiere terminal interactiva, recomendación y selección de `task`, autorización del contexto, plan aprobado y confirmación adicional de inicio. El harness revalida el snapshot de contexto antes de ejecutar. El Executor Agent recibe el plan y dispone únicamente de read/write/edit, cada llamada con autorización humana. No admite shell, skills, herramientas MCP del modelo ni sesiones conversacionales persistidas en este modo. El harness puede ejecutar pruebas Node seleccionadas y, opcionalmente, usar YTK fuera del registro de tools del modelo. Opcionalmente configurar `agents.executor.model` o `YOUR_GEAR_EXECUTOR_MODEL` siguiendo la misma precedencia que classifier/planner.
 
 La ejecución produce `awaiting-verification` y después pasa a verificación. No hay rollback ni garantía de aislamiento; un cambio puede permanecer incluso si se cancela. El plan y su hash no son permisos importables; el alcance semántico requiere supervisión humana. Para planificar sin cambios, utilizar `--plan`.
 
@@ -100,7 +103,7 @@ your-gear --run-task --context src/retry.js --verify-test test/retry.test.mjs "A
 
 Seleccioná hasta tres archivos de test Node (.test/.spec.js/.mjs/.cjs), existentes en el workspace cuando se ejecuten. Cada prueba se aprueba por separado tras ver su contenido y el comando exacto; el modelo no puede proponer comandos ejecutables automáticamente. Se ejecutan mediante Node sin shell, con timeout y límite de salida. **Un test puede ejecutar código arbitrario y tener efectos fuera del workspace**, acceder al entorno y crear procesos; revisá también sus imports. Solo usar código confiable en workspaces descartables.
 
-El harness observa el snapshot de contexto posterior y los resultados de los procesos. Tras autorizar el envío de esa evidencia, un Verifier Agent independiente evalúa cada criterio del plan. Opcionalmente configurar `agents.verifier.model` o `YOUR_GEAR_VERIFIER_MODEL`. El reporte del executor no prueba que un criterio se cumpla. El estado `accepted` requiere pruebas seleccionadas con código 0, sin salida truncada ni errores del executor, criterios respaldados y aceptación humana final. Sin tests o con evidencia insuficiente, devuelve `inconclusive`. Código 0 no significa por sí solo que se hayan ejecutado pruebas relevantes. Se verifica solo el contexto seleccionado, no todo el repositorio. La salida incluye estados de tests y criterios, no los extractos completos de stdout/stderr. El flujo con modelo real sigue pendiente de aceptación.
+El harness observa el snapshot de contexto posterior y los resultados de los procesos. Tras autorizar el envío de esa evidencia, un Verifier Agent independiente evalúa cada criterio del plan. Opcionalmente configurar `agents.verifier.model` o `YOUR_GEAR_VERIFIER_MODEL`. El reporte del executor no prueba que un criterio se cumpla. El estado `accepted` requiere pruebas seleccionadas con código 0, sin salida truncada ni errores o bloqueos del executor, criterios respaldados y aceptación humana final. Sin tests o con evidencia insuficiente, devuelve `inconclusive`. Código 0 no significa por sí solo que se hayan ejecutado pruebas relevantes. Se verifica solo el contexto seleccionado, no todo el repositorio. La salida incluye estados de tests y criterios, no los extractos completos de stdout/stderr. El flujo con modelo real sigue pendiente de aceptación.
 
 ### Registrar y consultar workflows (experimental)
 
@@ -110,7 +113,7 @@ your-gear workflows
 your-gear workflow UUID
 ```
 
-`--record` debe ir inmediatamente después de `--run-task`. Activa un registro local de eventos con identificador UUID mostrado al inicio. Guarda etapas, digests del contexto y plan, respuestas de aprobación, contadores y estados de pruebas/verificación, no texto del prompt, contenido de archivos, respuestas del modelo, argumentos de herramientas ni salidas de pruebas. No guarda el plan completo. Se almacena en `~/.your-gear/workflows/<hash del workspace>/<UUID>.jsonl` sin cifrado, con permisos dependientes del sistema operativo. El registro es optativo.
+`--record` debe ir inmediatamente después de `--run-task`. Activa un registro local de eventos con identificador UUID mostrado al inicio. Guarda etapas, digests del contexto y plan, respuestas de aprobación, contadores y estados de pruebas/verificación, no texto del prompt, contenido de archivos, respuestas del modelo, argumentos de herramientas ni salidas de pruebas. No guarda el plan completo. Se almacena en `~/.your-gear/workflows/<hash del workspace>/<UUID>.jsonl` sin cifrado, con permisos dependientes del sistema operativo. El registro es optativo; --memory implica registro y cada recuperación crea un nuevo journal.
 
 Los comandos de consulta funcionan sin modelo ni credenciales y solo leen registros del directorio de trabajo actual. `complete: false` indica que falta cierre, no que el proceso esté necesariamente detenido. `effectsMayHaveOccurred: true` advierte que se alcanzó una fase con posibles modificaciones o pruebas. La consulta no reanuda ni ejecuta tareas. Para recuperar un registro sin cierre, revisá primero el proyecto y usá el comando de recuperación guiada. No repitas a ciegas operaciones tras una interrupción. Los permisos anteriores no se reutilizan. La consulta rechaza registros dañados sin modificarlos. No constituye una auditoría inmutable, y no hay limpieza automática.
 
@@ -120,13 +123,13 @@ Los comandos de consulta funcionan sin modelo ni credenciales y solo leen regist
 your-gear --recover UUID --context src/retry.js --verify-test test/retry.test.mjs "Completar solo el trabajo pendiente descrito aquí"
 ```
 
-Seleccioná el UUID del workspace actual. Confirmá que la ejecución anterior y sus descendientes terminaron y que inspeccionaste los cambios que quedaron. El CLI no puede comprobarlo de manera infalible; no hay lock global del workspace. Si hubo posibles efectos, se exige al menos un archivo de contexto explícito. Se requiere describir el trabajo restante, porque el journal no contiene el prompt o plan completos.
+Seleccioná el UUID del workspace actual. Confirmá que la ejecución anterior y sus descendientes terminaron y que inspeccionaste los cambios que quedaron. El CLI no puede comprobarlo de manera infalible; no hay lock global del workspace. Si hubo posibles efectos, se exige al menos un archivo de contexto explícito. En recuperación manual se requiere describir el trabajo restante, porque el journal no contiene el prompt o plan completos. Si hay checkpoint válido, la recuperación asistida de abajo evita reescribirlo.
 
 La recuperación crea un UUID nuevo con vínculo al registro anterior, vuelve a clasificar y planificar con contexto actual, y exige todas las aprobaciones de nuevo. No reproduce comandos, no restaura permisos ni modifica el journal anterior. Si este cambia, se impiden nuevas operaciones al revalidarlo. Una tarea cerrada (incluidas las canceladas con Ctrl+C) no se recupera con este comando: para retomar trabajo, iniciá una solicitud nueva. No hay rollback automático ni garantía de idempotencia semántica; revisá el alcance de cada cambio. Ver [aceptación manual del Hito 3](docs/spikes/milestone-3-acceptance.md).
 
 ### Consultar Agent Memory (experimental, opcional)
 
-Instalá YTK por separado siguiendo su [guía](https://github.com/lucasjaviluna/your-team-knowledge/blob/main/docs/agent-memory-native-consumer-guide.md), inicializá el proyecto y comprobá su base. En `~/.your-gear/memory.json` (configuración de usuario, no del repo) registrá el workspace con su ruta canónica exacta. Ejemplo para Linux, adaptar rutas a la instalación:
+Instalá YTK por separado siguiendo su [guía](https://github.com/lucasjaviluna/your-team-knowledge/blob/main/docs/agent-memory-native-consumer-guide.md), inicializá el proyecto por el mecanismo de instalación de YTK y comprobá su base. El servidor real requiere .ytk-memory.json en el proyecto o un padre; Your Gear no lo crea ni registra un host de terceros automáticamente. En `~/.your-gear/memory.json` (configuración de usuario, no del repo) registrá el workspace con su ruta canónica exacta. Ejemplo para Linux, adaptar rutas a la instalación:
 
 ```json
 {
@@ -166,11 +169,27 @@ your-gear --recover
 your-gear --recover UUID
 ```
 
-`--memory` implica journal y pide autorización explícita para guardar un resumen del plan aprobado y rutas; los checkpoints siguientes solo agregan estados y contadores. No guarda prompt crudo, código ni salidas de herramientas. Revisá el resumen por datos sensibles. El binario y base deben quedar fuera del alcance editable (por ejemplo base en .ytk-memory). Se degrada a recuperación manual si falla YTK.
+`--memory` implica journal y pide autorización explícita para guardar un resumen del plan aprobado y rutas; los checkpoints siguientes solo agregan estados y contadores. No guarda deliberadamente prompt crudo, código ni salidas de herramientas; el texto generado del plan puede contener datos sensibles o fragmentos, por lo que debe revisarse antes de consentir. El briefing general de YTK no se envía al modelo todavía. El binario y base deben quedar fuera del alcance editable (por ejemplo base en .ytk-memory). Se degrada a recuperación manual si falla YTK.
 
 `--recover` lista tareas sin cierre y, cuando hay memoria autorizada, objetivos de hasta cinco de ellas. `--recover UUID` sin prompt reconstruye el objetivo desde el último checkpoint por ID y digest. Revisa la información recuperada, selecciona contexto actual y requiere nuevos gates. No reutiliza pruebas ni permisos; seleccionar nuevos tests con `--verify-test`, reemplazar rutas con `--context`. Si se necesita un nuevo checkpoint, agregar `--memory` después del UUID. Si falta memoria válida, proporcionar el trabajo restante de forma explícita como antes.
 
 No reanuda automáticamente efectos ni tareas cerradas, no verifica que el proceso anterior terminó y no guarda cada operación del executor. El checkpoint puede estar desactualizado; inspeccioná el workspace. No usar con datos reales hasta validar interoperabilidad con YTK y aceptación integral.
+
+### Referencia rápida de modos
+
+| Comando | Resultado | LLM |
+| --- | --- | --- |
+| `your-gear "prompt"` | Sesión directa, herramientas según policy | Sí |
+| `--persist` / `--continue` | Conversación del modo directo | Sí |
+| `--analyze-only` / `--review-route` | Recomendación / decisión sin efectos | Sí |
+| `--plan` | Plan task sin ejecutar | Sí |
+| `--run-task [--record] [--memory]` | Workflow task y verificación | Sí |
+| `workflows` / `workflow ID` | Journal local | No |
+| `--recover` | Candidatos sin cierre, con objetivos si hay memoria | No |
+| `--recover ID` | Nuevo intento con memoria válida o solicitud explícita | Sí, tras revisión |
+| `memory status/list/search/get` | Consulta local, arranque autorizado si configurado | No |
+
+Las opciones de contexto y pruebas van después de --record/--memory (si se usan) y antes de la solicitud. --memory debe ir después de --record o del UUID de recuperación. Los modos de revisión y recuperación requieren terminal interactiva. La ruta SDD solo se recomienda actualmente: OpenSpec todavía no se ejecuta.
 
 ### Continuar una sesión
 
@@ -245,18 +264,23 @@ El CLI informa en stderr el modo de sesión, el resultado de cada solicitud de a
 - [Visión](docs/vision.md)
 - [Arquitectura](docs/architecture.md)
 - [Evaluación tecnológica](docs/tech-stack.md)
+- [Seguridad y límites](docs/security.md)
+- [ADR-001: runtime](docs/decisions/ADR-001-runtime.md)
 - [ADR-002: autenticación autorizada](docs/decisions/ADR-002-model-auth.md)
+- [ADR-003: extensibilidad](docs/decisions/ADR-003-extensibility.md)
+- [ADR-004: memoria opcional](docs/adr/ADR-004-optional-agent-memory.md)
 - [Hito 0: seguimiento](docs/milestones/milestone-0.md)
 - [Hito 1: seguimiento](docs/milestones/milestone-1.md)
 - [Hito 2: seguimiento](docs/milestones/milestone-2.md)
 - [Aceptación del Hito 2](docs/spikes/milestone-2-acceptance.md)
-- [Hito 3: diseño inicial](docs/milestones/milestone-3.md)
+- [Hito 3: seguimiento](docs/milestones/milestone-3.md)
+- [Aceptación del Hito 3 y memoria](docs/spikes/milestone-3-acceptance.md)
 - [Smoke manual en Windows](docs/spikes/manual-smoke-windows.md)
 - [Roadmap](docs/roadmap.md)
 
 ## Objetivos
 
-Núcleo pequeño, interfaces justificadas, herramientas con human-in-the-loop, CLI primero, sesiones recuperables y providers autorizados. Skills y MCP tienen soporte inicial; TUI y workflows llegarán por hitos, sin sobreingeniería. [Your Harness v0](https://github.com/lucasjaviluna/your-harness-v0) y [agent-harness-lab](https://github.com/lucasjaviluna/agent-harness-lab) son referencias técnicas; no se copia su arquitectura automáticamente.
+Núcleo pequeño, interfaces justificadas, herramientas con human-in-the-loop, CLI primero, sesiones recuperables y providers autorizados. Skills, MCP, workflow task, journal y memoria YTK optativa tienen implementación inicial. TUI, SDD y RAG siguen pendientes, sin sobreingeniería. [Your Harness v0](https://github.com/lucasjaviluna/your-harness-v0) y [agent-harness-lab](https://github.com/lucasjaviluna/agent-harness-lab) son referencias técnicas; no se copia su arquitectura automáticamente.
 
 ## Licencia
 
