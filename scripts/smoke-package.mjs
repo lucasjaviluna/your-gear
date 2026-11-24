@@ -1,0 +1,61 @@
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = fileURLToPath(new URL('../', import.meta.url));
+const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const npmCli = process.env.npm_execpath;
+if (!npmCli) throw new Error('Ejecutá este smoke mediante npm run pack:check.');
+
+function npm(args, cwd, expectedStatus = 0) {
+  const result = spawnSync(process.execPath, [npmCli, ...args], {
+    cwd, encoding: 'utf8', timeout: 180000, maxBuffer: 4 * 1024 * 1024,
+    env: { ...process.env, NO_COLOR: '1' },
+  });
+  if (result.error) throw result.error;
+  assert.equal(result.status, expectedStatus,
+    `npm ${args[0]}: estado inesperado ${result.status}\n${result.stderr}`);
+  return result;
+}
+
+const temp = mkdtempSync(join(tmpdir(), 'your-gear-pack-'));
+try {
+  const packed = JSON.parse(npm(['pack', '--json', '--ignore-scripts', '--pack-destination', temp], root).stdout);
+  assert.equal(packed.length, 1);
+  assert.equal(packed[0].name, manifest.name);
+  assert.equal(packed[0].version, manifest.version);
+  const files = new Set(packed[0].files.map(file => file.path));
+  for (const required of ['package.json', 'README.md', 'dist/cli.js', 'dist/config.js', 'docs/references.md']) {
+    assert.ok(files.has(required), `Falta en el tarball: ${required}`);
+  }
+  for (const file of files) {
+    assert.ok(file === 'package.json' || file === 'README.md' || file.startsWith('dist/') || file.startsWith('docs/'),
+      `Entrada inesperada: ${file}`);
+  }
+  const tarball = resolve(temp, packed[0].filename);
+  const workspace = join(temp, 'workspace with spaces');
+  mkdirSync(workspace);
+  writeFileSync(join(workspace, 'package.json'), JSON.stringify({
+    name: 'your-gear-smoke', private: true, scripts: { smoke: 'your-gear' },
+  }));
+  npm(['install', '--ignore-scripts', '--omit=dev', '--no-audit', '--no-fund', '--no-package-lock', tarball], workspace);
+
+  const installed = JSON.parse(readFileSync(join(workspace, 'node_modules', 'your-gear', 'package.json'), 'utf8'));
+  assert.equal(installed.version, manifest.version);
+  assert.equal(installed.bin['your-gear'], 'dist/cli.js');
+
+  // An invalid project config ensures informational flags do not load settings.
+  mkdirSync(join(workspace, '.your-gear'));
+  writeFileSync(join(workspace, '.your-gear', 'config.json'), '{ invalid JSON');
+  const invoke = (args, status = 0) => npm(['run', '--silent', 'smoke', '--', ...args], workspace, status);
+  assert.match(invoke(['--help']).stdout, /Uso: your-gear/);
+  assert.match(invoke(['-h']).stdout, /Uso: your-gear/);
+  assert.equal(invoke(['--version']).stdout.trim(), manifest.version);
+  assert.match(invoke(['--invalid-option'], 1).stderr, /Opción desconocida/);
+  console.log(`Paquete ${manifest.name}@${manifest.version}: instalación y smoke OK (${process.platform}).`);
+} finally {
+  rmSync(temp, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+}

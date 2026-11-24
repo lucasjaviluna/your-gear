@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { stdout, stderr } from 'node:process';
 import { requestApproval, serializeApprovals } from './approval.ts';
-import { readConfiguration, readSettings } from './config.ts';
+import { readConfiguration, readSettings, USAGE } from './config.ts';
 import { createToolCallHandler } from './gate.ts';
 import { approveMcpStart, controlledMcpExtension, mcpToolNames, readMcpServer, waitForMcpTools } from './mcp.ts';
 import { selectModel } from './model-selection.ts';
@@ -20,6 +20,15 @@ async function main(controller: AbortController): Promise<void> {
   }
 
   const args = process.argv.slice(2);
+  if (args.length === 1 && (args[0] === '--help' || args[0] === '-h')) {
+    stdout.write(USAGE + '\n');
+    return;
+  }
+  if (args.length === 1 && args[0] === '--version') {
+    const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
+    stdout.write(manifest.version + '\n');
+    return;
+  }
   const showStatus = args.length === 2 && args[0] === 'auth' && args[1] === 'status';
   const listModels = args.length === 1 && args[0] === 'models';
   const sessionArgs = parseSessionArgs(args);

@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+export const USAGE = 'Uso: your-gear [--persist|--continue] [--skill ruta/SKILL.md] [--mcp servidor] "tu instrucción" | your-gear auth status | your-gear models | your-gear --help | your-gear --version';
+
 export type AuthMode = 'pi-subscription' | 'api-key';
 export type Configuration = {
   prompt: string;
@@ -42,7 +44,7 @@ export function readSettings(cwd: string, agentDir: string): FileSettings {
 export function readConfiguration(args: readonly string[], env: NodeJS.ProcessEnv, settings: FileSettings = {}): Configuration {
   const prompt = args.join(' ').trim();
   if (!prompt || prompt === '--help' || prompt === '-h') {
-    throw new Error('Uso: your-gear [--persist|--continue] [--skill ruta/SKILL.md] [--mcp servidor] "tu instrucción" | your-gear auth status | your-gear models');
+    throw new Error(USAGE);
   }
   const authMode = env.YOUR_GEAR_AUTH_MODE?.trim() || 'pi-subscription';
   if (authMode !== 'pi-subscription' && authMode !== 'api-key') {

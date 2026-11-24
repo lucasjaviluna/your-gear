@@ -30,15 +30,23 @@ Inspección estática de la dependencia instalada `@earendil-works/pi-coding-age
 - Se espera el registro de las herramientas configuradas antes del prompt y se emite `session_shutdown` en el cierre. La prueba de ciclo de vida reutiliza los helpers de producción y el gate.
 - Se agregan tests de validación, opt-in, denegación y disponibilidad, y build a CI. CI del PR #9 exitoso (run 45310044405); smoke manual pendiente; no se afirma aceptación ni aislamiento de procesos.
 
-## Incremento 2.B — Endurecimiento de políticas (propuesto)
+## Incremento 2.B — Endurecimiento de políticas (PR #10 integrado)
 
 - Aprobaciones serializadas para impedir preguntas concurrentes, cancelación de la pregunta activa y rechazo de aprobaciones tardías.
 - Señal de cancelación compartida desde el CLI, bloqueo de operaciones posteriores en el gate, espera de herramientas MCP cancelable y código de salida 130.
 - Pruebas de cola, rechazo posterior a cancelación y herramientas extra con servidor stdio descartable. El cierre continúa utilizando session_shutdown del SDK.
-- Limitaciones: no se garantiza interrumpir bindExtensions o conexiones internas del SDK, detener procesos descendientes ni revertir efectos. CI y smoke manual de este incremento pendientes.
+- Limitaciones: no se garantiza interrumpir bindExtensions o conexiones internas del SDK, detener procesos descendientes ni revertir efectos. CI del PR #10 exitoso (run 45310838794); smoke manual pendiente.
+
+## Incremento 2.C — Distribución y smoke del paquete (propuesto)
+
+- Comandos `--help` y `--version` con salida exitosa, sin configuración de proveedor ni credenciales.
+- `npm run pack:check`: compila, genera un tarball real, verifica sus entradas, instala dependencias de producción en un directorio temporal y ejecuta el bin instalado mediante npm. Comprueba ayuda, versión y error de opción inválida, sin invocar un modelo. Elimina el directorio temporal al finalizar.
+- La matriz CI ejecuta el smoke en Linux, Windows y macOS. No se publica el paquete ni se altera la instalación global.
+- Referencias: se incorpora Your Harness v0 a [referencias técnicas](../references.md). El CLI de Your Gear sigue siendo independiente.
+- CI y smoke manual real pendientes de evidencia.
 
 ## Próximo incremento
 
-Después de revisar el CI y los límites del incremento 2.B, consolidar empaquetado y smoke multiplataforma (2.C). Mantener las pruebas de aceptación real de MCP, cancelación y cierre como pendientes hasta contar con evidencia. No habilitar servidores arbitrarios ni extensiones externas.
+Después de revisar el CI del incremento 2.C, preparar la aceptación integral y cierre (2.D). Mantener las pruebas de aceptación real de MCP, cancelación y cierre como pendientes hasta contar con evidencia. No habilitar servidores arbitrarios ni extensiones externas.
 
 Las extensiones externas siguen deshabilitadas. MCP queda deshabilitado por defecto; la habilitación explícita propuesta requiere revisión y aceptación. El proceso no es un sandbox, y el ADR-003 requiere verificar cada vía nueva antes de incorporarla.

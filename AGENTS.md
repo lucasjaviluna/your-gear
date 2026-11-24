@@ -3,3 +3,7 @@
 
 Project: `your-gear`. Apply the `ytk-memory` skill for meaningful project work and whenever the user asks about saved YTK Memory. If the skill is unavailable, follow `.ytk-memory/YTK-MEMORY.md`. Never store secrets.
 <!-- END ytk-memory-init:codex -->
+
+## Project references
+
+Use [docs/references.md](docs/references.md) to consult Your Harness v0 and Agent Harness Lab before designing equivalent capabilities. Your Gear retains its own architecture, policies and roadmap.
