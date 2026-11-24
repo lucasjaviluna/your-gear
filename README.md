@@ -42,7 +42,7 @@ Con las dependencias de desarrollo instaladas, `npm pack` compila el CLI y gener
 your-gear --analyze-only "Agregar permisos por rol"
 ```
 
-El clasificador determinista devuelve JSON con ruta recomendada (`simple`, `task`, `sdd` o `clarify`), confianza cualitativa, razones, áreas e incógnitas. No inicia un modelo ni una sesión, no ejecuta herramientas y no concede permisos. Es una recomendación léxica inicial; los workflows aún no están habilitados. Usá el comando directo habitual para conservar el comportamiento anterior.
+El clasificador usa el modelo configurado mediante la autenticación existente de Pi y devuelve JSON validado con ruta recomendada (`simple`, `task`, `sdd` o `clarify`), confianza cualitativa, razones, áreas e incógnitas. Utiliza una sesión aislada en memoria sin herramientas, skills, MCP ni instrucciones del proyecto. Envía la solicitud al proveedor y consume uso del modelo. Si falla la evaluación, informa el error sin recomendar una ruta por defecto. No concede permisos ni ejecuta workflows. Usá el comando directo habitual para conservar el comportamiento anterior.
 
 ### Continuar una sesión
 
