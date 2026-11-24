@@ -36,6 +36,14 @@ El proyecto prevalece sobre el usuario y las variables `YOUR_GEAR_PROVIDER` y `Y
 
 Con las dependencias de desarrollo instaladas, `npm pack` compila el CLI y genera un tarball. Para probarlo, instalá ese archivo con `npm install -g ./your-gear-0.0.0.tgz` y ejecutá `your-gear` en una terminal. En Windows, macOS y Linux se requiere Node.js 22.19 o superior. `your-gear --help` y `your-gear --version` permiten comprobar la instalación sin credenciales. Para generar e instalar el paquete en un prefijo temporal y verificar su ejecutable sin publicar ni modificar instalaciones globales, ejecutar `npm run pack:check`. El paquete sigue marcado como privado; su publicación y licencia están pendientes.
 
+### Analizar una tarea sin ejecutarla
+
+```sh
+your-gear --analyze-only "Agregar permisos por rol"
+```
+
+El clasificador usa el modelo configurado mediante la autenticación existente de Pi y devuelve JSON validado con ruta recomendada (`simple`, `task`, `sdd` o `clarify`), confianza cualitativa, razones, áreas e incógnitas. Utiliza una sesión aislada en memoria sin herramientas, skills, MCP ni instrucciones del proyecto. Envía la solicitud al proveedor y consume uso del modelo. Si falla la evaluación, informa el error sin recomendar una ruta por defecto. No concede permisos ni ejecuta workflows. Usá el comando directo habitual para conservar el comportamiento anterior.
+
 ### Continuar una sesión
 
 Las ejecuciones son efímeras por defecto. Para guardar una conversación y luego continuar la más reciente del mismo directorio de trabajo:

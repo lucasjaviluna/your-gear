@@ -1,6 +1,6 @@
 # Hito 3 — Workflows con humanos en el circuito
 
-**Estado:** diseño inicial, no implementado. Entrada: Hito 2 aceptado o desviación explícita de alcance documentada.
+**Estado:** incremento 3.A propuesto, análisis aislado y sin efectos. La aceptación manual del Hito 2 sigue pendiente; no se habilitan workflows hasta resolverla.
 
 ## Referencias y decisiones
 
@@ -21,8 +21,8 @@ No clasificar por longitud del prompt. Una solicitud corta sobre permisos, contr
 
 | Incremento | Entrega | Criterio |
 | --- | --- | --- |
-| 3.A | Contrato de evaluación, clasificador determinista conservador y modo análisis sin efectos | Casos frontera, ambigüedad, riesgo; ninguna herramienta ni ejecución de tareas |
-| 3.B | Clasificación asistida por modelo sin herramientas, respuesta validada y confirmación humana de ruta | Respuesta inválida o fallo no autoriza acciones; riesgo explícito no se degrada; cancelación bloquea |
+| 3.A | Contrato de evaluación y agente clasificador LLM, modo análisis aislado | Respuesta validada, ninguna herramienta ni ejecución de tareas; evaluación semántica con modelo real |
+| 3.B | Confirmación humana de ruta, selección configurable del clasificador y evaluación de calidad | Respuesta inválida o fallo no autoriza acciones; cancelación bloquea |
 | 3.C | Ruta task con plan, gate, ejecución y verificación | Rechazo/cancelación impide ejecución; cambios de alcance invalidan aprobación |
 | 3.D | Estado y trazabilidad de workflow, recuperación y aceptación | No reejecutar efectos por reanudar; distinguir verificación real de afirmaciones del modelo |
 | 3.E | Evaluar integración SDD/OpenSpec opcional | Verificar necesidad y compatibilidad, diseñar gates y tests antes de activar |
@@ -33,6 +33,17 @@ El orden se revisará con evidencia. No introducir abstracciones públicas ni pe
 
 El clasificador recomienda, no autoriza. La confirmación del workflow no sustituye las aprobaciones de herramientas. La ejecución conserva las políticas y cancelación actuales. El contexto del repositorio y del prompt se trata como datos no confiables; no concede permisos. La ruta directa existente debe seguir funcionando sin activar workflows.
 
+## Incremento 3.A — Agente clasificador semántico
+
+Decisión revisada por el usuario: sustituir clasificación mediante regex y palabras clave por un LLM como única fuente de la recomendación. Se conserva la idea de rutas y gates de Your Harness v0, no su clasificación léxica ni su fallback.
+
+- `src/assessment.ts`: contrato, prompt de sistema, validación estricta de JSON y transporte desacoplado mediante callback. El código no infiere categorías por palabras.
+- `src/assessment-agent.ts`: sesión Pi independiente en memoria, sin herramientas, MCP, skills, extensiones externas, plantillas ni instrucciones del proyecto. Gate adicional deniega cualquier tool call.
+- `your-gear --analyze-only "tarea"`: usa autenticación y modelo configurados, envía la solicitud al proveedor, consume uso del modelo y devuelve solo JSON validado. No admite flags de ejecución; usar `--` para texto literal.
+- Evaluar intención, impacto, alcance, riesgo, reversibilidad, dependencias e incertidumbre. No inferir información del repositorio que no se haya suministrado.
+- Sin fallback léxico ni ruta automática ante errores de proveedor, cancelación o respuesta inválida. La confianza cualitativa no es una probabilidad calibrada; una respuesta válida puede ser semánticamente incorrecta. Ninguna ruta concede permisos.
+- Tests de contrato, errores e integración con SDK y modelo simulado; los casos semánticos se deben evaluar también con un modelo real. CI pendiente.
+
 ## Próximo paso
 
-Después de cerrar el Hito 2, comenzar por 3.A: revisar código real y pruebas de clasificación de v0, definir contratos mínimos y tests, implementar análisis sin efectos y conservar el comportamiento CLI actual.
+Validar el CI de 3.A. Resolver aceptación del Hito 2 antes de habilitar ejecución de workflows. Después implementar 3.B: confirmación humana de ruta, configuración específica del clasificador y evaluación de calidad semántica.

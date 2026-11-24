@@ -1,6 +1,6 @@
 # Hito 2 — Extensiones y distribución
 
-**Estado:** implementación 2.A–2.C integrada y CI exitoso; aceptación 2.D en progreso.
+**Estado:** implementación 2.A–2.D integrada y CI exitoso; aceptación manual pendiente.
 
 ## Alcance previsto
 
@@ -45,15 +45,15 @@ Inspección estática de la dependencia instalada `@earendil-works/pi-coding-age
 - Referencias: se incorpora Your Harness v0 a [referencias técnicas](../references.md). El CLI de Your Gear sigue siendo independiente.
 - CI del PR #11 exitoso (run 45311599196): typecheck, tests, build, tarball, instalación y smoke del ejecutable en Windows, Linux y macOS. Smoke con modelo real pendiente.
 
-## Incremento 2.D — Aceptación integral (propuesto)
+## Incremento 2.D — Aceptación integral (PR #12 integrado)
 
 - Rechazo de MCP sin TTY antes de cargar configuración, autenticación o extensiones; smoke del bin instalado con un servidor que dejaría un marcador si se iniciara.
 - [Matriz de aceptación y guía reproducible](../spikes/milestone-2-acceptance.md), con separación entre evidencia CI, evidencia previa de usuario y pruebas manuales pendientes.
 - [Diseño inicial del Hito 3](milestone-3.md) basado en las referencias, sin activar workflows ni cambiar la regla de avance.
-- El CI de 2.D y la confirmación manual del usuario siguen pendientes. No se declara el hito completamente cerrado.
+- CI del PR #12 exitoso (run 45312487354); la confirmación manual del usuario sigue pendiente. No se declara el hito completamente cerrado.
 
 ## Próximo incremento
 
-Completar CI de 2.D y registrar los resultados de la guía de aceptación. Cerrar el Hito 2 únicamente con evidencia suficiente o una desviación de alcance explícitamente acordada. Después comenzar la implementación del Hito 3. No habilitar servidores arbitrarios ni extensiones externas.
+Registrar los resultados de la guía de aceptación. El desarrollo aislado de 3.A se prepara en paralelo, sin habilitar ejecución de workflows ni declarar cerrado el Hito 2. Cerrar el Hito 2 únicamente con evidencia suficiente o una desviación de alcance explícitamente acordada. No habilitar servidores arbitrarios ni extensiones externas.
 
 Las extensiones externas siguen deshabilitadas. MCP queda deshabilitado por defecto; la habilitación explícita propuesta requiere revisión y aceptación. El proceso no es un sandbox, y el ADR-003 requiere verificar cada vía nueva antes de incorporarla.

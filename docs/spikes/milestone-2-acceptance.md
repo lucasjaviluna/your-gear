@@ -11,11 +11,11 @@ No confundir CI con uso real mediante un proveedor. No se requiere publicar el p
 | MCP explícito, permiso de arranque, gate por nombre | Tests de configuración y fixture stdio, CI #9–11 | Automatizado OK |
 | Cancelación, cola de aprobaciones y bloqueo posterior | Tests de políticas, fixture stdio, CI #10–11 | Automatizado OK |
 | Empaquetado, instalación y bin | CI #11 en Windows/Linux/macOS | Automatizado OK |
-| MCP sin TTY antes de autenticar | Smoke del paquete añadido en 2.D | CI pendiente |
+| MCP sin TTY antes de autenticar | Smoke del paquete, CI #12 | Automatizado OK |
 | CLI instalado con modelo real, MCP y aprobaciones interactivas | Guía siguiente | Manual pendiente |
 | Ctrl+C durante aprobación y continuidad de sesión | Guía siguiente | Manual pendiente |
 
-CI comprobado: [#9](https://github.com/lucasjaviluna/your-gear/actions/runs/45310044405), [#10](https://github.com/lucasjaviluna/your-gear/actions/runs/45310838794), [#11](https://github.com/lucasjaviluna/your-gear/actions/runs/45311599196).
+CI comprobado: [#9](https://github.com/lucasjaviluna/your-gear/actions/runs/45310044405), [#10](https://github.com/lucasjaviluna/your-gear/actions/runs/45310838794), [#11](https://github.com/lucasjaviluna/your-gear/actions/runs/45311599196), [#12](https://github.com/lucasjaviluna/your-gear/actions/runs/45312487354).
 
 ## Preparación (Windows PowerShell)
 
