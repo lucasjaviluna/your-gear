@@ -22,7 +22,7 @@ Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramie
 **Estado:** incrementos 2.A–2.D integrados, CI multiplataforma exitoso. [Hito 2](milestones/milestone-2.md) y [matriz de aceptación](spikes/milestone-2-acceptance.md) registran los límites y las pruebas manuales pendientes.
 
 ## Hito 3 — Workflows con humanos en el circuito
-Clasificación simple de tareas, plan opcional, gates por pasos, verificación de resultados y auditoría. Integración futura de especificaciones SDD, sin exigirlas a cada operación. Ver [diseño inicial](milestones/milestone-3.md); 3.A y 3.B integrados con CI exitoso; 3.C empieza por planificación aislada. El usuario acordó diferir las pruebas manuales del Hito 2; no se declaran aprobadas. Reevaluar esa deuda antes de habilitar workflows con efectos.
+Clasificación simple de tareas, plan opcional, gates por pasos, verificación de resultados y auditoría. Integración futura de especificaciones SDD, sin exigirlas a cada operación. Ver [diseño inicial](milestones/milestone-3.md); 3.A, 3.B y 3.C.1 integrados con CI exitoso; 3.C.2 incorpora contexto local de solo lectura con revisión antes del envío. El usuario acordó diferir las pruebas manuales del Hito 2; no se declaran aprobadas. Reevaluar esa deuda antes de habilitar workflows con efectos.
 
 ## Hito 4 — Contexto y memoria opcional
 Integrar una interfaz con RAG externo cuando exista caso real; no crear una base vectorial dentro del core. Políticas de contexto y minimización de información.
