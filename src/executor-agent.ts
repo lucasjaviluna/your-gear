@@ -2,7 +2,7 @@ import { createAgentSession, DefaultResourceLoader, SessionManager, SettingsMana
 import { createToolCallHandler } from './gate.ts';
 import { createResponseOutput } from './response-output.ts';
 import { serializeApprovals } from './approval.ts';
-import type { Approval } from './policy.ts';
+import { decideTool, type Approval } from './policy.ts';
 import type { ExecutionReport } from './task-orchestrator.ts';
 
 type Options = NonNullable<Parameters<typeof createAgentSession>[0]>;
@@ -32,12 +32,14 @@ export async function createExecutorSession(options: Pick<Options, 'cwd' | 'agen
     extensionFactories: [pi => {
       pi.on('tool_call', async event => {
         if (halted || signal.aborted || !tools.includes(event.toolName)) return block('Ejecución detenida o herramienta no autorizada.');
+        const original = decideTool({ cwd, toolName: event.toolName, input: event.input });
         const result = await authorize(event);
         if (result?.block) return block(result.reason);
         if (event.toolName === 'read' && !await ask('read (contenido enviado al modelo): ' + JSON.stringify(event.input))) return block('Lectura no autorizada.');
         if (halted || signal.aborted) return block('Ejecución detenida.');
-        // Recheck read policy after waiting for approval, without prompting twice.
-        if (event.toolName === 'read' && (await authorize(event))?.block) return block('La ruta dejó de estar permitida.');
+        // Recheck the same policy and approved preview after the interactive wait.
+        const current = decideTool({ cwd, toolName: event.toolName, input: event.input });
+        if (current.type === 'deny' || current.type !== original.type || current.reason !== original.reason) return block('La operación cambió durante la aprobación.');
         return undefined;
       });
     }],
