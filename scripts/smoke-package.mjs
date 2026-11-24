@@ -28,7 +28,7 @@ try {
   assert.equal(packed[0].name, manifest.name);
   assert.equal(packed[0].version, manifest.version);
   const files = new Set(packed[0].files.map(file => file.path));
-  for (const required of ['package.json', 'README.md', 'dist/cli.js', 'dist/config.js', 'dist/assessment.js', 'dist/assessment-agent.js', 'dist/planner-agent.js', 'dist/plan.js', 'dist/tool-free-agent.js', 'dist/context-engine.js', 'dist/task-orchestrator.js', 'dist/executor-agent.js', 'dist/verification-evidence.js', 'dist/verification.js', 'dist/verifier-agent.js', 'dist/workflow-journal.js', 'dist/workflow-recovery.js', 'docs/references.md']) {
+  for (const required of ['package.json', 'README.md', 'dist/cli.js', 'dist/config.js', 'dist/assessment.js', 'dist/assessment-agent.js', 'dist/planner-agent.js', 'dist/plan.js', 'dist/tool-free-agent.js', 'dist/context-engine.js', 'dist/task-orchestrator.js', 'dist/executor-agent.js', 'dist/verification-evidence.js', 'dist/verification.js', 'dist/verifier-agent.js', 'dist/workflow-journal.js', 'dist/workflow-recovery.js', 'dist/memory/provider.js', 'dist/memory/config.js', 'dist/memory/ytk.js', 'dist/memory/commands.js', 'docs/references.md']) {
     assert.ok(files.has(required), `Falta en el tarball: ${required}`);
   }
   for (const file of files) {
@@ -72,6 +72,8 @@ try {
   const home = join(temp, 'isolated-home');
   const agent = join(home, '.your-gear');
   mkdirSync(agent, { recursive: true });
+  const memoryStatus = npm(['run','--silent','smoke','--','memory','status'], workspace, 0, { HOME: home, USERPROFILE: home });
+  assert.deepEqual(JSON.parse(memoryStatus.stdout), { status: 'disabled' });
   const history = npm(['run', '--silent', 'smoke', '--', 'workflows'], workspace, 0, { HOME: home, USERPROFILE: home });
   assert.deepEqual(JSON.parse(history.stdout), []);
   assert.equal(existsSync(join(agent, 'workflows')), false);
