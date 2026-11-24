@@ -16,13 +16,13 @@ CLI ejecutable localmente; configuración de un proveedor permitido; prompt con 
 
 **Aceptación:** el usuario confirmó en Windows el flujo de lectura y edición en un workspace temporal, la inspección y aprobación del cambio, el resultado del archivo y la recuperación del contexto al continuar la sesión. La vista previa se integró mediante el PR #7. El detalle y los límites de la evidencia están en [Hito 1](milestones/milestone-1.md).
 
-## Hito 2 — Extensiones y distribución
+## Hito 2 — Extensiones y distribución (aceptación en progreso)
 Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramientas, empaquetado `your-gear` con npm, docs de uso para Windows/macOS/Linux. TUI simple si mejora la UX sin acoplar al core.
 
-**Inicio:** evaluación de las rutas de recursos y herramientas de Pi antes de habilitarlas; hallazgos y próximo incremento en [Hito 2](milestones/milestone-2.md).
+**Estado:** incrementos 2.A–2.C integrados, CI multiplataforma exitoso. [Hito 2](milestones/milestone-2.md) y [matriz de aceptación](spikes/milestone-2-acceptance.md) registran los límites y las pruebas manuales pendientes.
 
 ## Hito 3 — Workflows con humanos en el circuito
-Clasificación simple de tareas, plan opcional, gates por pasos, verificación de resultados y auditoría. Integración futura de especificaciones SDD, sin exigirlas a cada operación.
+Clasificación simple de tareas, plan opcional, gates por pasos, verificación de resultados y auditoría. Integración futura de especificaciones SDD, sin exigirlas a cada operación. Ver [diseño inicial](milestones/milestone-3.md); implementar después del cierre del Hito 2.
 
 ## Hito 4 — Contexto y memoria opcional
 Integrar una interfaz con RAG externo cuando exista caso real; no crear una base vectorial dentro del core. Políticas de contexto y minimización de información.
