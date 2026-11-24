@@ -5,7 +5,7 @@ import type { MemoryProvider } from './provider.ts';
 import { readMemoryConfig, type MemoryConfig } from './config.ts';
 import { connectYtk } from './ytk.ts';
 import { createBrief, checkpointRequest, memoryScope, readCheckpoint, storeCheckpoint, type CheckpointPhase } from './checkpoint.ts';
-import { inspectWorkflow, type WorkflowJournal } from '../workflow-journal.ts';
+import { inspectWorkflow, listWorkflows, type WorkflowJournal } from '../workflow-journal.ts';
 import { safePreview } from '../verification-evidence.ts';
 import type { Plan } from '../plan.ts';
 
@@ -85,4 +85,39 @@ export async function recoverFromMemory(options:Options,id:string,files:readonly
     if(JSON.stringify(inspectWorkflow(options.cwd,options.agentDir,id))!==JSON.stringify(parent))throw new Error('El registro anterior cambió durante la recuperación.');
     return {remaining,files:selected,parentDigest:createHash('sha256').update(JSON.stringify(parent)).digest('hex')};
   }finally{await provider.close();}
+}
+
+/** Bounded discovery; names come only from validated exact checkpoints. No LLM. */
+export async function listRecoveries(options:Options):Promise<unknown[]>{
+  check(options.signal);
+  const candidates=listWorkflows(options.cwd,options.agentDir).filter(row=>!row.complete && row.stage!=='unreadable').slice(0,10);
+  if(!candidates.some(row=>'hasCheckpoint' in row&&row.hasCheckpoint))return candidates;
+  let provider:MemoryProvider|undefined;
+  try{
+    const config=await configFor(options);
+    const answer=await options.ask('Consultar objetivos de tareas sin cierre desde YTK (sin LLM; el binario puede migrar la base).\n'+safePreview(config)+'\n¿Autorizar inicio? [s/N] ');
+    check(options.signal);
+    if(!accepted(answer))return candidates;
+    provider=await (options.connect??connectYtk)(config,options.signal);
+    const results:unknown[]=[];
+    let remaining=5;
+    for(const row of candidates){
+      check(options.signal);
+      if(!('hasCheckpoint' in row)||!row.hasCheckpoint||remaining<=0){results.push(row);continue;}
+      remaining--;
+      try{
+        const parent=inspectWorkflow(options.cwd,options.agentDir,row.id);
+        if(parent.complete)continue;
+        const cp=await readCheckpoint(provider,parent,memoryScope(config));
+        check(options.signal);
+        if(JSON.stringify(inspectWorkflow(options.cwd,options.agentDir,row.id))!==JSON.stringify(parent))throw Error('Registro cambió.');
+        results.push({...row,objective:cp.brief.objective,checkpointPhase:cp.phase});
+      }catch{check(options.signal);results.push({...row,memoryUnavailable:true});}
+    }
+    return results;
+  }catch{
+    check(options.signal);
+    options.warn('No se pudo consultar memoria; se muestran metadatos locales.\n');
+    return candidates;
+  }finally{if(provider)await provider.close().catch(()=>{});}
 }
