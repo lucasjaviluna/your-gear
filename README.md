@@ -112,7 +112,17 @@ your-gear workflow UUID
 
 `--record` debe ir inmediatamente después de `--run-task`. Activa un registro local de eventos con identificador UUID mostrado al inicio. Guarda etapas, digests del contexto y plan, respuestas de aprobación, contadores y estados de pruebas/verificación, no texto del prompt, contenido de archivos, respuestas del modelo, argumentos de herramientas ni salidas de pruebas. No guarda el plan completo. Se almacena en `~/.your-gear/workflows/<hash del workspace>/<UUID>.jsonl` sin cifrado, con permisos dependientes del sistema operativo. El registro es optativo.
 
-Los comandos de consulta funcionan sin modelo ni credenciales y solo leen registros del directorio de trabajo actual. `complete: false` indica que falta cierre, no que el proceso esté necesariamente detenido. `effectsMayHaveOccurred: true` advierte que se alcanzó una fase con posibles modificaciones o pruebas. No es posible reanudar ni ejecutar desde estos registros todavía. Revisá el proyecto antes de iniciar una tarea nueva; no repitas a ciegas operaciones tras una interrupción. Los permisos anteriores no se reutilizan. La consulta rechaza registros dañados sin modificarlos. No constituye una auditoría inmutable, y no hay limpieza automática.
+Los comandos de consulta funcionan sin modelo ni credenciales y solo leen registros del directorio de trabajo actual. `complete: false` indica que falta cierre, no que el proceso esté necesariamente detenido. `effectsMayHaveOccurred: true` advierte que se alcanzó una fase con posibles modificaciones o pruebas. La consulta no reanuda ni ejecuta tareas. Para recuperar un registro sin cierre, revisá primero el proyecto y usá el comando de recuperación guiada. No repitas a ciegas operaciones tras una interrupción. Los permisos anteriores no se reutilizan. La consulta rechaza registros dañados sin modificarlos. No constituye una auditoría inmutable, y no hay limpieza automática.
+
+### Recuperar un workflow sin cierre (experimental)
+
+```sh
+your-gear --recover UUID --context src/retry.js --verify-test test/retry.test.mjs "Completar solo el trabajo pendiente descrito aquí"
+```
+
+Seleccioná el UUID del workspace actual. Confirmá que la ejecución anterior y sus descendientes terminaron y que inspeccionaste los cambios que quedaron. El CLI no puede comprobarlo de manera infalible; no hay lock global del workspace. Si hubo posibles efectos, se exige al menos un archivo de contexto explícito. Se requiere describir el trabajo restante, porque el journal no contiene el prompt o plan completos.
+
+La recuperación crea un UUID nuevo con vínculo al registro anterior, vuelve a clasificar y planificar con contexto actual, y exige todas las aprobaciones de nuevo. No reproduce comandos, no restaura permisos ni modifica el journal anterior. Si este cambia, se impiden nuevas operaciones al revalidarlo. Una tarea cerrada (incluidas las canceladas con Ctrl+C) no se recupera con este comando: para retomar trabajo, iniciá una solicitud nueva. No hay rollback automático ni garantía de idempotencia semántica; revisá el alcance de cada cambio. Ver [aceptación manual del Hito 3](docs/spikes/milestone-3-acceptance.md).
 
 ### Continuar una sesión
 
