@@ -1,6 +1,6 @@
 # Hito 3 — Workflows con humanos en el circuito
 
-**Estado:** 3.A integrado con CI exitoso; 3.B propuesto, análisis y decisión aislados. La aceptación manual del Hito 2 sigue pendiente; no se habilitan workflows hasta resolverla.
+**Estado:** 3.A y 3.B integrados con CI exitoso; 3.C.1 (planificación aislada) propuesto. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
 
 ## Referencias y decisiones
 
@@ -48,9 +48,19 @@ Decisión revisada por el usuario: sustituir clasificación mediante regex y pal
 
 - Configuración `agents.classifier` con modelo y proveedor opcional igual al proveedor efectivo; no se reutilizan claves entre proveedores. `YOUR_GEAR_CLASSIFIER_MODEL` prevalece sobre el modelo global del entorno, el modelo específico de archivos y el modelo general de archivos. Herencia usuario/proyecto por campo.
 - `--review-route` exige TTY, muestra razones e incógnitas y solicita aceptar, cambiar o cancelar. `clarify` no se puede saltar. Una selección es una decisión de estrategia, no autorización de ejecución. No persiste estado ni inicia workflows.
-- Tests de precedencia, rechazo de claves/configuración desconocida, revisión y cancelación; smoke de rechazo sin TTY. CI pendiente.
+- Tests de precedencia, rechazo de claves/configuración desconocida, revisión y cancelación; smoke de rechazo sin TTY. CI del PR #14 exitoso (run 45317184205).
 - `npm run eval:classifier` ejecuta 12 ejemplos sintéticos con el modelo configurado. Reporta aciertos, errores y subclasificación de riesgos explícitos en el conjunto etiquetado. No se ejecuta en CI sin proveedor; no representa una medida general de calidad. No registra prompts ni respuestas completas del modelo. Validación real pendiente.
+
+## Incremento 3.C.1 — Planner Agent y aprobación de plan
+
+Se revisaron `src/plan.ts` y `tests/plan.test.ts` de Your Harness v0: se adopta la idea de versión y revisión, pero los pasos se generan semánticamente por LLM en lugar de plantillas fijas.
+
+- `--plan "solicitud"`: clasifica, solicita decisión de ruta y genera plan únicamente si se selecciona task. No inicia executor, SDD ni herramientas. Las otras rutas terminan sin plan.
+- `src/plan.ts`: contrato validado, objetivo, alcance, pasos, criterios de aceptación, riesgos, supuestos e incógnitas bloqueantes. El digest SHA-256 cubre contenido normalizado y versión; cualquier modificación invalida una aprobación anterior. No es firma ni token de autorización; no se acepta un JSON externo como permiso.
+- `src/planner-agent.ts`: sesión efímera y prompt propio; reutiliza el helper concreto `tool-free-agent.ts` con el clasificador. Configuración `agents.planner` y `YOUR_GEAR_PLANNER_MODEL`, mismo proveedor autenticado.
+- El plan es preliminar, no inspecciona el repositorio ni afirma verificaciones realizadas. Incógnitas bloquean aprobación; rechazo, respuesta inválida, EOF o cancelación no producen un plan aprobado.
+- Tests unitarios e integración Pi con modelo simulado; smoke del paquete sin TTY. CI y uso real pendientes. No persiste estado ni implementa revisiones interactivas del plan aún.
 
 ## Próximo paso
 
-Validar CI de 3.B y ejecutar la evaluación con modelo real cuando haya acceso a una sesión autorizada. Resolver aceptación del Hito 2 antes de habilitar ejecución de workflows. Luego 3.C: plan, gate, ejecución y verificación.
+3.C.2: integrar contexto de repositorio de solo lectura, acotado por políticas, y revisar el plan con evidencia antes de ejecutarlo. Diseñar orquestación que vincule solicitud, ruta y versión aprobada en memoria, sin confiar en JSON importado. 3.C.3: executor y verifier bajo políticas existentes, con pruebas de efectos reales y revisión humana; reevaluar antes la aceptación manual del Hito 2. Mantener pendiente la evaluación semántica real de 3.B.
