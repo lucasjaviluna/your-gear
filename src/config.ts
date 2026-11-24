@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-export const USAGE = 'Uso: your-gear [--persist|--continue] [--skill ruta/SKILL.md] [--mcp servidor] "tu instrucción" | your-gear --analyze-only "tu tarea" | your-gear --review-route "tu tarea" | your-gear --plan [--context archivo] "tu tarea" | your-gear auth status | your-gear models | your-gear --help | your-gear --version';
+export const USAGE = 'Uso: your-gear [--persist|--continue] [--skill ruta/SKILL.md] [--mcp servidor] "tu instrucción" | your-gear --analyze-only "tu tarea" | your-gear --review-route "tu tarea" | your-gear --plan [--context archivo] "tu tarea" | your-gear --run-task [--context archivo] "tu tarea" | your-gear auth status | your-gear models | your-gear --help | your-gear --version';
 
 export type AuthMode = 'pi-subscription' | 'api-key';
 export type Configuration = {
@@ -17,7 +17,7 @@ export type Configuration = {
  * don't silently fall back to a paid API when subscription auth is missing.
  */
 type AgentSettings = { provider?: string; model?: string };
-type FileSettings = { provider?: string; model?: string; agents?: { classifier?: AgentSettings; planner?: AgentSettings } };
+type FileSettings = { provider?: string; model?: string; agents?: { classifier?: AgentSettings; planner?: AgentSettings; executor?: AgentSettings } };
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -28,7 +28,7 @@ function readAgentSettings(value: unknown, path: string): NonNullable<FileSettin
   if (!object(value) || !Object.keys(value).length) throw invalid();
   const agents: NonNullable<FileSettings['agents']> = {};
   for (const [role, entry] of Object.entries(value)) {
-    if ((role !== 'classifier' && role !== 'planner') || !object(entry) ||
+    if ((role !== 'classifier' && role !== 'planner' && role !== 'executor') || !object(entry) ||
       Object.keys(entry).some(key => key !== 'provider' && key !== 'model') ||
       !Object.values(entry).every(field => typeof field === 'string' && field.trim())) throw invalid();
     agents[role] = entry as AgentSettings;
@@ -55,6 +55,7 @@ export function readSettings(cwd: string, agentDir: string): FileSettings {
         result = { ...result, agents: {
           ...(result.agents?.classifier || agents.classifier ? { classifier: { ...result.agents?.classifier, ...agents.classifier } } : {}),
           ...(result.agents?.planner || agents.planner ? { planner: { ...result.agents?.planner, ...agents.planner } } : {}),
+          ...(result.agents?.executor || agents.executor ? { executor: { ...result.agents?.executor, ...agents.executor } } : {}),
         } };
         continue;
       }
@@ -68,7 +69,7 @@ export function readSettings(cwd: string, agentDir: string): FileSettings {
   return result;
 }
 
-export function readConfiguration(args: readonly string[], env: NodeJS.ProcessEnv, settings: FileSettings = {}, role: 'default' | 'classifier' | 'planner' = 'default'): Configuration {
+export function readConfiguration(args: readonly string[], env: NodeJS.ProcessEnv, settings: FileSettings = {}, role: 'default' | 'classifier' | 'planner' | 'executor' = 'default'): Configuration {
   const prompt = args.join(' ').trim();
   if (!prompt || prompt === '--help' || prompt === '-h') {
     throw new Error(USAGE);
@@ -83,7 +84,7 @@ export function readConfiguration(args: readonly string[], env: NodeJS.ProcessEn
   if (agent?.provider && agent.provider.trim() !== provider) {
     throw new Error('El agente debe usar el proveedor de autenticación configurado; no se reutilizan claves entre proveedores.');
   }
-  const modelId = (role === 'classifier' ? env.YOUR_GEAR_CLASSIFIER_MODEL?.trim() : role === 'planner' ? env.YOUR_GEAR_PLANNER_MODEL?.trim() : undefined) ||
+  const modelId = (role === 'classifier' ? env.YOUR_GEAR_CLASSIFIER_MODEL?.trim() : role === 'planner' ? env.YOUR_GEAR_PLANNER_MODEL?.trim() : role === 'executor' ? env.YOUR_GEAR_EXECUTOR_MODEL?.trim() : undefined) ||
     env.YOUR_GEAR_MODEL?.trim() || agent?.model?.trim() || settings.model?.trim() || undefined;
   if (authMode === 'pi-subscription') {
     if (provider !== 'openai') {
