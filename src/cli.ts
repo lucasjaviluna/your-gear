@@ -41,6 +41,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     stdout.write(JSON.stringify(inspectWorkflow(process.cwd(), join(homedir(), '.your-gear'), args[1]), null, 2) + '\n');
     return;
   }
+  if (args[0] === 'workflows' || args[0] === 'workflow') throw new Error('Uso: your-gear workflows | your-gear workflow ID');
   const executing = args[0] === '--run-task';
   const recording = executing && args[1] === '--record';
   const planning = args[0] === '--plan' || executing;
@@ -136,7 +137,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     const decision = await reviewRoute(assessment, ask, controller.signal);
     journal?.record({ kind: 'route', recommended: assessment.recommendedRoute, decision: decision.status === 'selected' ? decision.route : decision.status });
     if (executing && (assessment.recommendedRoute !== 'task' || decision.status !== 'selected' || decision.route !== 'task')) {
-      stdout.write(JSON.stringify({ assessment, decision, execution: { status: 'blocked', reason: 'La ejecución experimental requiere recomendación y selección de task.' } }, null, 2) + '\n');
+      stdout.write(JSON.stringify({ workflowId: journal?.id, assessment, decision, execution: { status: 'blocked', reason: 'La ejecución experimental requiere recomendación y selección de task.' } }, null, 2) + '\n');
       journal?.finish(decision.status === 'cancelled' ? 'cancelled' : 'blocked');
       process.exitCode = 1;
       return;
@@ -150,7 +151,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
       journal?.record({ kind: 'context', digest: context.digest, files: context.entries.length, approved: contextApproved });
       if (!contextApproved) {
         journal?.finish('cancelled');
-        stdout.write(JSON.stringify({ assessment, decision, context: contextSummary, planDecision: { status: 'cancelled' } }, null, 2) + '\n');
+        stdout.write(JSON.stringify({ workflowId: journal?.id, assessment, decision, context: contextSummary, planDecision: { status: 'cancelled' } }, null, 2) + '\n');
         process.exitCode = 1;
         return;
       }
@@ -200,7 +201,11 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
           try {
             if (!execution.report.blockedCalls && !execution.report.toolErrors) {
               for (const path of taskArgs?.tests ?? []) {
-                const test = await runSelectedTest(cwd, path, ask, controller.signal);
+                const test = await runSelectedTest(cwd, path, async description => {
+                  const answer = await ask(description);
+                  journal?.record({ kind: 'verification-gate', gate: 'test', approved: answer.trim().toLowerCase() === 's' });
+                  return answer;
+                }, controller.signal);
                 tests.push(test);
                 journal?.record({ kind: 'test', status: test.status, exitCode: test.exitCode, outputTruncated: test.outputTruncated });
                 if (test.status !== 'exit-zero') break;
@@ -211,6 +216,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
             const { createVerifierSession, verifyWithSession } = await import('./verifier-agent.ts');
             verification = await verifyTask({ request: classificationRequest, plan, report: execution.report, before: context, after, tests }, {
               ask, signal: controller.signal, refreshDigest: () => refreshContext().digest,
+              onDecision: (gate, approved) => journal?.record({ kind: 'verification-gate', gate, approved }),
               complete: async message => {
                 const verifierModel = await selectModel(verifierConfig, modelRuntime);
                 stderr.write(`Your Gear verifier: ${verifierModel.provider}/${verifierModel.id}\n`);
@@ -227,7 +233,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
           journal?.record({ kind: 'verification', status: verification.status, supported: verification.criteria.filter(c => c.status === 'supported').length, total: plan.acceptanceCriteria.length });
           journal?.finish(verification.status);
         } else {
-          journal?.finish(execution.status === 'awaiting-verification' ? 'failed' : execution.status);
+          journal?.finish(planDecision.status === 'cancelled' ? 'cancelled' : execution.status === 'awaiting-verification' ? 'failed' : execution.status);
         }
         stdout.write(JSON.stringify({ workflowId: journal?.id, assessment, decision, context: contextSummary, plan, planDecision, execution,
           tests: tests.map(({ path, status, exitCode, outputTruncated }) => ({ path, status, exitCode, outputTruncated })), verification }, null, 2) + '\n');
