@@ -71,7 +71,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
   if (review && (!stdin.isTTY || !stderr.isTTY)) {
     throw new Error('La revisión de ruta requiere una terminal interactiva.');
   }
-  if (recovering && (!args[1] || args[1].startsWith('-'))) throw new Error('Uso: your-gear --recover ID --context archivo "trabajo pendiente"');
+  if (recovering && args.length > 1 && (!args[1] || args[1].startsWith('-'))) throw new Error('Uso: your-gear --recover ID --context archivo "trabajo pendiente"');
   const taskArgs = executing ? parseTaskArgs(args.slice(taskStart)) : undefined;
   const planningArgs = taskArgs ?? (planning ? parsePlanningArgs(args.slice(1)) : undefined);
   const assisted = recovering && taskArgs?.promptArgs.length === 0;
@@ -89,6 +89,13 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
 
   let assistedDigest: string | undefined;
   const memoryOptions = { cwd: process.cwd(), agentDir: join(homedir(), '.your-gear'), ask, signal: controller.signal, warn: (message:string) => stderr.write(message) };
+  if (recovering && args.length === 1) {
+    const { listRecoveries } = await import('./memory/workflow-memory.ts');
+    const { safePreview } = await import('./verification-evidence.ts');
+    stdout.write(safePreview(await listRecoveries(memoryOptions)) + '\n');
+    stderr.write('Seleccioná un UUID y ejecutá --recover ID. Los registros sin cierre podrían seguir activos.\n');
+    return;
+  }
   if (assisted && taskArgs) {
     const { recoverFromMemory } = await import('./memory/workflow-memory.ts');
     let restored;
