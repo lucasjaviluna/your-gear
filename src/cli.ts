@@ -6,10 +6,9 @@ import { stdin, stdout, stderr } from 'node:process';
 import { requestApproval, serializeApprovals } from './approval.ts';
 import { readConfiguration, readSettings, USAGE } from './config.ts';
 import { createToolCallHandler } from './gate.ts';
-import { approveMcpStart, controlledMcpExtension, mcpToolNames, readMcpServer, waitForMcpTools } from './mcp.ts';
+import { analysisPrompt, assessTask } from './assessment.ts';
 import { selectModel } from './model-selection.ts';
 import { createResponseOutput, redactError } from './response-output.ts';
-import { createSessionManager, parseSessionArgs } from './sessions.ts';
 import { resolveSkill } from './skills.ts';
 import { createToolTrace, traceApproval, traceSession } from './tool-trace.ts';
 
@@ -29,6 +28,13 @@ async function main(controller: AbortController): Promise<void> {
     stdout.write(manifest.version + '\n');
     return;
   }
+  if (args[0] === '--analyze-only') {
+    const assessment = assessTask(analysisPrompt(args.slice(1)));
+    stdout.write(JSON.stringify(assessment, null, 2) + '\n');
+    return;
+  }
+  const { createSessionManager, parseSessionArgs } = await import('./sessions.ts');
+  const { approveMcpStart, controlledMcpExtension, mcpToolNames, readMcpServer, waitForMcpTools } = await import('./mcp.ts');
   const showStatus = args.length === 2 && args[0] === 'auth' && args[1] === 'status';
   const listModels = args.length === 1 && args[0] === 'models';
   const sessionArgs = parseSessionArgs(args);
