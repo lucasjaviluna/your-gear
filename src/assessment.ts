@@ -65,6 +65,6 @@ export function analysisPrompt(args: readonly string[]): string {
     throw new Error('El modo de clasificación no admite otras opciones; usá -- para texto literal.');
   }
   const prompt = tokens.join(' ').trim();
-  if (!prompt) throw new Error('Uso: your-gear --analyze-only | --review-route "tu tarea"');
+  if (!prompt) throw new Error('Uso: your-gear --analyze-only | --review-route | --plan "tu tarea"');
   return prompt;
 }

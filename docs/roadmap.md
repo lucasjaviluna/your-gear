@@ -22,7 +22,7 @@ Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramie
 **Estado:** incrementos 2.A–2.D integrados, CI multiplataforma exitoso. [Hito 2](milestones/milestone-2.md) y [matriz de aceptación](spikes/milestone-2-acceptance.md) registran los límites y las pruebas manuales pendientes.
 
 ## Hito 3 — Workflows con humanos en el circuito
-Clasificación simple de tareas, plan opcional, gates por pasos, verificación de resultados y auditoría. Integración futura de especificaciones SDD, sin exigirlas a cada operación. Ver [diseño inicial](milestones/milestone-3.md); preparar el análisis aislado 3.A sin efectos; habilitar workflows después del cierre del Hito 2.
+Clasificación simple de tareas, plan opcional, gates por pasos, verificación de resultados y auditoría. Integración futura de especificaciones SDD, sin exigirlas a cada operación. Ver [diseño inicial](milestones/milestone-3.md); 3.A y 3.B integrados con CI exitoso; 3.C empieza por planificación aislada. El usuario acordó diferir las pruebas manuales del Hito 2; no se declaran aprobadas. Reevaluar esa deuda antes de habilitar workflows con efectos.
 
 ## Hito 4 — Contexto y memoria opcional
 Integrar una interfaz con RAG externo cuando exista caso real; no crear una base vectorial dentro del core. Políticas de contexto y minimización de información.
@@ -31,4 +31,4 @@ Integrar una interfaz con RAG externo cuando exista caso real; no crear una base
 Instrumentación, recuperabilidad, compatibilidad, políticas avanzadas, documentación de contribución y releases; definir extensiones estables cuando haya consumidores reales.
 
 ## Regla de avance
-No comenzar un hito por volumen de funciones: primero completar pruebas de aceptación del anterior y documentar desviaciones. La prioridad puede cambiar según resultados del spike.
+No comenzar un hito por volumen de funciones: completar pruebas de aceptación del anterior o acordar y documentar explícitamente una desviación de alcance y sus límites. La prioridad puede cambiar según resultados del spike.
