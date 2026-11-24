@@ -54,6 +54,6 @@ Inspección estática de la dependencia instalada `@earendil-works/pi-coding-age
 
 ## Próximo incremento
 
-Registrar los resultados de la guía de aceptación. El desarrollo aislado de 3.A se prepara en paralelo, sin habilitar ejecución de workflows ni declarar cerrado el Hito 2. Cerrar el Hito 2 únicamente con evidencia suficiente o una desviación de alcance explícitamente acordada. No habilitar servidores arbitrarios ni extensiones externas.
+El usuario acordó continuar el desarrollo del Hito 3 y diferir la aceptación manual. Registrar los ocho resultados de la guía cuando disponga de su entorno. El Hito 2 no se declara completamente aceptado; la desviación permite avanzar con el planificador sin ejecución. Antes de activar workflows con efectos, reevaluar la deuda de validación y las pruebas de seguridad. No habilitar servidores arbitrarios ni extensiones externas.
 
-Las extensiones externas siguen deshabilitadas. MCP queda deshabilitado por defecto; la habilitación explícita propuesta requiere revisión y aceptación. El proceso no es un sandbox, y el ADR-003 requiere verificar cada vía nueva antes de incorporarla.
+Las extensiones externas siguen deshabilitadas. MCP queda deshabilitado por defecto; la habilitación explícita integrada requiere aceptación manual. El proceso no es un sandbox, y el ADR-003 requiere verificar cada vía nueva antes de incorporarla.
