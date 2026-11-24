@@ -90,7 +90,17 @@ your-gear --run-task --context src/retry.ts "Agregar reintentos HTTP y documenta
 
 Usar únicamente un workspace descartable, sin datos sensibles. Requiere terminal interactiva, recomendación y selección de `task`, autorización del contexto, plan aprobado y confirmación adicional de inicio. El harness revalida el snapshot de contexto antes de ejecutar. El Executor Agent recibe el plan y dispone únicamente de read/write/edit, cada llamada con autorización humana. No admite shell, skills, MCP ni sesiones persistidas en este modo. Opcionalmente configurar `agents.executor.model` o `YOUR_GEAR_EXECUTOR_MODEL` siguiendo la misma precedencia que classifier/planner.
 
-La salida es `awaiting-verification` tras la ejecución, no una certificación de éxito. Los bloqueos y errores se informan en el reporte; no hay verificación automática, rollback ni garantía de aislamiento. Si se cancela después de un cambio, el archivo puede seguir modificado. El plan y su hash no son permisos importables; el alcance semántico requiere supervisión humana. Las pruebas con modelo real del nuevo flujo siguen pendientes. Para planificar sin cambios, utilizar `--plan`.
+La ejecución produce `awaiting-verification` y después pasa a verificación. No hay rollback ni garantía de aislamiento; un cambio puede permanecer incluso si se cancela. El plan y su hash no son permisos importables; el alcance semántico requiere supervisión humana. Para planificar sin cambios, utilizar `--plan`.
+
+### Verificar el resultado (experimental)
+
+```sh
+your-gear --run-task --context src/retry.js --verify-test test/retry.test.mjs "Agregar reintentos HTTP y documentarlos"
+```
+
+Seleccioná hasta tres archivos de test Node (.test/.spec.js/.mjs/.cjs), existentes en el workspace cuando se ejecuten. Cada prueba se aprueba por separado tras ver su contenido y el comando exacto; el modelo no puede proponer comandos ejecutables automáticamente. Se ejecutan mediante Node sin shell, con timeout y límite de salida. **Un test puede ejecutar código arbitrario y tener efectos fuera del workspace**, acceder al entorno y crear procesos; revisá también sus imports. Solo usar código confiable en workspaces descartables.
+
+El harness observa el snapshot de contexto posterior y los resultados de los procesos. Tras autorizar el envío de esa evidencia, un Verifier Agent independiente evalúa cada criterio del plan. Opcionalmente configurar `agents.verifier.model` o `YOUR_GEAR_VERIFIER_MODEL`. El reporte del executor no prueba que un criterio se cumpla. El estado `accepted` requiere pruebas seleccionadas con código 0, sin salida truncada ni errores del executor, criterios respaldados y aceptación humana final. Sin tests o con evidencia insuficiente, devuelve `inconclusive`. Código 0 no significa por sí solo que se hayan ejecutado pruebas relevantes. Se verifica solo el contexto seleccionado, no todo el repositorio. La salida incluye estados de tests y criterios, no los extractos completos de stdout/stderr. El flujo con modelo real sigue pendiente de aceptación.
 
 ### Continuar una sesión
 
