@@ -40,7 +40,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     const { safePreview } = await import('./verification-evidence.ts');
     const result = await runMemoryCommand(parseMemoryCommand(args.slice(1)), {
       cwd: process.cwd(), agentDir: join(homedir(), '.your-gear'),
-      interactive: Boolean(stdin.isTTY && stderr.isTTY), signal: controller.signal,
+      interactive: Boolean(stdin.isTTY && stdout.isTTY), signal: controller.signal,
       approve: description => requestApproval(description, controller.signal, () => controller.abort()),
       connect: config => connectYtk(config, controller.signal),
     });
