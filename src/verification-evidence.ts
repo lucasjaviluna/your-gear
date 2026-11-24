@@ -53,6 +53,8 @@ export async function runSelectedTest(cwd: string, path: string, ask: (descripti
   const env = { ...process.env };
   delete env.NODE_OPTIONS;
   delete env.NODE_PATH;
+  delete env.NODE_TEST_CONTEXT;
+  delete env.NODE_V8_COVERAGE;
   const evidence = await new Promise<TestEvidence>(resolve => {
     execFile(process.execPath, args, { cwd, env, shell: false, timeout: 60000, maxBuffer: 65536, signal, encoding: 'utf8', windowsHide: true },
       (error, stdout, stderr) => {
