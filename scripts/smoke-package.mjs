@@ -28,7 +28,7 @@ try {
   assert.equal(packed[0].name, manifest.name);
   assert.equal(packed[0].version, manifest.version);
   const files = new Set(packed[0].files.map(file => file.path));
-  for (const required of ['package.json', 'README.md', 'dist/cli.js', 'dist/config.js', 'dist/assessment.js', 'dist/assessment-agent.js', 'dist/planner-agent.js', 'dist/plan.js', 'dist/tool-free-agent.js', 'dist/context-engine.js', 'dist/task-orchestrator.js', 'dist/executor-agent.js', 'dist/verification-evidence.js', 'dist/verification.js', 'dist/verifier-agent.js', 'docs/references.md']) {
+  for (const required of ['package.json', 'README.md', 'dist/cli.js', 'dist/config.js', 'dist/assessment.js', 'dist/assessment-agent.js', 'dist/planner-agent.js', 'dist/plan.js', 'dist/tool-free-agent.js', 'dist/context-engine.js', 'dist/task-orchestrator.js', 'dist/executor-agent.js', 'dist/verification-evidence.js', 'dist/verification.js', 'dist/verifier-agent.js', 'dist/workflow-journal.js', 'docs/references.md']) {
     assert.ok(files.has(required), `Falta en el tarball: ${required}`);
   }
   for (const file of files) {
@@ -61,6 +61,8 @@ try {
   assert.match(invoke(['--review-route', 'hola'], 1).stderr, /terminal interactiva/);
   assert.match(invoke(['--plan', 'hola'], 1).stderr, /terminal interactiva/);
   assert.match(invoke(['--run-task', 'hola'], 1).stderr, /terminal interactiva/);
+  assert.match(invoke(['--run-task', '--record', 'hola'], 1).stderr, /terminal interactiva/);
+  assert.match(invoke(['workflow', '../other'], 1).stderr, /ID de workflow inválido/);
   assert.match(invoke(['--run-task', '--verify-test', 'example.test.js', 'hola'], 1).stderr, /terminal interactiva/);
   assert.match(invoke(['--plan', '--context', 'README.md', 'hola'], 1).stderr, /terminal interactiva/);
   assert.match(invoke(['--invalid-option'], 1).stderr, /Opción desconocida/);
