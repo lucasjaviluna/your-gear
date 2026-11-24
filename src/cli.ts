@@ -13,12 +13,13 @@ import { parseTaskArgs, runSelectedTest, type TestEvidence } from './verificatio
 import { type VerificationResult } from './verification.ts';
 import { createWorkflowJournal, inspectWorkflow, listWorkflows, type WorkflowJournal } from './workflow-journal.ts';
 import { prepareRecovery, assertRecoverySource, recoveryRequest } from './workflow-recovery.ts';
+import type { WorkflowMemory } from './memory/workflow-memory.ts';
 import { selectModel } from './model-selection.ts';
 import { createResponseOutput, redactError } from './response-output.ts';
 import { resolveSkill } from './skills.ts';
 import { createToolTrace, traceApproval, traceSession } from './tool-trace.ts';
 
-async function main(controller: AbortController, state: { journal?: WorkflowJournal }): Promise<void> {
+async function main(controller: AbortController, state: { journal?: WorkflowJournal; memory?: WorkflowMemory }): Promise<void> {
   if (Number(process.versions.node.split('.')[0]) < 22 ||
       (Number(process.versions.node.split('.')[0]) === 22 && Number(process.versions.node.split('.')[1]) < 19)) {
     throw new Error('Se requiere Node.js >=22.19.0 (requisito de Pi SDK 1.6.0).');
@@ -58,7 +59,12 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
   if (args[0] === 'workflows' || args[0] === 'workflow') throw new Error('Uso: your-gear workflows | your-gear workflow ID');
   const recovering = args[0] === '--recover';
   const executing = args[0] === '--run-task' || recovering;
-  const recording = recovering || (executing && args[1] === '--record');
+  let taskStart = recovering ? 2 : 1;
+  const explicitRecord = !recovering && executing && args[taskStart] === '--record';
+  if (explicitRecord) taskStart++;
+  const useMemory = executing && args[taskStart] === '--memory';
+  if (useMemory) taskStart++;
+  const recording = recovering || explicitRecord || useMemory;
   const planning = args[0] === '--plan' || executing;
   const review = args[0] === '--review-route' || planning;
   const classify = args[0] === '--analyze-only' || review;
@@ -66,9 +72,10 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     throw new Error('La revisión de ruta requiere una terminal interactiva.');
   }
   if (recovering && (!args[1] || args[1].startsWith('-'))) throw new Error('Uso: your-gear --recover ID --context archivo "trabajo pendiente"');
-  const taskArgs = executing ? parseTaskArgs(args.slice(recording ? 2 : 1)) : undefined;
+  const taskArgs = executing ? parseTaskArgs(args.slice(taskStart)) : undefined;
   const planningArgs = taskArgs ?? (planning ? parsePlanningArgs(args.slice(1)) : undefined);
-  const request = classify ? analysisPrompt(planningArgs?.promptArgs ?? args.slice(1)) : undefined;
+  const assisted = recovering && taskArgs?.promptArgs.length === 0;
+  let request = classify && !assisted ? analysisPrompt(planningArgs?.promptArgs ?? args.slice(1)) : undefined;
   const ask = async (description: string): Promise<string> => {
     const rl = createInterface({ input: stdin, output: stderr });
     const onInterrupt = () => { controller.abort(); rl.close(); };
@@ -80,6 +87,23 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     finally { rl.off('SIGINT', onInterrupt); rl.off('close', onClose); rl.close(); }
   };
 
+  let assistedDigest: string | undefined;
+  const memoryOptions = { cwd: process.cwd(), agentDir: join(homedir(), '.your-gear'), ask, signal: controller.signal, warn: (message:string) => stderr.write(message) };
+  if (assisted && taskArgs) {
+    const { recoverFromMemory } = await import('./memory/workflow-memory.ts');
+    let restored;
+    try { restored = await recoverFromMemory(memoryOptions,args[1],taskArgs.files); }
+    catch (error) {
+      if (controller.signal.aborted) throw error;
+      throw new Error('No se pudo recuperar memoria válida. Usá --recover ID --context archivo "trabajo pendiente" para recuperación manual.');
+    }
+    if (!restored) { stdout.write(JSON.stringify({status:'cancelled'}) + '\n'); process.exitCode=1; return; }
+    request = restored.remaining;
+    assistedDigest = restored.parentDigest;
+    taskArgs.files = restored.files;
+    // Validate actual files before starting the new workflow, not just historical names.
+    collectContext(process.cwd(), taskArgs.files, controller.signal);
+  }
   const classificationRequest = recovering && request !== undefined ? recoveryRequest(request) : request;
   const recovery = recovering && request !== undefined ? await prepareRecovery({
     cwd: process.cwd(), agentDir: join(homedir(), '.your-gear'), id: args[1], remaining: request, files: taskArgs?.files ?? [],
@@ -89,6 +113,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     process.exitCode = 1;
     return;
   }
+  if (assistedDigest && recovery?.parentDigest !== assistedDigest) throw new Error('El registro anterior cambió; revisá la recuperación.');
   if (recording) {
     state.journal = createWorkflowJournal(process.cwd(), join(homedir(), '.your-gear'));
     stderr.write('Your Gear workflow: ' + state.journal.id + '\n');
@@ -192,6 +217,11 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
       journal?.transition('plan-review');
       const planDecision = await reviewPlan(plan, ask, controller.signal);
       journal?.record({ kind: 'plan', digest: plan.digest, version: plan.version, criteria: plan.acceptanceCriteria.length, decision: planDecision.status });
+      if (useMemory && journal && planDecision.status === 'approved') {
+        const { openWorkflowMemory } = await import('./memory/workflow-memory.ts');
+        state.memory = await openWorkflowMemory(memoryOptions,journal,plan,context.entries.map(e=>e.path));
+        await state.memory?.checkpoint('plan','Plan histórico aprobado; ninguna implementación confirmada en este checkpoint.');
+      }
       if (executing && executorConfig) {
         const { executeApprovedTask } = await import('./task-orchestrator.ts');
         const { createExecutorSession, executeWithSession } = await import('./executor-agent.ts');
@@ -228,6 +258,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
         let verification: VerificationResult | undefined;
         if (execution.status === 'awaiting-verification' && verifierConfig) {
           journal?.record({ kind: 'execution', blockedCalls: execution.report.blockedCalls, toolErrors: execution.report.toolErrors });
+          await state.memory?.checkpoint('execution','Ejecutor retornó; llamadas bloqueadas: '+execution.report.blockedCalls+'; errores de herramientas: '+execution.report.toolErrors+'. El trabajo restante requiere inspección.');
           journal?.transition('verifying');
           try {
             if (!execution.report.blockedCalls && !execution.report.toolErrors) {
@@ -266,6 +297,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
         }
         if (verification) {
           journal?.record({ kind: 'verification', status: verification.status, supported: verification.criteria.filter(c => c.status === 'supported').length, total: plan.acceptanceCriteria.length });
+          await state.memory?.checkpoint('verification','Resultado histórico de revisión: '+verification.status+'; criterios respaldados: '+verification.criteria.filter(c=>c.status==='supported').length+'/'+plan.acceptanceCriteria.length+'. No certifica el estado actual.');
           journal?.finish(verification.status);
         } else {
           journal?.finish(planDecision.status === 'cancelled' ? 'cancelled' : execution.status === 'awaiting-verification' ? 'failed' : execution.status);
@@ -362,13 +394,15 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
 const controller = new AbortController();
 const onSigint = () => controller.abort();
 process.on('SIGINT', onSigint);
-const workflowState: { journal?: WorkflowJournal } = {};
+const workflowState: { journal?: WorkflowJournal; memory?: WorkflowMemory } = {};
 main(controller, workflowState).catch((error: unknown) => {
   try { workflowState.journal?.finish(controller.signal.aborted ? 'cancelled' : 'failed'); }
   catch { stderr.write('Your Gear: no se pudo cerrar el registro; revisar estado antes de retomar.\n'); }
   stderr.write(`Your Gear: ${redactError(error instanceof Error ? error.message : String(error))}\n`);
   process.exitCode = controller.signal.aborted ? 130 : 1;
-}).finally(() => {
+}).finally(async () => {
+  try { await workflowState.memory?.close(); }
+  catch { stderr.write('Your Gear: no se pudo cerrar memoria.\n'); }
   process.off('SIGINT', onSigint);
   try { workflowState.journal?.close(); }
   catch { stderr.write('Your Gear: no se pudo cerrar el archivo de workflow.\n'); process.exitCode = 1; }
