@@ -54,6 +54,6 @@ Inspección estática de la dependencia instalada `@earendil-works/pi-coding-age
 
 ## Próximo incremento
 
-El usuario acordó continuar el desarrollo del Hito 3 y diferir la aceptación manual. Registrar los ocho resultados de la guía cuando disponga de su entorno. El Hito 2 no se declara completamente aceptado; la desviación permite avanzar con el planificador sin ejecución. Antes de activar workflows con efectos, reevaluar la deuda de validación y las pruebas de seguridad. No habilitar servidores arbitrarios ni extensiones externas.
+El usuario acordó continuar el desarrollo del Hito 3 y diferir la aceptación manual. Registrar los ocho resultados de la guía cuando disponga de su entorno. El Hito 2 no se declara completamente aceptado; la desviación permitió avanzar con planificación. Se propone en 3.C.3.A un executor experimental restringido a read/write/edit, ya ejercitadas en Hitos 0/1, con aprobaciones separadas y sin shell/MCP. Solo para workspace descartable hasta aceptación real; las pruebas pendientes no se dan por aprobadas. No habilitar servidores arbitrarios ni extensiones externas.
 
 Las extensiones externas siguen deshabilitadas. MCP queda deshabilitado por defecto; la habilitación explícita integrada requiere aceptación manual. El proceso no es un sandbox, y el ADR-003 requiere verificar cada vía nueva antes de incorporarla.
