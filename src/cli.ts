@@ -29,7 +29,8 @@ async function main(controller: AbortController): Promise<void> {
     stdout.write(manifest.version + '\n');
     return;
   }
-  const review = args[0] === '--review-route';
+  const planning = args[0] === '--plan';
+  const review = args[0] === '--review-route' || planning;
   const classify = args[0] === '--analyze-only' || review;
   if (review && (!stdin.isTTY || !stderr.isTTY)) {
     throw new Error('La revisión de ruta requiere una terminal interactiva.');
@@ -46,7 +47,9 @@ async function main(controller: AbortController): Promise<void> {
     throw new Error('MCP requiere una terminal interactiva para autorizar el inicio.');
   }
   const agentDir = join(homedir(), '.your-gear');
-  const config = showStatus || listModels ? undefined : readConfiguration(sessionArgs.promptArgs, process.env, readSettings(process.cwd(), agentDir), classify ? 'classifier' : 'default');
+  const settings = showStatus || listModels ? undefined : readSettings(process.cwd(), agentDir);
+  const config = showStatus || listModels ? undefined : readConfiguration(sessionArgs.promptArgs, process.env, settings, classify ? 'classifier' : 'default');
+  const plannerConfig = planning ? readConfiguration(['plan'], process.env, settings, 'planner') : undefined;
 
   const { createAgentSession, DefaultResourceLoader, ModelRuntime, SettingsManager } =
     await import('@earendil-works/pi-coding-agent');
@@ -95,14 +98,33 @@ async function main(controller: AbortController): Promise<void> {
       return;
     }
     const { reviewRoute } = await import('./route-review.ts');
-    const decision = await reviewRoute(assessment, async description => {
+    const ask = async (description: string): Promise<string> => {
       const rl = createInterface({ input: stdin, output: stderr });
       const onInterrupt = () => { controller.abort(); rl.close(); };
       rl.on('SIGINT', onInterrupt);
-      try { return await rl.question(description, { signal: controller.signal }); }
+      let onClose: () => void = () => {};
+      const closed = new Promise<string>(resolve => { onClose = () => resolve(''); rl.once('close', onClose); });
+      try { return await Promise.race([rl.question(description, { signal: controller.signal }), closed]); }
       catch { return ''; }
-      finally { rl.off('SIGINT', onInterrupt); rl.close(); }
-    }, controller.signal);
+      finally { rl.off('SIGINT', onInterrupt); rl.off('close', onClose); rl.close(); }
+    };
+    const decision = await reviewRoute(assessment, ask, controller.signal);
+    if (planning && decision.status === 'selected' && decision.route === 'task' && plannerConfig) {
+      if (controller.signal.aborted) throw new Error('La ejecución fue cancelada.');
+      const plannerModel = await selectModel(plannerConfig, modelRuntime);
+      stderr.write(`Your Gear planner: ${plannerModel.provider}/${plannerModel.id}\n`);
+      const { createPlannerSession, planWithSession } = await import('./planner-agent.ts');
+      const { reviewPlan } = await import('./plan.ts');
+      const planner = await createPlannerSession({ cwd, agentDir, modelRuntime, model: plannerModel });
+      const plan = await planWithSession(planner, classificationRequest, assessment, controller.signal);
+      const planDecision = await reviewPlan(plan, ask, controller.signal);
+      stdout.write(JSON.stringify({ assessment, decision, plan, planDecision }, null, 2) + '\n');
+      if (planDecision.status === 'cancelled') process.exitCode = 1;
+      return;
+    }
+    if (planning && decision.status === 'selected') {
+      stderr.write('En este incremento solo se genera un plan para la ruta task. No se ejecutó la solicitud.\n');
+    }
     stdout.write(JSON.stringify({ assessment, decision }, null, 2) + '\n');
     if (decision.status === 'cancelled') process.exitCode = 1;
     return;
