@@ -28,7 +28,7 @@ try {
   assert.equal(packed[0].name, manifest.name);
   assert.equal(packed[0].version, manifest.version);
   const files = new Set(packed[0].files.map(file => file.path));
-  for (const required of ['package.json', 'README.md', 'dist/cli.js', 'dist/config.js', 'docs/references.md']) {
+  for (const required of ['package.json', 'README.md', 'dist/cli.js', 'dist/config.js', 'dist/assessment.js', 'dist/assessment-agent.js', 'docs/references.md']) {
     assert.ok(files.has(required), `Falta en el tarball: ${required}`);
   }
   for (const file of files) {
@@ -54,9 +54,8 @@ try {
   assert.match(invoke(['--help']).stdout, /Uso: your-gear/);
   assert.match(invoke(['-h']).stdout, /Uso: your-gear/);
   assert.equal(invoke(['--version']).stdout.trim(), manifest.version);
-  const assessment = JSON.parse(invoke(['--analyze-only', 'Agregar permisos por rol']).stdout);
-  assert.equal(assessment.recommendedRoute, 'sdd');
-  assert.equal(assessment.source, 'deterministic');
+  // Semantic classification requires a model. CI validates early error paths without credentials.
+  assert.match(invoke(['--analyze-only', 'Agregar permisos por rol'], 1).stderr, /JSON inválida/);
   assert.match(invoke(['--analyze-only', '--mcp', 'fixture', 'hola'], 1).stderr, /no admite otras opciones/);
   assert.match(invoke(['--analyze-only'], 1).stderr, /Uso/);
   assert.match(invoke(['--invalid-option'], 1).stderr, /Opción desconocida/);
