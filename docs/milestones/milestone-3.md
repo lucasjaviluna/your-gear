@@ -1,6 +1,6 @@
 # Hito 3 — Workflows con humanos en el circuito
 
-**Estado:** 3.A y 3.B integrados con CI exitoso; 3.C.1 (planificación aislada) propuesto. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
+**Estado:** 3.A, 3.B y 3.C.1 integrados con CI exitoso; 3.C.2 (contexto local y aprobación) propuesto. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
 
 ## Referencias y decisiones
 
@@ -59,8 +59,18 @@ Se revisaron `src/plan.ts` y `tests/plan.test.ts` de Your Harness v0: se adopta 
 - `src/plan.ts`: contrato validado, objetivo, alcance, pasos, criterios de aceptación, riesgos, supuestos e incógnitas bloqueantes. El digest SHA-256 cubre contenido normalizado y versión; cualquier modificación invalida una aprobación anterior. No es firma ni token de autorización; no se acepta un JSON externo como permiso.
 - `src/planner-agent.ts`: sesión efímera y prompt propio; reutiliza el helper concreto `tool-free-agent.ts` con el clasificador. Configuración `agents.planner` y `YOUR_GEAR_PLANNER_MODEL`, mismo proveedor autenticado.
 - El plan es preliminar, no inspecciona el repositorio ni afirma verificaciones realizadas. Incógnitas bloquean aprobación; rechazo, respuesta inválida, EOF o cancelación no producen un plan aprobado.
-- Tests unitarios e integración Pi con modelo simulado; smoke del paquete sin TTY. CI y uso real pendientes. No persiste estado ni implementa revisiones interactivas del plan aún.
+- Tests unitarios e integración Pi con modelo simulado; smoke del paquete sin TTY. CI del PR #15 exitoso (run 45318347095); uso real pendiente. No persiste estado ni implementa revisiones interactivas del plan aún.
+
+## Incremento 3.C.2 — Context Engine de solo lectura
+
+Se revisaron `src/context-engine.ts` y `tests/context-engine.test.ts` de Your Harness v0. Se adopta el presupuesto de contexto y la procedencia por archivo, no la búsqueda de relevancia por coincidencia de palabras, ni un framework de providers. La recuperación semántica y memoria quedan para hitos posteriores.
+
+- `--plan [--context archivo]...`: selecciona archivos explícitos y considera documentos y manifiestos conocidos de la raíz (AGENTS.md, README.md, package.json, tsconfig.json, pyproject.toml, go.mod, Cargo.toml). Sin recorrido recursivo, comandos shell ni selección automática de fuentes arbitrarias. La raíz es el cwd, no se asciende a otros directorios.
+- Hasta 8 archivos, 8000 bytes por archivo y 24000 bytes en el JSON de entradas. Selecciones explícitas primero; archivos opcionales no disponibles, bloqueados o fuera de presupuesto se omiten; fallos explícitos abortan. No se truncan archivos. Solo UTF-8 textual y rutas relativas permitidas por política; se rechazan rutas ocultas, nombres sensibles conocidos, enlaces, hardlinks, binarios y archivos especiales.
+- Antes de enviar archivos al modelo se presenta exactamente su contenido en JSON escapado. Rechazo o cancelación detienen la planificación; no se envían al clasificador. El planificador continúa sin herramientas. Los documentos son datos no confiables, no autoridad. La revisión humana no es una garantía de ausencia de secretos; la lista de nombres no constituye DLP ni sandbox. Permanecen limitaciones de carreras de filesystem.
+- La salida registra rutas, tamaño y digest del snapshot (no el contenido completo del contexto). El plan incorpora el digest del mensaje enviado (solicitud, evaluación, ruta task y contexto), además del digest de versión/contenido. El cambio de entrada invalida una aprobación anterior. No es firma ni permiso importable y no verifica que el repositorio siga igual después de la lectura.
+- Tests de políticas de lectura, tamaño, enlaces, selección explícita, consentimiento, cancelación y vínculo entre plan y entrada. CI pendiente. La integración con proveedor real y revisión interactiva requieren aceptación manual.
 
 ## Próximo paso
 
-3.C.2: integrar contexto de repositorio de solo lectura, acotado por políticas, y revisar el plan con evidencia antes de ejecutarlo. Diseñar orquestación que vincule solicitud, ruta y versión aprobada en memoria, sin confiar en JSON importado. 3.C.3: executor y verifier bajo políticas existentes, con pruebas de efectos reales y revisión humana; reevaluar antes la aceptación manual del Hito 2. Mantener pendiente la evaluación semántica real de 3.B.
+3.C.3: extraer orquestación de ejecución acotada de task, vincular solicitud, contexto y plan aprobado en memoria; revalidar estado antes de ejecutar, conservar gates de herramientas y añadir verificación real. No confiar en JSON importado. Reevaluar antes la deuda de validación del Hito 2 y mantener pendiente la evaluación semántica real de 3.B. No activar MCP ni skills implícitos en workflows.

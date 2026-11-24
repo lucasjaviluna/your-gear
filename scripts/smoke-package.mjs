@@ -28,7 +28,7 @@ try {
   assert.equal(packed[0].name, manifest.name);
   assert.equal(packed[0].version, manifest.version);
   const files = new Set(packed[0].files.map(file => file.path));
-  for (const required of ['package.json', 'README.md', 'dist/cli.js', 'dist/config.js', 'dist/assessment.js', 'dist/assessment-agent.js', 'dist/planner-agent.js', 'dist/plan.js', 'dist/tool-free-agent.js', 'docs/references.md']) {
+  for (const required of ['package.json', 'README.md', 'dist/cli.js', 'dist/config.js', 'dist/assessment.js', 'dist/assessment-agent.js', 'dist/planner-agent.js', 'dist/plan.js', 'dist/tool-free-agent.js', 'dist/context-engine.js', 'docs/references.md']) {
     assert.ok(files.has(required), `Falta en el tarball: ${required}`);
   }
   for (const file of files) {
@@ -60,6 +60,7 @@ try {
   assert.match(invoke(['--analyze-only'], 1).stderr, /Uso/);
   assert.match(invoke(['--review-route', 'hola'], 1).stderr, /terminal interactiva/);
   assert.match(invoke(['--plan', 'hola'], 1).stderr, /terminal interactiva/);
+  assert.match(invoke(['--plan', '--context', 'README.md', 'hola'], 1).stderr, /terminal interactiva/);
   assert.match(invoke(['--invalid-option'], 1).stderr, /Opción desconocida/);
   // Invoke the installed CLI without a TTY, with a registered local server
   // that would create a marker immediately if it ever started.

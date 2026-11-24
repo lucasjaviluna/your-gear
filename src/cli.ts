@@ -8,6 +8,7 @@ import { requestApproval, serializeApprovals } from './approval.ts';
 import { readConfiguration, readSettings, USAGE } from './config.ts';
 import { createToolCallHandler } from './gate.ts';
 import { analysisPrompt } from './assessment.ts';
+import { approveContext, collectContext, parsePlanningArgs } from './context-engine.ts';
 import { selectModel } from './model-selection.ts';
 import { createResponseOutput, redactError } from './response-output.ts';
 import { resolveSkill } from './skills.ts';
@@ -35,7 +36,8 @@ async function main(controller: AbortController): Promise<void> {
   if (review && (!stdin.isTTY || !stderr.isTTY)) {
     throw new Error('La revisión de ruta requiere una terminal interactiva.');
   }
-  const classificationRequest = classify ? analysisPrompt(args.slice(1)) : undefined;
+  const planningArgs = planning ? parsePlanningArgs(args.slice(1)) : undefined;
+  const classificationRequest = classify ? analysisPrompt(planningArgs?.promptArgs ?? args.slice(1)) : undefined;
   const { createSessionManager, parseSessionArgs } = await import('./sessions.ts');
   const { approveMcpStart, controlledMcpExtension, mcpToolNames, readMcpServer, waitForMcpTools } = await import('./mcp.ts');
   const showStatus = args.length === 2 && args[0] === 'auth' && args[1] === 'status';
@@ -111,14 +113,21 @@ async function main(controller: AbortController): Promise<void> {
     const decision = await reviewRoute(assessment, ask, controller.signal);
     if (planning && decision.status === 'selected' && decision.route === 'task' && plannerConfig) {
       if (controller.signal.aborted) throw new Error('La ejecución fue cancelada.');
+      const context = collectContext(cwd, planningArgs?.files, controller.signal);
+      const contextSummary = { paths: context.entries.map(entry => entry.path), bytes: context.bytes, digest: context.digest };
+      if (!await approveContext(context, ask, controller.signal)) {
+        stdout.write(JSON.stringify({ assessment, decision, context: contextSummary, planDecision: { status: 'cancelled' } }, null, 2) + '\n');
+        process.exitCode = 1;
+        return;
+      }
       const plannerModel = await selectModel(plannerConfig, modelRuntime);
       stderr.write(`Your Gear planner: ${plannerModel.provider}/${plannerModel.id}\n`);
       const { createPlannerSession, planWithSession } = await import('./planner-agent.ts');
       const { reviewPlan } = await import('./plan.ts');
       const planner = await createPlannerSession({ cwd, agentDir, modelRuntime, model: plannerModel });
-      const plan = await planWithSession(planner, classificationRequest, assessment, controller.signal);
+      const plan = await planWithSession(planner, classificationRequest, assessment, controller.signal, context);
       const planDecision = await reviewPlan(plan, ask, controller.signal);
-      stdout.write(JSON.stringify({ assessment, decision, plan, planDecision }, null, 2) + '\n');
+      stdout.write(JSON.stringify({ assessment, decision, context: contextSummary, plan, planDecision }, null, 2) + '\n');
       if (planDecision.status === 'cancelled') process.exitCode = 1;
       return;
     }

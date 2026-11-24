@@ -13,7 +13,8 @@ test('el modelo recibe solicitud y evaluación como datos y produce plan version
   });
   assert.equal(plan.version, 1);
   assert.equal(plan.digest.length, 64);
-  assert.deepEqual(plan, versionPlan(draft));
+  assert.equal(plan.inputDigest?.length, 64);
+  assert.deepEqual(plan, versionPlan(draft, 1, plan.inputDigest));
 });
 
 test('rechaza resultados incompletos, permisos inventados y formatos inválidos', () => {
@@ -57,4 +58,16 @@ test('rechazo, fallo del modelo y cancelación nunca producen plan aprobado', as
   await assert.rejects(reviewPlan(versionPlan(draft), async () => { assert.fail('no preguntar'); }, c.signal), /cancelada/);
   const d = new AbortController();
   await assert.rejects(reviewPlan(versionPlan(draft), async () => { d.abort(); return 's'; }, d.signal), /cancelada/);
+});
+
+test('el digest del plan vincula también la solicitud y el contexto de entrada', async () => {
+  const first = await generatePlan('tarea', assessment, async message => {
+    assert.deepEqual(JSON.parse(message).context, [{ path: 'src/a.ts', content: 'v1' }]);
+    return JSON.stringify(draft);
+  }, undefined, { entries: [{ path: 'src/a.ts', content: 'v1' }], bytes: 0, digest: '' });
+  const second = await generatePlan('tarea', assessment, async () => JSON.stringify(draft), undefined,
+    { entries: [{ path: 'src/a.ts', content: 'v2' }], bytes: 0, digest: '' });
+  const decision = await reviewPlan(first, async () => 's');
+  assert.notEqual(first.inputDigest, second.inputDigest);
+  assert.equal(isPlanApproved(second, decision), false);
 });
