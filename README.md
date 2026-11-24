@@ -124,6 +124,32 @@ Seleccioná el UUID del workspace actual. Confirmá que la ejecución anterior y
 
 La recuperación crea un UUID nuevo con vínculo al registro anterior, vuelve a clasificar y planificar con contexto actual, y exige todas las aprobaciones de nuevo. No reproduce comandos, no restaura permisos ni modifica el journal anterior. Si este cambia, se impiden nuevas operaciones al revalidarlo. Una tarea cerrada (incluidas las canceladas con Ctrl+C) no se recupera con este comando: para retomar trabajo, iniciá una solicitud nueva. No hay rollback automático ni garantía de idempotencia semántica; revisá el alcance de cada cambio. Ver [aceptación manual del Hito 3](docs/spikes/milestone-3-acceptance.md).
 
+### Consultar Agent Memory (experimental, opcional)
+
+Instalá YTK por separado siguiendo su [guía](https://github.com/lucasjaviluna/your-team-knowledge/blob/main/docs/agent-memory-native-consumer-guide.md), inicializá el proyecto y comprobá su base. En `~/.your-gear/memory.json` (configuración de usuario, no del repo) registrá el workspace con su ruta canónica exacta. Ejemplo para Linux, adaptar rutas a la instalación:
+
+```json
+{
+  "workspaces": {
+    "/home/dev/proyecto": {
+      "provider": "ytk",
+      "command": "/home/dev/bin/ytk-memory",
+      "project": "proyecto",
+      "database": "/home/dev/proyecto/.ytk-memory/ytk-memory.sqlite"
+    }
+  }
+}
+```
+
+```sh
+your-gear memory status
+your-gear memory list
+your-gear memory search "reintentos HTTP"
+your-gear memory get ID
+```
+
+Las rutas de ejecutable y base deben ser absolutas y existentes. Opcionalmente indicar `area`; si se omite, YTK resuelve su área según su propia configuración. El proceso se inicia tras confirmación interactiva, sin LLM. Puede migrar la base al abrirla y no es sandbox: usar binario confiable. Sin configuración para ese workspace, status devuelve disabled. Por ahora solo consulta, no guarda memorias ni las incorpora a prompts; el adaptador de sesiones y escrituras prepara el siguiente incremento. Los workflows actuales siguen independientes de YTK.
+
 ### Continuar una sesión
 
 Las ejecuciones son efímeras por defecto. Para guardar una conversación y luego continuar la más reciente del mismo directorio de trabajo:
