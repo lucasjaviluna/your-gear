@@ -82,6 +82,16 @@ El Context Engine considera archivos conocidos de la raíz (README.md, AGENTS.md
 
 Opcionalmente agregá `"planner": { "model": "MODELO_PLANIFICADOR" }` dentro de `agents` o definí `YOUR_GEAR_PLANNER_MODEL`. Usa las mismas reglas de precedencia y autenticación que classifier.
 
+### Ejecutar una tarea (experimental)
+
+```sh
+your-gear --run-task --context src/retry.ts "Agregar reintentos HTTP y documentar su comportamiento"
+```
+
+Usar únicamente un workspace descartable, sin datos sensibles. Requiere terminal interactiva, recomendación y selección de `task`, autorización del contexto, plan aprobado y confirmación adicional de inicio. El harness revalida el snapshot de contexto antes de ejecutar. El Executor Agent recibe el plan y dispone únicamente de read/write/edit, cada llamada con autorización humana. No admite shell, skills, MCP ni sesiones persistidas en este modo. Opcionalmente configurar `agents.executor.model` o `YOUR_GEAR_EXECUTOR_MODEL` siguiendo la misma precedencia que classifier/planner.
+
+La salida es `awaiting-verification` tras la ejecución, no una certificación de éxito. Los bloqueos y errores se informan en el reporte; no hay verificación automática, rollback ni garantía de aislamiento. Si se cancela después de un cambio, el archivo puede seguir modificado. El plan y su hash no son permisos importables; el alcance semántico requiere supervisión humana. Las pruebas con modelo real del nuevo flujo siguen pendientes. Para planificar sin cambios, utilizar `--plan`.
+
 ### Continuar una sesión
 
 Las ejecuciones son efímeras por defecto. Para guardar una conversación y luego continuar la más reciente del mismo directorio de trabajo:

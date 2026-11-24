@@ -82,7 +82,7 @@ test('configuración del clasificador hereda y combina usuario y proyecto sin mo
   assert.equal(readConfiguration(['hola'], { YOUR_GEAR_CLASSIFIER_MODEL: 'role-env' }, settings).modelId, 'default');
   assert.equal(readConfiguration(['hola'], {}, settings, 'classifier').authMode, 'pi-subscription');
   assert.throws(() => readConfiguration(['hola'], { YOUR_GEAR_PROVIDER: 'other', YOUR_GEAR_AUTH_MODE: 'api-key', YOUR_GEAR_API_KEY: 'secret' }, settings, 'classifier'), /proveedor de autenticación/);
-  for (const agents of [null, [], { executor: {} }, { classifier: { apiKey: 'secret' } }, { classifier: { authMode: 'api-key' } }, { classifier: { model: 123 } }]) {
+  for (const agents of [null, [], { verifier: {} }, { classifier: { apiKey: 'secret' } }, { classifier: { authMode: 'api-key' } }, { classifier: { model: 123 } }]) {
     writeFileSync(join(cwd, '.your-gear', 'config.json'), JSON.stringify({ agents }));
     assert.throws(() => readSettings(cwd, agent), /Opción de configuración inválida/);
   }
@@ -103,4 +103,21 @@ test('planner usa modelo independiente y conserva credenciales del proveedor', t
   assert.equal(readConfiguration(['hola'], {}, settings, 'classifier').modelId, 'class');
   assert.equal(readConfiguration(['hola'], {}, settings).modelId, 'default');
   assert.throws(() => readConfiguration(['hola'], { YOUR_GEAR_PROVIDER: 'other' }, settings, 'planner'), /proveedor de autenticación/);
+});
+
+test('executor usa modelo independiente y conserva credenciales del proveedor', t => {
+  const root = mkdtempSync(join(tmpdir(), 'your-gear-executor-config-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const agent = join(root, 'user');
+  const cwd = join(root, 'project');
+  mkdirSync(agent);
+  mkdirSync(join(cwd, '.your-gear'), { recursive: true });
+  writeFileSync(join(agent, 'config.json'), JSON.stringify({ model: 'default', agents: { executor: { provider: 'openai', model: 'user-exec' }, planner: { model: 'plan' } } }));
+  writeFileSync(join(cwd, '.your-gear', 'config.json'), JSON.stringify({ agents: { executor: { model: 'project-exec' } } }));
+  const settings = readSettings(cwd, agent);
+  assert.equal(readConfiguration(['hola'], {}, settings, 'executor').modelId, 'project-exec');
+  assert.equal(readConfiguration(['hola'], { YOUR_GEAR_EXECUTOR_MODEL: 'env-exec' }, settings, 'executor').modelId, 'env-exec');
+  assert.equal(readConfiguration(['hola'], {}, settings, 'planner').modelId, 'plan');
+  assert.equal(readConfiguration(['hola'], {}, settings).modelId, 'default');
+  assert.throws(() => readConfiguration(['hola'], { YOUR_GEAR_PROVIDER: 'other' }, settings, 'executor'), /proveedor de autenticación/);
 });

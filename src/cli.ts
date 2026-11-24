@@ -30,7 +30,8 @@ async function main(controller: AbortController): Promise<void> {
     stdout.write(manifest.version + '\n');
     return;
   }
-  const planning = args[0] === '--plan';
+  const executing = args[0] === '--run-task';
+  const planning = args[0] === '--plan' || executing;
   const review = args[0] === '--review-route' || planning;
   const classify = args[0] === '--analyze-only' || review;
   if (review && (!stdin.isTTY || !stderr.isTTY)) {
@@ -52,6 +53,7 @@ async function main(controller: AbortController): Promise<void> {
   const settings = showStatus || listModels ? undefined : readSettings(process.cwd(), agentDir);
   const config = showStatus || listModels ? undefined : readConfiguration(sessionArgs.promptArgs, process.env, settings, classify ? 'classifier' : 'default');
   const plannerConfig = planning ? readConfiguration(['plan'], process.env, settings, 'planner') : undefined;
+  const executorConfig = executing ? readConfiguration(['execute'], process.env, settings, 'executor') : undefined;
 
   const { createAgentSession, DefaultResourceLoader, ModelRuntime, SettingsManager } =
     await import('@earendil-works/pi-coding-agent');
@@ -111,6 +113,11 @@ async function main(controller: AbortController): Promise<void> {
       finally { rl.off('SIGINT', onInterrupt); rl.off('close', onClose); rl.close(); }
     };
     const decision = await reviewRoute(assessment, ask, controller.signal);
+    if (executing && (assessment.recommendedRoute !== 'task' || decision.status !== 'selected' || decision.route !== 'task')) {
+      stdout.write(JSON.stringify({ assessment, decision, execution: { status: 'blocked', reason: 'La ejecución experimental requiere recomendación y selección de task.' } }, null, 2) + '\n');
+      process.exitCode = 1;
+      return;
+    }
     if (planning && decision.status === 'selected' && decision.route === 'task' && plannerConfig) {
       if (controller.signal.aborted) throw new Error('La ejecución fue cancelada.');
       const context = collectContext(cwd, planningArgs?.files, controller.signal);
@@ -127,6 +134,32 @@ async function main(controller: AbortController): Promise<void> {
       const planner = await createPlannerSession({ cwd, agentDir, modelRuntime, model: plannerModel });
       const plan = await planWithSession(planner, classificationRequest, assessment, controller.signal, context);
       const planDecision = await reviewPlan(plan, ask, controller.signal);
+      if (executing && executorConfig) {
+        const { executeApprovedTask } = await import('./task-orchestrator.ts');
+        const { createExecutorSession, executeWithSession } = await import('./executor-agent.ts');
+        const refreshContext = () => collectContext(cwd, planningArgs?.files, controller.signal);
+        const execution = await executeApprovedTask({ request: classificationRequest, assessment, decision, context, plan, planDecision }, {
+          signal: controller.signal, refreshContext, ask,
+          execute: async message => {
+            const executorModel = await selectModel(executorConfig, modelRuntime);
+            stderr.write(`Your Gear executor: ${executorModel.provider}/${executorModel.id}\n`);
+            const executor = await createExecutorSession({ cwd, agentDir, modelRuntime, model: executorModel },
+              async description => (await ask('¿Autorizar ' + description + '? [s/N] ')).trim().toLowerCase() === 's',
+              controller.signal);
+            try {
+              if (refreshContext().digest !== context.digest) throw new Error('El contexto cambió antes de ejecutar.');
+              if (controller.signal.aborted) throw new Error('La ejecución fue cancelada.');
+            } catch (error) {
+              executor.session.dispose();
+              throw error;
+            }
+            return executeWithSession(executor, message, controller.signal);
+          },
+        });
+        stdout.write(JSON.stringify({ assessment, decision, context: contextSummary, plan, planDecision, execution }, null, 2) + '\n');
+        if (execution.status !== 'awaiting-verification' || execution.report.blockedCalls || execution.report.toolErrors) process.exitCode = 1;
+        return;
+      }
       stdout.write(JSON.stringify({ assessment, decision, context: contextSummary, plan, planDecision }, null, 2) + '\n');
       if (planDecision.status === 'cancelled') process.exitCode = 1;
       return;
