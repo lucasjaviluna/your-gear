@@ -18,6 +18,7 @@
     "start": "node src/cli.ts",
     "build": "tsc -p tsconfig.build.json",
     "prepack": "npm run build",
+    "smoke:ytk": "npm run build && node scripts/smoke-ytk.mjs",
     "pack:check": "npm run build && node scripts/smoke-package.mjs",
     "test": "node --experimental-strip-types --test test/*.test.ts",
     "typecheck": "tsc --noEmit",

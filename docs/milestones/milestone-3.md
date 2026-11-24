@@ -1,6 +1,6 @@
 # Hito 3 — Workflows con humanos en el circuito
 
-**Estado:** 3.A–3.D.2 integrados con CI exitoso; 3.D.3 (memoria opcional YTK) propuesto. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
+**Estado:** 3.A–3.D.3 integrados con CI exitoso; 3.D.4 (checkpoints y recuperación asistida) propuesto. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
 
 ## Referencias y decisiones
 
@@ -120,8 +120,17 @@ Decisión acordada: adelantar parte de Hito 4 para mejorar recuperación, sin ac
 - Puerto MemoryProvider y adaptador con seis operaciones YTK (list/search/get/start/save/finish), límites, scope y validación de resultado. La sesión activa pertenece a la misma conexión. No se exponen herramientas nuevas a los modelos. Las escrituras están desactivadas en CLI; no se envía memoria a LLM todavía.
 - Configuración del usuario en ~/.your-gear/memory.json por ruta canónica exacta del workspace; ejecutable y DB absolutos existentes, project explícito y area opcional. No autoinstalación, no se ejecuta configuración del repositorio. YTK requiere configuración local propia previa. Se exige autorización de inicio y TTY para consultar un proveedor configurado. El binario puede migrar la base y tiene permisos del usuario; no es sandbox.
 - Comandos memory status/list/search/get no requieren autenticación LLM. Ausencia de configuración devuelve disabled en status; errores de consulta no afectan workflows normales. Conexión y llamadas con presupuesto temporal 10 s, cierre en finally. No se garantiza límite de memoria del protocolo antes de recibir una respuesta ni cierre de descendientes.
-- Tests de configuración, aislamiento, sesión, modo sin escritura y servidor fixture MCP stdio; smoke del paquete. CI pendiente. Interoperabilidad contra binario YTK real aún no validada. No guardar checkpoints ni activar autoRecall/autoSave en este incremento.
+- Tests de configuración, aislamiento, sesión, modo sin escritura y servidor fixture MCP stdio; smoke del paquete. CI del PR #21 exitoso (run 45503506875). Interoperabilidad contra binario YTK real aún no validada. No guardar checkpoints ni activar autoRecall/autoSave en este incremento.
+
+## Incremento 3.D.4 — Checkpoints y recuperación asistida (experimental)
+
+- Opt-in explícito `--run-task --memory` (implica registro) o `--run-task --record --memory`. El gate posterior a la aprobación del plan muestra el resumen exacto y scope de YTK; autoriza la sesión y checkpoints posteriores sin gates por operación. Si se rechaza o falla YTK, continúa el flujo sin memoria. No se habilita memoria por defecto.
+- Checkpoints antes de efectos (plan aprobado), al retornar el ejecutor y al finalizar verificación. Guardan objetivo, alcance, pasos, criterios, rutas seleccionadas y observaciones acotadas derivadas de estados/contadores, no prompt crudo, código, output ni autorizaciones. El plan puede contener texto sensible: revisar la vista previa. No se registra progreso granular dentro de una llamada larga al executor; una interrupción allí conserva el checkpoint anterior.
+- Cada checkpoint usa subjectKey por UUID/fase y se verifica por lectura exacta antes de registrar entryId, digest y hash del scope en el journal. Lectura por referencia, no similitud; no se reintentan escrituras inciertas. No hay transacción común SQLite/JSONL: una caída entre guardado y registro puede dejar memoria huérfana. Protege las rutas estándar .ytk-memory y .ytk-memory.json; el binario y la base no deben estar en el alcance editable del executor. No es sandbox.
+- `--recover` lista hasta diez candidatos recientes sin cierre, enriquece hasta cinco con objetivos validados si se autoriza acceso YTK. `--recover ID` sin prompt recupera el último checkpoint exacto, presenta objetivo/alcance y rutas actuales a confirmar, vuelve a leer archivos con política vigente, verifica digest del padre y utiliza el flujo 3.D.2. No recupera tests, permisos ni ejecución; todos los gates se repiten. Opcionalmente `--context` reemplaza rutas históricas y `--verify-test` elige pruebas nuevas. Un nuevo intento solo guarda checkpoints con `--memory` explícito.
+- Si no hay checkpoint válido, falla la recuperación asistida con indicación de la alternativa manual. No se reactiva un workflow terminal. No hay exclusión global del workspace. El bootstrap de YTK abre sesión pero no incorpora briefing general al LLM; recall de conocimiento técnico entre tareas se difiere al Hito 4.
+- Tests de checkpoints, scope, digest, lectura exacta, rechazo, degradación y recuperación; smoke sin TTY. `npm run smoke:ytk -- /ruta/ytk-memory` crea base descartable y verifica escritura/reconexión/lectura sin LLM. No ejecutado aquí: validar con binario real antes de usar datos reales. CI pendiente.
 
 ## Próximo paso
 
-3.D.4: validar con binario YTK real, integrar bootstrap y checkpoints curados en fases del workflow, registrar IDs/digests en journal, recuperar por ID y seleccionar tarea sin reconstrucción manual. Autorización explícita de alcance antes de automatizar memoria, fallos degradan a recuperación manual. No importar permisos ni repetir efectos. Luego 3.E OpenSpec opcional. Mantener pendientes aceptación de Hitos 2/3 y evaluación semántica real.
+3.E: evaluar OpenSpec opcional tras revisar CI. La aceptación real de YTK y workflows sigue pendiente; mantener experimental y no activar automáticamente. Hito 4: recall contextual general, aprendizaje durable y RAG separado. No declarar cerrado Hito 3 solo por CI.
