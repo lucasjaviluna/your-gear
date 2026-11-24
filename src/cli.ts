@@ -6,6 +6,7 @@ import { stdout, stderr } from 'node:process';
 import { requestApproval } from './approval.ts';
 import { readConfiguration, readSettings } from './config.ts';
 import { createToolCallHandler } from './gate.ts';
+import { approveMcpStart, controlledMcpExtension, mcpToolNames, readMcpServer, waitForMcpTools } from './mcp.ts';
 import { selectModel } from './model-selection.ts';
 import { createResponseOutput, redactError } from './response-output.ts';
 import { createSessionManager, parseSessionArgs } from './sessions.ts';
@@ -63,13 +64,18 @@ async function main(): Promise<void> {
 
   const cwd = resolve(process.cwd());
   const skillPath = sessionArgs.skillPath ? resolveSkill(cwd, sessionArgs.skillPath) : undefined;
-  const settingsManager = SettingsManager.inMemory({ defaultTools: ['read', 'write', 'edit', 'bash'] });
-  const authorize = createToolCallHandler(cwd, traceApproval(requestApproval, text => stderr.write(text)));
+  const approve = traceApproval(requestApproval, text => stderr.write(text));
+  const mcpServer = sessionArgs.mcpName ? readMcpServer(agentDir, sessionArgs.mcpName) : undefined;
+  if (mcpServer) await approveMcpStart(mcpServer, cwd, approve);
+  const mcpTools = mcpServer ? mcpToolNames(mcpServer) : [];
+  const tools = ['read', 'write', 'edit', 'bash', ...mcpTools];
+  const settingsManager = SettingsManager.inMemory({ defaultTools: tools });
+  const authorize = createToolCallHandler(cwd, approve, mcpTools);
   const loader = new DefaultResourceLoader({
     cwd, agentDir, settingsManager,
     noExtensions: true, noSkills: true, noPromptTemplates: true,
     noThemes: true, noContextFiles: true, additionalSkillPaths: skillPath ? [skillPath] : [],
-    extensionFactories: [(pi) => { pi.on('tool_call', async (event) => {
+    extensionFactories: [...(mcpServer ? [controlledMcpExtension(mcpServer, agentDir)] : []), (pi) => { pi.on('tool_call', async (event) => {
       const result = await authorize(event);
       if (result?.block) stderr.write(`Your Gear: herramienta ${event.toolName} bloqueada: ${result.reason}\n`);
       return result;
@@ -83,15 +89,11 @@ async function main(): Promise<void> {
   const { session, extensionsResult } = await createAgentSession({
     cwd, agentDir, modelRuntime, model, settingsManager,
     sessionManager,
-    resourceLoader: loader, tools: ['read', 'write', 'edit', 'bash'],
+    resourceLoader: loader, tools,
   });
-  if (extensionsResult.errors.length > 0) {
-    session.dispose();
-    throw new Error(`Error cargando extensiones de seguridad (${extensionsResult.errors.length}).`);
-  }
   traceSession(sessionArgs.mode, text => stderr.write(text));
   const output = createResponseOutput((text) => stdout.write(text));
-  const traceTool = createToolTrace((text) => stderr.write(text));
+  const traceTool = createToolTrace((text) => stderr.write(text), mcpTools);
   const unsubscribe = session.subscribe((event) => {
     output.onEvent(event);
     if (event.type === 'tool_execution_start' || event.type === 'tool_execution_end') traceTool(event);
@@ -99,12 +101,24 @@ async function main(): Promise<void> {
   const onSigint = () => { void session.abort(); };
   process.on('SIGINT', onSigint);
   try {
+    if (extensionsResult.errors.length > 0) {
+      throw new Error(`Error cargando extensiones de seguridad (${extensionsResult.errors.length}).`);
+    }
+    if (mcpServer) {
+      await session.bindExtensions({});
+      await waitForMcpTools(mcpTools, () => session.agent.state.tools.map(tool => tool.name));
+      stderr.write(`Your Gear: MCP ${mcpServer.name} listo\n`);
+    }
     await session.prompt(config.prompt);
     output.finish(session.getLastAssistantText());
   } finally {
     process.off('SIGINT', onSigint);
     unsubscribe();
-    session.dispose();
+    try {
+      if (mcpServer) await session.extensionRunner.emit({ type: 'session_shutdown', reason: 'quit' });
+    } finally {
+      session.dispose();
+    }
   }
 }
 
