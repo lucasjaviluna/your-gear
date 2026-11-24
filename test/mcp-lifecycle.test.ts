@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createAssistantMessageEventStream, type AssistantMessage, type Model } from '@earendil-works/pi-ai';
+import { approveMcpStart, controlledMcpExtension, mcpToolNames, waitForMcpTools } from '../src/mcp.ts';
+import { createToolCallHandler } from '../src/gate.ts';
 import { createAgentSession, createMcpExtension, DefaultResourceLoader, ModelRuntime, SessionManager, SettingsManager } from '@earendil-works/pi-coding-agent';
 
 test('MCP inicia la conexión al iniciar sesión, antes de cualquier tool_call', async t => {
@@ -50,32 +52,32 @@ test('servidor MCP local conecta, respeta el gate y cierra al terminar', async t
   const fixture = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'mcp-server.cjs');
   let allow = false;
   let intercepted = 0;
-  const mcp = createMcpExtension({ loadConfig: () => ({ errors: [], servers: [{ name: 'fixture', source: 'test',
-    config: { command: process.execPath, args: [fixture, marker], exposure: 'direct' } }] }), logPath: join(cwd, 'mcp.log') });
+  const server = { name: 'fixture', command: process.execPath, args: [fixture, marker], tools: ['effect'] };
+  await assert.rejects(approveMcpStart(server, cwd, async () => false), /no autorizado/);
+  await approveMcpStart(server, cwd, async () => true);
+  const names = mcpToolNames(server);
+  const mcp = controlledMcpExtension(server, cwd);
+  const authorize = createToolCallHandler(cwd, async () => allow, names);
   const loader = new DefaultResourceLoader({ cwd, agentDir, settingsManager, noExtensions: true, noSkills: true,
     noPromptTemplates: true, noThemes: true, noContextFiles: true, extensionFactories: [mcp, pi => {
       pi.on('tool_call', async event => {
         if (event.toolName !== 'mcp__fixture__effect') return { block: true };
         intercepted++;
-        return allow ? undefined : { block: true, reason: 'denegado' };
+        return authorize(event);
       });
     }] });
   await loader.reload();
   const runtime = await ModelRuntime.create({ authPath: join(agentDir, 'auth.json'), modelsPath: join(agentDir, 'models.json') });
   const model = { id: 'fake', name: 'fake', provider: 'openai', api: 'openai-completions', baseUrl: 'http://localhost', reasoning: false, input: ['text'], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 10000, maxTokens: 1000 } as Model<'openai-completions'>;
   const { session } = await createAgentSession({ cwd, agentDir, settingsManager, modelRuntime: runtime, model,
-    sessionManager: SessionManager.inMemory(cwd), resourceLoader: loader, tools: ['mcp__fixture__effect'] });
+    sessionManager: SessionManager.inMemory(cwd), resourceLoader: loader, tools: names });
   t.after(async () => {
     await session.extensionRunner.emit({ type: 'session_shutdown', reason: 'quit' });
     session.dispose();
     rmSync(cwd, { recursive: true, force: true });
   });
   await session.bindExtensions({});
-  const deadline = Date.now() + 10000;
-  while (!session.agent.state.tools.some(tool => tool.name === 'mcp__fixture__effect')) {
-    if (Date.now() > deadline) throw new Error('El servidor MCP no registró su herramienta');
-    await new Promise(resolve => setTimeout(resolve, 50));
-  }
+  await waitForMcpTools(names, () => session.agent.state.tools.map(tool => tool.name));
   let turn = 0;
   session.agent.streamFunction = () => {
     const stream = createAssistantMessageEventStream();
