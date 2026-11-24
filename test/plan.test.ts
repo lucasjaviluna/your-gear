@@ -13,7 +13,8 @@ test('el modelo recibe solicitud y evaluación como datos y produce plan version
   });
   assert.equal(plan.version, 1);
   assert.equal(plan.digest.length, 64);
-  assert.deepEqual(plan, versionPlan(draft));
+  assert.equal(plan.inputDigest?.length, 64);
+  assert.deepEqual(plan, versionPlan(draft, 1, plan.inputDigest));
 });
 
 test('rechaza resultados incompletos, permisos inventados y formatos inválidos', () => {
