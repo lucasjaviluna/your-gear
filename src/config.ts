@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-export const USAGE = 'Uso: your-gear [--persist|--continue] [--skill ruta/SKILL.md] [--mcp servidor] "tu instrucción" | your-gear --analyze-only "tu tarea" | your-gear --review-route "tu tarea" | your-gear --plan [--context archivo] "tu tarea" | your-gear --run-task [--record] [--context archivo] [--verify-test archivo] "tu tarea" | your-gear workflows | your-gear workflow ID | your-gear auth status | your-gear models | your-gear --help | your-gear --version';
+export const USAGE = 'Uso: your-gear [--persist|--continue] [--skill ruta/SKILL.md] [--mcp servidor] "tu instrucción" | your-gear --analyze-only "tu tarea" | your-gear --review-route "tu tarea" | your-gear --plan [--context archivo] "tu tarea" | your-gear --run-task [--record] [--context archivo] [--verify-test archivo] "tu tarea" | your-gear --recover ID [--context archivo] [--verify-test archivo] "trabajo pendiente" | your-gear workflows | your-gear workflow ID | your-gear auth status | your-gear models | your-gear --help | your-gear --version';
 
 export type AuthMode = 'pi-subscription' | 'api-key';
 export type Configuration = {

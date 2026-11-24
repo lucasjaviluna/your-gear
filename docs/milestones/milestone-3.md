@@ -1,6 +1,6 @@
 # Hito 3 — Workflows con humanos en el circuito
 
-**Estado:** 3.A–3.C.3.B integrados con CI exitoso; 3.D.1 (registro y consulta del workflow) propuesto. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
+**Estado:** 3.A–3.D.1 integrados con CI exitoso; 3.D.2 (recuperación guiada) propuesto. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
 
 ## Referencias y decisiones
 
@@ -101,8 +101,18 @@ Referencia: fases 4 y 7 de Your Harness v0 (artefactos de tarea y gate de recupe
 - `executing` se escribe antes de crear/iniciar el executor; `verifying` antes de las pruebas. Las decisiones de herramientas y pruebas se registran antes de permitir la operación; no demuestran que la operación haya terminado. Un fallo de escritura detiene nuevos avances del flujo registrado; no deshace efectos anteriores.
 - `your-gear workflows` muestra hasta 50 registros recientes del workspace; `your-gear workflow ID` recupera historial y estado sin autenticar, invocar modelos, ejecutar herramientas o modificar el journal. `complete: false` significa que falta cierre (podría seguir activo, estar interrumpido o haber fallado el registro). `effectsMayHaveOccurred` indica que se alcanzó una fase con posibles efectos; no prueba que hubo cambios. Un estado terminal indica cierre del workflow, no necesariamente éxito; solo accepted representa aceptación humana limitada.
 - Registros corruptos, incompletos, rutas con ID inválido y transiciones inválidas se rechazan; no se reparan ni importan. La consulta no certifica autenticidad del registro ni protege contra un usuario/proceso con acceso a los archivos; no es auditoría inmutable, sandbox ni DLP. Retención/eliminación manual y controles avanzados quedan pendientes.
-- Tests de recuperación sin cierre, aislamiento, esquema, secuencia, corrupción, privacidad y smoke sin proveedor. CI pendiente.
+- Tests de recuperación sin cierre, aislamiento, esquema, secuencia, corrupción, privacidad y smoke sin proveedor. CI del PR #19 exitoso (run 45498413572).
+
+## Incremento 3.D.2 — Recuperación guiada sin replay
+
+Referencia: fase 7 y `src/task.ts` de Your Harness v0. Se adopta el gate de recuperación y la replanificación, pero no se hidratan permisos ni se reactiva la tarea anterior.
+
+- `your-gear --recover ID [--context archivo] [--verify-test archivo] "trabajo pendiente"` exige TTY y registro sin cierre del workspace actual. El usuario confirma que el proceso anterior y sus descendientes terminaron, que inspeccionó el workspace y que la nueva solicitud describe solo el trabajo restante. Rechazo, registro inválido, terminal o de otro workspace no crean intento. Si se alcanzó una fase con efectos posibles, exige al menos un archivo de contexto explícito.
+- `workflow-recovery.ts` calcula un digest del registro anterior y valida que no haya cambiado durante el gate. Se crea un journal nuevo con evento recovery (parentId y parentDigest), sin modificar el anterior. La clasificación y planificación son nuevas, con contexto actual y las mismas aprobaciones del flujo task. La solicitud agrega una indicación de no repetir efectos y pedir aclaración si falta evidencia. No importa prompt, plan, decisiones ni resultados anteriores.
+- Revalidación del registro padre antes de iniciar executor, antes de nuevas operaciones aprobadas y durante gates de verificación. No hay lock global, prueba infalible de que el proceso anterior terminó ni exclusión de otros escritores. El control es conservador y no garantiza evitar todas las carreras o efectos duplicados: el usuario revisa las operaciones. No hay replay automático ni rollback.
+- Se conserva la minimización de datos: no se persiste el texto del plan ni prompt ni evidencia completa. El usuario debe suministrar nuevamente la información necesaria; la recuperación no es una continuación transparente de sesión ni reactivación de un estado terminal. Un nuevo intento inicia versión de plan 1 bajo un UUID nuevo. Se mantiene compatibilidad de lectura con registros previos.
+- Tests de vínculo, aislamiento, rechazo, cancelación, modificación del padre y no importación de permisos; smoke sin TTY. CI pendiente. [Guía de aceptación manual](../spikes/milestone-3-acceptance.md) incluye casos de clasificación, planificación, gates, pruebas, journal y recuperación. No se declara aceptado el workflow con modelo real.
 
 ## Próximo paso
 
-3.D.2: recuperación guiada de tareas interrumpidas, artefactos necesarios con consentimiento explícito y replanificación desde el estado actual. No reproducir efectos, no importar permisos y no reactivar automáticamente tareas terminales. Añadir guía de aceptación integral de 3.C/3.D. Mantener pendiente la aceptación manual del Hito 2 y evaluación semántica real del clasificador. Luego 3.E: integración SDD opcional.
+3.E: evaluar integración SDD opcional (OpenSpec), comenzar por descubrimiento de capacidades y flujo de propuesta sin efectos automáticos. Mantener pendientes la aceptación manual de Hitos 2 y 3 y evaluación semántica real. No declarar cerrado el Hito 3 solo por CI.

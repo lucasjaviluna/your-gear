@@ -12,6 +12,7 @@ import { approveContext, collectContext, parsePlanningArgs } from './context-eng
 import { parseTaskArgs, runSelectedTest, type TestEvidence } from './verification-evidence.ts';
 import { type VerificationResult } from './verification.ts';
 import { createWorkflowJournal, inspectWorkflow, listWorkflows, type WorkflowJournal } from './workflow-journal.ts';
+import { prepareRecovery, assertRecoverySource, recoveryRequest } from './workflow-recovery.ts';
 import { selectModel } from './model-selection.ts';
 import { createResponseOutput, redactError } from './response-output.ts';
 import { resolveSkill } from './skills.ts';
@@ -42,20 +43,43 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     return;
   }
   if (args[0] === 'workflows' || args[0] === 'workflow') throw new Error('Uso: your-gear workflows | your-gear workflow ID');
-  const executing = args[0] === '--run-task';
-  const recording = executing && args[1] === '--record';
+  const recovering = args[0] === '--recover';
+  const executing = args[0] === '--run-task' || recovering;
+  const recording = recovering || (executing && args[1] === '--record');
   const planning = args[0] === '--plan' || executing;
   const review = args[0] === '--review-route' || planning;
   const classify = args[0] === '--analyze-only' || review;
   if (review && (!stdin.isTTY || !stderr.isTTY)) {
     throw new Error('La revisión de ruta requiere una terminal interactiva.');
   }
+  if (recovering && (!args[1] || args[1].startsWith('-'))) throw new Error('Uso: your-gear --recover ID --context archivo "trabajo pendiente"');
   const taskArgs = executing ? parseTaskArgs(args.slice(recording ? 2 : 1)) : undefined;
   const planningArgs = taskArgs ?? (planning ? parsePlanningArgs(args.slice(1)) : undefined);
-  const classificationRequest = classify ? analysisPrompt(planningArgs?.promptArgs ?? args.slice(1)) : undefined;
+  const request = classify ? analysisPrompt(planningArgs?.promptArgs ?? args.slice(1)) : undefined;
+  const ask = async (description: string): Promise<string> => {
+    const rl = createInterface({ input: stdin, output: stderr });
+    const onInterrupt = () => { controller.abort(); rl.close(); };
+    rl.on('SIGINT', onInterrupt);
+    let onClose: () => void = () => {};
+    const closed = new Promise<string>(resolve => { onClose = () => resolve(''); rl.once('close', onClose); });
+    try { return await Promise.race([rl.question(description, { signal: controller.signal }), closed]); }
+    catch { return ''; }
+    finally { rl.off('SIGINT', onInterrupt); rl.off('close', onClose); rl.close(); }
+  };
+
+  const classificationRequest = recovering && request !== undefined ? recoveryRequest(request) : request;
+  const recovery = recovering && request !== undefined ? await prepareRecovery({
+    cwd: process.cwd(), agentDir: join(homedir(), '.your-gear'), id: args[1], remaining: request, files: taskArgs?.files ?? [],
+  }, ask, controller.signal) : undefined;
+  if (recovering && !recovery) {
+    stdout.write(JSON.stringify({ status: 'cancelled' }, null, 2) + '\n');
+    process.exitCode = 1;
+    return;
+  }
   if (recording) {
     state.journal = createWorkflowJournal(process.cwd(), join(homedir(), '.your-gear'));
     stderr.write('Your Gear workflow: ' + state.journal.id + '\n');
+    if (recovery) state.journal.record({ kind: 'recovery', ...recovery });
     state.journal.transition('classifying');
   }
   const journal = state.journal;
@@ -123,16 +147,6 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
       return;
     }
     const { reviewRoute } = await import('./route-review.ts');
-    const ask = async (description: string): Promise<string> => {
-      const rl = createInterface({ input: stdin, output: stderr });
-      const onInterrupt = () => { controller.abort(); rl.close(); };
-      rl.on('SIGINT', onInterrupt);
-      let onClose: () => void = () => {};
-      const closed = new Promise<string>(resolve => { onClose = () => resolve(''); rl.once('close', onClose); });
-      try { return await Promise.race([rl.question(description, { signal: controller.signal }), closed]); }
-      catch { return ''; }
-      finally { rl.off('SIGINT', onInterrupt); rl.off('close', onClose); rl.close(); }
-    };
     journal?.transition('route-review');
     const decision = await reviewRoute(assessment, ask, controller.signal);
     journal?.record({ kind: 'route', recommended: assessment.recommendedRoute, decision: decision.status === 'selected' ? decision.route : decision.status });
@@ -169,21 +183,25 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
         const { executeApprovedTask } = await import('./task-orchestrator.ts');
         const { createExecutorSession, executeWithSession } = await import('./executor-agent.ts');
         const refreshContext = () => collectContext(cwd, planningArgs?.files, controller.signal);
+        if (recovery) assertRecoverySource(cwd, agentDir, recovery);
         journal?.transition('execution-review');
         const execution = await executeApprovedTask({ request: classificationRequest, assessment, decision, context, plan, planDecision }, {
           signal: controller.signal, refreshContext, ask,
           execute: async message => {
+            if (recovery) assertRecoverySource(cwd, agentDir, recovery);
             journal?.transition('executing');
             const executorModel = await selectModel(executorConfig, modelRuntime);
             stderr.write(`Your Gear executor: ${executorModel.provider}/${executorModel.id}\n`);
             const executor = await createExecutorSession({ cwd, agentDir, modelRuntime, model: executorModel },
               async description => {
                 const approved = (await ask('¿Autorizar ' + description + '? [s/N] ')).trim().toLowerCase() === 's';
+                if (approved && recovery) assertRecoverySource(cwd, agentDir, recovery);
                 journal?.record({ kind: 'tool-approval', approved });
                 return approved;
               },
               controller.signal);
             try {
+              if (recovery) assertRecoverySource(cwd, agentDir, recovery);
               if (refreshContext().digest !== context.digest) throw new Error('El contexto cambió antes de ejecutar.');
               if (controller.signal.aborted) throw new Error('La ejecución fue cancelada.');
             } catch (error) {
@@ -203,6 +221,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
               for (const path of taskArgs?.tests ?? []) {
                 const test = await runSelectedTest(cwd, path, async description => {
                   const answer = await ask(description);
+                  if (answer.trim().toLowerCase() === 's' && recovery) assertRecoverySource(cwd, agentDir, recovery);
                   journal?.record({ kind: 'verification-gate', gate: 'test', approved: answer.trim().toLowerCase() === 's' });
                   return answer;
                 }, controller.signal);
@@ -216,7 +235,10 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
             const { createVerifierSession, verifyWithSession } = await import('./verifier-agent.ts');
             verification = await verifyTask({ request: classificationRequest, plan, report: execution.report, before: context, after, tests }, {
               ask, signal: controller.signal, refreshDigest: () => refreshContext().digest,
-              onDecision: (gate, approved) => journal?.record({ kind: 'verification-gate', gate, approved }),
+              onDecision: (gate, approved) => {
+                if (approved && recovery) assertRecoverySource(cwd, agentDir, recovery);
+                journal?.record({ kind: 'verification-gate', gate, approved });
+              },
               complete: async message => {
                 const verifierModel = await selectModel(verifierConfig, modelRuntime);
                 stderr.write(`Your Gear verifier: ${verifierModel.provider}/${verifierModel.id}\n`);
