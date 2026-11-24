@@ -2,7 +2,7 @@
 
 **Estado:** arquitectura evolutiva; el prototipo implementa parcialmente el flujo · actualización 2026-11-23
 
-El prototipo usa Pi SDK 1.6.0 y sesiones en memoria por defecto, con persistencia y reanudación optativas. El Hito 1 completó el flujo validado en Windows, incluida la trazabilidad básica; el usuario reportó recuperación de contexto tras cancelar una generación y un comando en espera. No se han validado todas las formas de cancelación ni una auditoría completa. Una skill del workspace puede seleccionarse explícitamente; extensiones externas siguen deshabilitadas. El incremento 2.A propone MCP stdio con selección explícita, registro de usuario y doble autorización. Ver [Hito 1](milestones/milestone-1.md), [Hito 2](milestones/milestone-2.md), [ADR-001](decisions/ADR-001-runtime.md) y [ADR-003](decisions/ADR-003-extensibility.md).
+El prototipo usa Pi SDK 1.6.0 y sesiones en memoria por defecto, con persistencia y reanudación optativas. El Hito 1 completó el flujo validado en Windows, incluida la trazabilidad básica; el usuario reportó recuperación de contexto tras cancelar una generación y un comando en espera. No se han validado todas las formas de cancelación ni una auditoría completa. Una skill del workspace puede seleccionarse explícitamente; extensiones externas siguen deshabilitadas. El incremento 2.A incorporó MCP stdio con selección explícita, registro de usuario y doble autorización. Ver [Hito 1](milestones/milestone-1.md), [Hito 2](milestones/milestone-2.md), [ADR-001](decisions/ADR-001-runtime.md) y [ADR-003](decisions/ADR-003-extensibility.md).
 
 ```text
 Human / terminal
@@ -50,6 +50,10 @@ Human / terminal
 
 ## Consideraciones de seguridad
 Prompt injection no debe alterar políticas; las decisiones se ejecutan fuera del contexto del modelo. Capturar cambios no basta: bloquear antes del efecto. El proceso no es un sandbox por defecto; para contenido no confiable se necesitará aislamiento adicional.
+
+## Referencias
+
+Consultar [referencias técnicas](references.md), especialmente Your Harness v0 para workflows, gates, distribución y memoria. Your Gear conserva sus propias decisiones y pruebas de aceptación.
 
 ## No introducir aún
 - Sistema universal de eventos/DI, colas, microservicios, registro distribuido de plugins.
