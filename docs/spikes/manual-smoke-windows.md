@@ -1,5 +1,7 @@
 # Smoke manual Windows — ChatGPT subscription con Pi
 
+**Alcance:** guía y registro histórico de Hitos 0/1, modo directo. Para el checkout actual consultar también [aceptación Hito 2](milestone-2-acceptance.md) y [Hito 3 / YTK](milestone-3-acceptance.md). No trasladar resultados antiguos a escenarios nuevos.
+
 ## Validaciones del Hito 0
 
 **Resultado reportado por el usuario:** las comprobaciones de rutas externas y escritura sin TTY pasaron en Windows. La versión exacta de Node, el modelo y el detalle individual de cada caso no fueron registrados. Las pruebas automatizadas locales del gate y del proceso sin TTY también pasaron; no son una prueba integral del SDK.
@@ -50,7 +52,7 @@ Validar que Your Gear reutiliza el **login autorizado de ChatGPT en Pi** sin API
 Con Node.js >=22.19.0 instalado, ubicarse en la carpeta del repositorio:
 
 ```powershell
-npm install --ignore-scripts
+npm ci --ignore-scripts
 npm run typecheck
 npm test
 $repo = (Get-Location).Path
@@ -72,7 +74,7 @@ El status debe indicar **ChatGPT conectado** y `models` debe listar IDs de model
 Crear un workspace descartable:
 
 ```powershell
-$workspace = Join-Path $env:TEMP "your-gear-smoke"
+$workspace = Join-Path $env:TEMP ("your-gear-smoke-" + [guid]::NewGuid().ToString())
 New-Item -ItemType Directory -Force -Path $workspace | Out-Null
 Push-Location $workspace
 ```
