@@ -102,7 +102,11 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     assistedDigest = restored.parentDigest;
     taskArgs.files = restored.files;
     // Validate actual files before starting the new workflow, not just historical names.
-    collectContext(process.cwd(), taskArgs.files, controller.signal);
+    try { collectContext(process.cwd(), taskArgs.files, controller.signal); }
+    catch (error) {
+      if (controller.signal.aborted) throw error;
+      throw new Error('Las rutas históricas ya no son utilizables. Repetí --recover ID con --context archivo actualizado.');
+    }
   }
   const classificationRequest = recovering && request !== undefined ? recoveryRequest(request) : request;
   const recovery = recovering && request !== undefined ? await prepareRecovery({
