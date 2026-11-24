@@ -6,7 +6,7 @@ import { stdin, stdout, stderr } from 'node:process';
 import { requestApproval, serializeApprovals } from './approval.ts';
 import { readConfiguration, readSettings, USAGE } from './config.ts';
 import { createToolCallHandler } from './gate.ts';
-import { analysisPrompt, assessTask } from './assessment.ts';
+import { analysisPrompt } from './assessment.ts';
 import { selectModel } from './model-selection.ts';
 import { createResponseOutput, redactError } from './response-output.ts';
 import { resolveSkill } from './skills.ts';
@@ -28,16 +28,13 @@ async function main(controller: AbortController): Promise<void> {
     stdout.write(manifest.version + '\n');
     return;
   }
-  if (args[0] === '--analyze-only') {
-    const assessment = assessTask(analysisPrompt(args.slice(1)));
-    stdout.write(JSON.stringify(assessment, null, 2) + '\n');
-    return;
-  }
+  const classify = args[0] === '--analyze-only';
+  const classificationRequest = classify ? analysisPrompt(args.slice(1)) : undefined;
   const { createSessionManager, parseSessionArgs } = await import('./sessions.ts');
   const { approveMcpStart, controlledMcpExtension, mcpToolNames, readMcpServer, waitForMcpTools } = await import('./mcp.ts');
   const showStatus = args.length === 2 && args[0] === 'auth' && args[1] === 'status';
   const listModels = args.length === 1 && args[0] === 'models';
-  const sessionArgs = parseSessionArgs(args);
+  const sessionArgs = parseSessionArgs(classify ? ['classify'] : args);
   // No MCP server may start without an interactive startup approval.
   // Reject before settings, provider authentication or extension loading.
   if (sessionArgs.mcpName && (!stdin.isTTY || !stdout.isTTY)) {
@@ -83,6 +80,14 @@ async function main(controller: AbortController): Promise<void> {
   stderr.write(`Your Gear: ${model.provider}/${model.id} (${config.authMode})\n`);
 
   const cwd = resolve(process.cwd());
+  if (classificationRequest !== undefined) {
+    if (controller.signal.aborted) throw new Error('La ejecución fue cancelada.');
+    const { createClassifierSession, classifyWithSession } = await import('./assessment-agent.ts');
+    const session = await createClassifierSession({ cwd, agentDir, modelRuntime, model });
+    const assessment = await classifyWithSession(session, classificationRequest, controller.signal);
+    stdout.write(JSON.stringify(assessment, null, 2) + '\n');
+    return;
+  }
   const skillPath = sessionArgs.skillPath ? resolveSkill(cwd, sessionArgs.skillPath) : undefined;
   const signal = controller.signal;
   const checkCancelled = () => { if (signal.aborted) throw new Error('La ejecución fue cancelada.'); };
