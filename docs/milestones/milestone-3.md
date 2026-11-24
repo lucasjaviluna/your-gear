@@ -1,6 +1,6 @@
 # Hito 3 — Workflows con humanos en el circuito
 
-**Estado:** 3.A, 3.B y 3.C.1 integrados con CI exitoso; 3.C.2 (contexto local y aprobación) propuesto. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
+**Estado:** 3.A, 3.B, 3.C.1 y 3.C.2 integrados con CI exitoso; 3.C.3.A (orquestador y ejecución experimental) propuesto. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
 
 ## Referencias y decisiones
 
@@ -69,8 +69,17 @@ Se revisaron `src/context-engine.ts` y `tests/context-engine.test.ts` de Your Ha
 - Hasta 8 archivos, 8000 bytes por archivo y 24000 bytes en el JSON de entradas. Selecciones explícitas primero; archivos opcionales no disponibles, bloqueados o fuera de presupuesto se omiten; fallos explícitos abortan. No se truncan archivos. Solo UTF-8 textual y rutas relativas permitidas por política; se rechazan rutas ocultas, nombres sensibles conocidos, enlaces, hardlinks, binarios y archivos especiales.
 - Antes de enviar archivos al modelo se presenta exactamente su contenido en JSON escapado. Rechazo o cancelación detienen la planificación; no se envían al clasificador. El planificador continúa sin herramientas. Los documentos son datos no confiables, no autoridad. La revisión humana no es una garantía de ausencia de secretos; la lista de nombres no constituye DLP ni sandbox. Permanecen limitaciones de carreras de filesystem.
 - La salida registra rutas, tamaño y digest del snapshot (no el contenido completo del contexto). El plan incorpora el digest del mensaje enviado (solicitud, evaluación, ruta task y contexto), además del digest de versión/contenido. El cambio de entrada invalida una aprobación anterior. No es firma ni permiso importable y no verifica que el repositorio siga igual después de la lectura.
-- Tests de políticas de lectura, tamaño, enlaces, selección explícita, consentimiento, cancelación y vínculo entre plan y entrada. CI pendiente. La integración con proveedor real y revisión interactiva requieren aceptación manual.
+- Tests de políticas de lectura, tamaño, enlaces, selección explícita, consentimiento, cancelación y vínculo entre plan y entrada. CI del PR #16 exitoso (run 45320011615). La integración con proveedor real y revisión interactiva requieren aceptación manual.
+
+## Incremento 3.C.3.A — Task Orchestrator y Executor Agent
+
+- `--run-task [--context archivo]... "solicitud"` es optativo, experimental y exige terminal interactiva. No altera el CLI directo ni `--plan`. Solo continúa si tanto recomendación como decisión humana son task; no permite degradar SDD ni saltar aclaraciones.
+- `task-orchestrator.ts` controla de forma determinista la secuencia: verifica ruta, aprobación de plan y digest de entrada, vuelve a recopilar el snapshot, pide autorización separada para iniciar y vuelve a comprobar plan y contexto. El CLI comprueba también el snapshot inmediatamente antes de llamar al ejecutor. No acepta permisos importados ni persiste estado. La comprobación detecta cambios en el snapshot seleccionado, no en todo el repositorio.
+- `executor-agent.ts`: sesión Pi efímera, system prompt propio, modelo configurable con `agents.executor` y `YOUR_GEAR_EXECUTOR_MODEL`. Solo read/write/edit; todas las llamadas requieren aprobación humana, incluso read (se envía al modelo). Reutiliza política de rutas y gate, revalida la decisión tras la espera. Una denegación bloquea llamadas posteriores; operaciones ya aprobadas o iniciadas pueden haber tenido efectos. No hay sandbox, rollback ni enforcement semántico del alcance; el prompt orienta al modelo y el usuario inspecciona las operaciones. No se ejecutan comandos ni se cargan MCP, skills o extensiones externas.
+- La salida incluye reporte del modelo, número de llamadas bloqueadas y errores observados en eventos de herramientas. Estado final `awaiting-verification`, nunca completado/verificado. Un reporte textual no demuestra que se cumplan criterios; los errores y bloqueos se señalizan con código de salida distinto de cero. Cancelar o fallar no deshace archivos.
+- Tests del orquestador (rechazo, ruta, plan/entrada alterados, contexto cambiado y cancelación), configuración y prueba con sesión Pi real y modelo simulado que intenta escribir un archivo temporal. CI del nuevo PR pendiente.
+- Reevaluación de la deuda del Hito 2: la ruta experimental se limita a las herramientas de archivos ya ejercitadas en Windows durante Hitos 0/1 y a tests de efectos; no utiliza MCP ni shell. Probar únicamente en workspace descartable, con modelo real y revisión humana, antes de uso habitual. No se declaran aceptadas las pruebas diferidas.
 
 ## Próximo paso
 
-3.C.3: extraer orquestación de ejecución acotada de task, vincular solicitud, contexto y plan aprobado en memoria; revalidar estado antes de ejecutar, conservar gates de herramientas y añadir verificación real. No confiar en JSON importado. Reevaluar antes la deuda de validación del Hito 2 y mantener pendiente la evaluación semántica real de 3.B. No activar MCP ni skills implícitos en workflows.
+3.C.3.B: verificación basada en evidencia observada, selección y aprobación separada de comandos de verificación cuando corresponda, evaluación de criterios de aceptación y revisión humana. Mantener bloqueadas las capacidades no validadas; documentar pruebas manuales del flujo completo. Luego 3.D: persistencia y recuperación sin reejecutar efectos. Mantener pendiente aceptación manual del Hito 2 y evaluación semántica real de 3.B.
