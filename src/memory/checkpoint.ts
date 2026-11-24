@@ -32,7 +32,7 @@ export function checkpointContent(id:string,phase:CheckpointPhase,brief:Brief,ob
 export async function storeCheckpoint(provider:MemoryProvider,sessionId:string,journal:WorkflowJournal,scopeDigest:string,
   phase:CheckpointPhase,brief:Brief,observation:string):Promise<void>{
   const content=checkpointContent(journal.id,phase,brief,observation);
-  const entryId=await provider.save(sessionId,{type:'summary',title:'Your Gear workflow '+journal.id+' '+phase,content,subjectKey:subject(journal.id,phase)});
+  const entryId=await provider.save(sessionId,{type:'summary',title:brief.objective.slice(0,380)+' ['+journal.id+' '+phase+']',content,subjectKey:subject(journal.id,phase)});
   // Do not retry an ambiguous write. Verify exact readback before publishing reference.
   const saved=await provider.get(entryId);
   if(saved.id!==entryId||saved.subjectKey!==subject(journal.id,phase)||saved.type!=='summary'||saved.content!==content)throw new Error('Checkpoint no confirmado.');
