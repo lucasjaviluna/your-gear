@@ -1,13 +1,13 @@
 # Aceptación manual — Hito 3 (workflows)
 
-Estado: pendiente de ejecución con modelo real por el usuario. CI valida contratos, integración SDK con modelo simulado, procesos Node reales y almacenamiento local; no reemplaza estas pruebas.
+Estado al PR #22: pendiente de ejecución con modelo real y binario YTK real por el usuario. [CI #22](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165) pasó en Windows, Linux y macOS. CI valida contratos, integración SDK con modelo simulado, procesos Node reales, almacenamiento local y MCP fixture; no reemplaza estas pruebas.
 
 ## Preparación (PowerShell, Windows)
 
 Desde el repositorio Your Gear actualizado:
 
 ```powershell
-npm install --ignore-scripts
+npm ci --ignore-scripts
 npm run typecheck
 npm test
 npm run pack:check
@@ -79,6 +79,66 @@ your-gear --recover UUID --context retry.cjs --context retry.test.cjs --verify-t
 ```
 
 Sustituir UUID por el registro sin cierre del mismo workspace. Inspeccionar archivos antes de aceptar la recuperación y adaptar el trabajo pendiente al estado real. Un registro sin cierre puede estar activo: el CLI no lo detecta de forma infalible. No recuperar mientras otro proceso trabaje en el mismo workspace. Verificar que el padre no cambió, que el nuevo historial contiene un evento recovery con parentId y parentDigest y que no se heredan decisiones. Rechazar una aprobación para probar que no se ejecuta el cambio correspondiente.
+
+## Memoria YTK y recuperación asistida (3.D.3–3.D.4)
+
+Primero, desde el checkout de Your Gear, validar el binario aprobado de YTK sin LLM:
+
+```powershell
+$ytk = (Get-Command ytk-memory).Source
+& $ytk --version
+npm run smoke:ytk -- "$ytk"
+```
+
+El script crea una base descartable, inicia sesión, guarda un checkpoint, comprueba lectura exacta, cierra/reconecta y recupera el checkpoint por referencia del journal. No usa la base habitual. Esperado: mensaje YTK real OK y código 0. No está incluido en CI. Registrar versión exacta del binario y cualquier error.
+
+Para probar el workflow, volver a un workspace descartable con el fixture retry.cjs de arriba. Inicializar YTK por separado siguiendo la [guía de instalación de YTK](https://github.com/lucasjaviluna/your-team-knowledge/blob/main/docs/agent-memory-installation.md); revisar dry-run antes de ejecutar setup, ya que puede modificar configuración de otro host (por ejemplo Codex o Pi). Your Gear no instala YTK ni crea el registro del host. Confirmar archivo .ytk-memory.json y base existente. No utilizar la memoria real del equipo.
+
+Agregar una entrada a `~/.your-gear/memory.json` preservando sus otras entradas y realizando backup previo. La clave debe ser la ruta canónica exacta que devuelve Node, no una ruta relativa. Ejemplo de datos para armar la entrada (adaptar proyecto/área a la configuración de YTK y el ejecutable real):
+
+```powershell
+$root = node -e "console.log(require('node:fs').realpathSync(process.cwd()))"
+$entry = @{
+  provider = "ytk"
+  command = $ytk
+  project = "PROYECTO_DEL_LAB"
+  database = (Join-Path $root ".ytk-memory/ytk-memory.sqlite")
+  area = "smoke"
+}
+@{ workspaces = @{ $root = $entry } } | ConvertTo-Json -Depth 5
+```
+
+Copiar únicamente la entrada correspondiente al workspace en el objeto workspaces de la configuración del usuario. Usar UTF-8 sin BOM. Indicar un área explícita para un scope reproducible; no compartir la DB del proyecto real. No escribir el ejecutable o la DB en rutas editables por el executor (la ruta estándar .ytk-memory está protegida para tools de archivos).
+
+```powershell
+your-gear memory status
+your-gear memory list
+your-gear memory search "retry"
+your-gear --run-task --memory --context retry.cjs --context retry.test.cjs --verify-test retry.test.cjs "Implementar un único reintento síncrono ante excepción y documentarlo en README.md, sin cambiar el test."
+```
+
+El status configurado requiere autorización de inicio y no usa LLM. La sesión de checkpoints requiere un único consentimiento de almacenamiento tras aprobar el plan. Revisar el resumen por datos sensibles; no persistir prompts crudos, código, credenciales o resultados de tools. El CLI puede seguir sin memoria si el proveedor falla o se rechaza el consentimiento.
+
+| Caso | Acción | Resultado esperado |
+| --- | --- | --- |
+| Y1 | Ejecutar smoke:ytk con el binario real | Escritura, reconexión y lectura exacta exitosas; código 0 |
+| Y2 | Sin entrada memory.json del laboratorio, ejecutar memory status y un workflow normal | disabled; workflow normal no necesita YTK |
+| Y3 | Con configuración válida, memory status/list/search y get ID real del laboratorio | Consultas con alcance correcto, sin LLM; rechazo de inicio no lanza servidor |
+| Y4 | Aprobar memoria del plan y luego ejecutar flujo completo con --memory | Journal contiene referencias memory-checkpoint de fases alcanzadas; objetivo y observaciones en YTK, sin permisos importables |
+| Y5 | En otro intento rechazar almacenamiento de memoria tras aprobar plan | Sin checkpoints nuevos; gates normales siguen vigentes |
+| Y6 | Interrumpir abruptamente un intento después de checkpoint plan, durante gate de inicio (sin tools/test en curso) | Journal sin cierre; no confundir con Ctrl+C terminal; confirmar que terminó el proceso |
+| Y7 | En el workspace de Y6 ejecutar --recover y --recover ID sin prompt | Candidato con objetivo si checkpoint válido; nueva revisión, contexto actual y nuevo UUID, sin replay ni aprobación anterior |
+| Y8 | Rechazar recuperación desde memoria, usar ID cerrado, o deshabilitar temporalmente entrada de laboratorio | No se inicia nuevo intento asistido; cuando no hay memoria válida se indica recuperación manual |
+| Y9 | En un fixture aparte, cambiar el contenido de una memoria por interfaz soportada de YTK y recuperar | El digest o lifecycle no coincide; rechazo, nunca reutilizar registro alterado |
+
+Para Y6–Y7 seguir las precauciones de interrupción de la sección anterior. No interrumpir procesos durante una prueba externa. Confirmar que el journal padre conserva su historial; elegir nuevamente tests si se necesita aceptación final. Ejemplo:
+
+```powershell
+your-gear --recover
+your-gear --recover UUID --context retry.cjs --context retry.test.cjs --verify-test retry.test.cjs
+```
+
+Si se desea guardar los checkpoints del nuevo intento, incluir --memory inmediatamente después del UUID. Si la referencia no existe, no coincide o se perdió la base, usar la recuperación manual con solicitud explícita. Registrar si el checkpoint quedó huérfano; no repetir una escritura incierta ni editar directamente SQLite o journals reales. Al finalizar, retirar solo la entrada del laboratorio en memory.json (preservar las demás) y conservar/eliminar la DB temporal según necesidad; si setup alteró otro host, seguir la desinstalación de YTK para ese laboratorio.
 
 ## Registro de resultados
 
