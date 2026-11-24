@@ -62,9 +62,9 @@ export async function assessTask(prompt: string, complete: (message: string) => 
 export function analysisPrompt(args: readonly string[]): string {
   const tokens = args[0] === '--' ? args.slice(1) : args;
   if (args[0] !== '--' && tokens.some(token => token.startsWith('--'))) {
-    throw new Error('El modo --analyze-only no admite otras opciones; usá -- para texto literal.');
+    throw new Error('El modo de clasificación no admite otras opciones; usá -- para texto literal.');
   }
   const prompt = tokens.join(' ').trim();
-  if (!prompt) throw new Error('Uso: your-gear --analyze-only "tu tarea"');
+  if (!prompt) throw new Error('Uso: your-gear --analyze-only | --review-route "tu tarea"');
   return prompt;
 }
