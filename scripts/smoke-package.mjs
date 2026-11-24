@@ -58,6 +58,7 @@ try {
   assert.match(invoke(['--analyze-only', 'Agregar permisos por rol'], 1).stderr, /JSON inválida/);
   assert.match(invoke(['--analyze-only', '--mcp', 'fixture', 'hola'], 1).stderr, /no admite otras opciones/);
   assert.match(invoke(['--analyze-only'], 1).stderr, /Uso/);
+  assert.match(invoke(['--review-route', 'hola'], 1).stderr, /terminal interactiva/);
   assert.match(invoke(['--invalid-option'], 1).stderr, /Opción desconocida/);
   // Invoke the installed CLI without a TTY, with a registered local server
   // that would create a marker immediately if it ever started.
