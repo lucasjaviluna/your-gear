@@ -43,7 +43,7 @@ function safeWorkspacePath(cwd: string, requested: string): string | undefined {
   }
 }
 
-export function decideTool({ toolName, input, cwd }: ToolCall): Decision {
+export function decideTool({ toolName, input, cwd }: ToolCall, allowedMcp: readonly string[] = []): Decision {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     return { type: 'deny', reason: 'Argumentos inválidos' };
   }
@@ -80,11 +80,14 @@ export function decideTool({ toolName, input, cwd }: ToolCall): Decision {
     }
     return { type: 'ask', reason: `bash (cwd=${JSON.stringify(cwd)}): ${JSON.stringify(args.command)}` };
   }
+  if (toolName.startsWith('mcp__') && allowedMcp.includes(toolName)) {
+    return { type: 'ask', reason: `MCP ${toolName}: ${JSON.stringify(args)}` };
+  }
   return { type: 'deny', reason: `Herramienta no autorizada: ${toolName}` };
 }
 
-export async function authorizeTool(call: ToolCall, approve: Approval): Promise<{ block: true; reason: string } | undefined> {
-  const decision = decideTool(call);
+export async function authorizeTool(call: ToolCall, approve: Approval, allowedMcp: readonly string[] = []): Promise<{ block: true; reason: string } | undefined> {
+  const decision = decideTool(call, allowedMcp);
   if (decision.type === 'allow') return undefined;
   if (decision.type === 'deny') return { block: true, reason: decision.reason };
   try {

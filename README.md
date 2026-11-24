@@ -57,6 +57,26 @@ your-gear --skill ./skills/ejemplo/SKILL.md "Aplicá la skill a esta tarea"
 
 Solo se carga la skill indicada. La ruta debe estar dentro del workspace y fuera de rutas protegidas; se rechazan enlaces que salgan del workspace. La skill aporta instrucciones al modelo y las herramientas siguen sujetas a la política y aprobación normales. Revisá el contenido antes de seleccionarla: el proceso no es un sandbox. Para continuar una sesión con esa skill, indicá `--skill` de nuevo junto con `--continue`.
 
+### MCP experimental (stdio local)
+
+MCP está deshabilitado por defecto. Para seleccionar un único servidor confiable, registralo en `~/.your-gear/mcp.json` (no se consulta configuración MCP del proyecto). Ejemplo para adaptar a rutas absolutas reales del equipo:
+
+```json
+{
+  "example": {
+    "command": "/absolute/path/to/node",
+    "args": ["/absolute/path/to/trusted-server.js"],
+    "tools": ["search"]
+  }
+}
+```
+
+```sh
+your-gear --mcp example "Usá la herramienta search"
+```
+
+Se exige aprobación del arranque antes de cargar la extensión y aprobación de cada llamada a un nombre exacto permitido. Sin TTY se deniega el arranque. No se admiten transportes remotos, env ni auto-descubrimiento de servidores. El servidor puede tener efectos propios al iniciarse, heredar el entorno del proceso y acceder fuera del workspace: **no es un sandbox**. No uses servidores no confiables ni secretos en argumentos. La salida del servidor puede contener datos sensibles; revisá el log MCP de Pi y la persistencia antes de utilizar datos reales. Al continuar una sesión, volvé a seleccionar y autorizar el servidor.
+
 Las opciones se indican antes del prompt y se rechazan si son desconocidas. Si el prompt comienza con un guion, usá `--` para separar las opciones del texto: `node src/cli.ts -- "--texto literal"`.
 
 Al reanudar, si el archivo más reciente contiene JSONL inválido o no pertenece al workspace, el CLI informa el problema y no descarta líneas ni cambia a una sesión anterior. Si el directorio o archivo no se puede leer, informa un error de acceso. Conservá una copia antes de intentar reparar una sesión dañada.
@@ -79,7 +99,7 @@ En PowerShell, definir variables con `$env:NOMBRE='valor'`. No publicar, compart
 
 ## Seguridad
 
-Las lecturas se restringen de manera conservadora al workspace; las escrituras y comandos shell requieren confirmación interactiva y se deniegan en modos sin TTY. El usuario reportó pruebas reales de las herramientas habilitadas en Windows. **El prototipo no es un sandbox**; las skills se cargan solo por selección explícita y MCP sigue deshabilitado. Usar proyectos descartables para el smoke.
+Las lecturas se restringen de manera conservadora al workspace; las escrituras y comandos shell requieren confirmación interactiva y se deniegan en modos sin TTY. El usuario reportó pruebas reales de las herramientas habilitadas en Windows. **El prototipo no es un sandbox**; las skills y MCP requieren selección explícita. Usar proyectos descartables para el smoke.
 
 El CLI informa en stderr el modo de sesión, el resultado de cada solicitud de aprobación y cuándo una herramienta integrada se solicita, se bloquea o finaliza, sin registrar argumentos ni resultados en esa traza. La solicitud de aprobación muestra la ruta y el contenido propuesto para escrituras, los textos a reemplazar y propuestos para ediciones, o el comando para shell. Los textos se muestran escapados y pueden incluir información sensible. Las sesiones persistidas pueden contener el detalle de las herramientas.
 
@@ -97,7 +117,7 @@ El CLI informa en stderr el modo de sesión, el resultado de cada solicitud de a
 
 ## Objetivos
 
-Núcleo pequeño, interfaces justificadas, herramientas con human-in-the-loop, CLI primero, sesiones recuperables y providers autorizados. Skills, MCP, TUI y workflows llegarán por hitos, sin sobreingeniería. El laboratorio complementario [agent-harness-lab](https://github.com/lucasjaviluna/agent-harness-lab) sirve de referencia técnica, no se copia su arquitectura automáticamente.
+Núcleo pequeño, interfaces justificadas, herramientas con human-in-the-loop, CLI primero, sesiones recuperables y providers autorizados. Skills y MCP tienen soporte inicial; TUI y workflows llegarán por hitos, sin sobreingeniería. El laboratorio complementario [agent-harness-lab](https://github.com/lucasjaviluna/agent-harness-lab) sirve de referencia técnica, no se copia su arquitectura automáticamente.
 
 ## Licencia
 

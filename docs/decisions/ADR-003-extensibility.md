@@ -19,7 +19,7 @@ Queremos herramientas, MCP, skills y workflows reemplazables, sin fabricar un fr
 - Hito 3+: hooks/plugins y workflows humanos con gates; si surgen casos reales, API pública de extensiones.
 
 ## Evidencia y preguntas pendientes
-El prototipo registra el hook `tool_call` para las herramientas integradas `read`, `write`, `edit` y `bash`. El usuario reportó pruebas manuales exitosas del flujo del Hito 1. La carga automática de skills está deshabilitada; puede seleccionarse un `SKILL.md` del workspace explícitamente. Extensiones externas y recursos de contexto siguen deshabilitados; MCP no está habilitado. Las pruebas del Hito 2 cubren un servidor MCP local de prueba, sin demostrar garantías para servidores arbitrarios.
+El prototipo registra el hook `tool_call` para las herramientas integradas `read`, `write`, `edit` y `bash`. El usuario reportó pruebas manuales exitosas del flujo del Hito 1. La carga automática de skills está deshabilitada; puede seleccionarse un `SKILL.md` del workspace explícitamente. Extensiones externas y recursos de contexto siguen deshabilitados; MCP está deshabilitado por defecto; el incremento 2.A propone selección explícita de un servidor stdio confiable, con aprobación de arranque y por llamada. Las pruebas del Hito 2 cubren un servidor MCP local de prueba, sin demostrar garantías para servidores arbitrarios.
 
 - Verificar cada ruta nueva de ejecución antes de habilitarla; ninguna puede evadir el gate.
 - ¿Cómo se comparten/aislan instancias de MCP y permisos entre sesiones?

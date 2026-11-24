@@ -20,8 +20,8 @@ export function traceSession(mode: SessionMode, write: (text: string) => void): 
   write(`Your Gear: sesión ${status[mode]}\n`);
 }
 
-export function createToolTrace(write: (text: string) => void) {
-  const tools = new Set(['read', 'write', 'edit', 'bash']);
+export function createToolTrace(write: (text: string) => void, allowedMcp: readonly string[] = []) {
+  const tools = new Set(['read', 'write', 'edit', 'bash', ...allowedMcp]);
   return (event: { type: string; toolName?: string; isError?: boolean }) => {
     if (!event.toolName || !tools.has(event.toolName)) return;
     if (event.type === 'tool_execution_start') {

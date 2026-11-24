@@ -20,11 +20,18 @@ Inspección estática de la dependencia instalada `@earendil-works/pi-coding-age
 - Una prueba con la extensión MCP de Pi habilitada explícitamente confirmó que, al iniciar la sesión, intenta crear la conexión antes de cualquier `tool_call`, incluso con la lista de herramientas integradas. El transporte de prueba falla deliberadamente: no inicia un proceso ni conecta un servidor, y no valida la ejecución de herramientas MCP ni el cierre de conexiones. Esto implica que una política futura también deberá controlar la habilitación y el arranque del servidor, antes del gate de herramientas. La suite local pasó con 47 tests y typecheck.
 - Una prueba posterior con un servidor MCP local descartable comprobó la conexión stdio, el bloqueo de una llamada y la ejecución de otra autorizada a través del hook, y el cierre del proceso mediante `session_shutdown`. El modelo se simuló y la política de autorización se limitó a la prueba; no demuestra seguridad de servidores arbitrarios.
 - La configuración local permite seleccionar `provider` y `model` mediante archivos de usuario y proyecto, con prioridad de las variables de entorno. El modo API y la clave siguen siendo explícitos en el entorno. La suite pasó con 48 tests y typecheck en Windows.
-- Se agregó compilación a JavaScript y entrada `your-gear` para un paquete npm privado. En Windows se generó un tarball, se instaló en un directorio temporal y el comando instalado mostró el mensaje de uso. Se agregó una matriz de CI para Windows, Linux y macOS, pendiente de ejecución remota. No se ha probado el paquete instalado en Linux ni macOS.
+- Se agregó compilación a JavaScript y entrada `your-gear` para un paquete npm privado. En Windows se generó un tarball, se instaló en un directorio temporal y el comando instalado mostró el mensaje de uso. Se agregó una matriz de CI para Windows, Linux y macOS, con CI del PR #8 exitoso en las tres plataformas (run 45281357403). No se ha probado el paquete instalado en Linux ni macOS.
 - El CLI admite seleccionar explícitamente un único `SKILL.md` del workspace con `--skill`; la carga automática sigue deshabilitada. Se validan rutas externas, protegidas y enlaces externos antes de cargar. El usuario confirmó en Windows el uso de la skill con un modelo real y el rechazo de una ruta externa. Las pruebas automatizadas ejercitan la selección y el loader de Pi; la suite local pasó con 50 tests y typecheck.
+
+## Incremento 2.A — MCP explícito (propuesto en PR)
+
+- Registro de usuario `~/.your-gear/mcp.json`, selección de un servidor local stdio con `--mcp` y ejecutable absoluto. No se carga configuración MCP del workspace.
+- Aprobación previa al arranque, antes de crear la extensión; sin TTY se deniega. Nombres exactos de herramientas autorizadas, con aprobación por llamada y bloqueo por defecto. Las herramientas adicionales que registre el SDK no reciben permisos.
+- Se espera el registro de las herramientas configuradas antes del prompt y se emite `session_shutdown` en el cierre. La prueba de ciclo de vida reutiliza los helpers de producción y el gate.
+- Se agregan tests de validación, opt-in, denegación y disponibilidad, y build a CI. Validación del nuevo PR y smoke manual pendientes; no se afirma aceptación ni aislamiento de procesos.
 
 ## Próximo incremento
 
 Investigar por separado la carga y expansión de skills y el ciclo de vida de MCP, incluidos sus efectos fuera de llamadas de herramienta. Ampliar las pruebas con el SDK real y recursos descartables según los riesgos identificados. Registrar evidencia y límites antes de proponer una habilitación explícita y acotada.
 
-Las extensiones externas y MCP siguen deshabilitados. El proceso no es un sandbox, y el ADR-003 requiere verificar cada vía nueva antes de incorporarla.
+Las extensiones externas siguen deshabilitadas. MCP queda deshabilitado por defecto; la habilitación explícita propuesta requiere revisión y aceptación. El proceso no es un sandbox, y el ADR-003 requiere verificar cada vía nueva antes de incorporarla.

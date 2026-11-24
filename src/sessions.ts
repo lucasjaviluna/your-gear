@@ -5,15 +5,22 @@ import { SessionManager } from '@earendil-works/pi-coding-agent';
 
 export type SessionMode = 'memory' | 'persist' | 'continue';
 
-export function parseSessionArgs(args: readonly string[]): { mode: SessionMode; promptArgs: string[]; skillPath?: string } {
+export function parseSessionArgs(args: readonly string[]): { mode: SessionMode; promptArgs: string[]; skillPath?: string; mcpName?: string } {
   let mode: SessionMode = 'memory';
   let skillPath: string | undefined;
+  let mcpName: string | undefined;
   let index = 0;
   while (index < args.length) {
     const arg = args[index];
-    if (arg === '--') return { mode, promptArgs: args.slice(index + 1), ...(skillPath ? { skillPath } : {}) };
-    if (arg === '--help' || arg === '-h') return { mode, promptArgs: args.slice(index), ...(skillPath ? { skillPath } : {}) };
+    if (arg === '--') return { mode, promptArgs: args.slice(index + 1), ...(skillPath ? { skillPath } : {}), ...(mcpName ? { mcpName } : {}) };
+    if (arg === '--help' || arg === '-h') return { mode, promptArgs: args.slice(index), ...(skillPath ? { skillPath } : {}), ...(mcpName ? { mcpName } : {}) };
     if (!arg.startsWith('-') || arg === '-') break;
+    if (arg === '--mcp') {
+      if (mcpName || !args[index + 1] || args[index + 1].startsWith('-')) throw new Error('Indicá un solo servidor después de --mcp.');
+      mcpName = args[index + 1];
+      index += 2;
+      continue;
+    }
     if (arg === '--skill') {
       if (skillPath || !args[index + 1] || args[index + 1].startsWith('-')) throw new Error('Indicá una sola ruta de skill después de --skill.');
       skillPath = args[index + 1];
@@ -21,13 +28,13 @@ export function parseSessionArgs(args: readonly string[]): { mode: SessionMode; 
       continue;
     }
     if (arg !== '--persist' && arg !== '--continue') {
-      throw new Error(`Opción desconocida: ${arg}. Usá --persist, --continue o --skill.`);
+      throw new Error(`Opción desconocida: ${arg}. Usá --persist, --continue --skill o --mcp.`);
     }
     if (mode !== 'memory') throw new Error('Elegí solo una opción de sesión.');
     mode = arg === '--persist' ? 'persist' : 'continue';
     index++;
   }
-  return { mode, promptArgs: args.slice(index), ...(skillPath ? { skillPath } : {}) };
+  return { mode, promptArgs: args.slice(index), ...(skillPath ? { skillPath } : {}), ...(mcpName ? { mcpName } : {}) };
 }
 
 export async function createSessionManager(cwd: string, agentDir: string, mode: SessionMode): Promise<SessionManager> {
