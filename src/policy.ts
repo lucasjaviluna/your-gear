@@ -7,7 +7,7 @@ export type Approval = (description: string) => Promise<boolean>;
 
 // Initial conservative list. This is NOT a sandbox or a complete DLP system.
 const PROTECTED = new Set([
-  '.git', '.ssh', '.pi', '.your-gear', '.aws', '.config',
+  '.git', '.ssh', '.pi', '.your-gear', '.ytk-memory', '.ytk-memory.json', '.aws', '.config',
   '.env', '.npmrc', '.netrc', '.pypirc', 'auth.json', 'credentials',
 ]);
 
