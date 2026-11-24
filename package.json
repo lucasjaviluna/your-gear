@@ -20,7 +20,8 @@
     "prepack": "npm run build",
     "pack:check": "npm run build && node scripts/smoke-package.mjs",
     "test": "node --experimental-strip-types --test test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eval:classifier": "npm run build && node scripts/eval-classifier.mjs"
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "1.6.0"
