@@ -1,6 +1,6 @@
 # Hito 3 — Workflows con humanos en el circuito
 
-**Estado:** 3.A–3.D.1 integrados con CI exitoso; 3.D.2 (recuperación guiada) propuesto. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
+**Estado:** 3.A–3.D.2 integrados con CI exitoso; 3.D.3 (memoria opcional YTK) propuesto. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
 
 ## Referencias y decisiones
 
@@ -111,8 +111,17 @@ Referencia: fase 7 y `src/task.ts` de Your Harness v0. Se adopta el gate de recu
 - `workflow-recovery.ts` calcula un digest del registro anterior y valida que no haya cambiado durante el gate. Se crea un journal nuevo con evento recovery (parentId y parentDigest), sin modificar el anterior. La clasificación y planificación son nuevas, con contexto actual y las mismas aprobaciones del flujo task. La solicitud agrega una indicación de no repetir efectos y pedir aclaración si falta evidencia. No importa prompt, plan, decisiones ni resultados anteriores.
 - Revalidación del registro padre antes de iniciar executor, antes de nuevas operaciones aprobadas y durante gates de verificación. No hay lock global, prueba infalible de que el proceso anterior terminó ni exclusión de otros escritores. El control es conservador y no garantiza evitar todas las carreras o efectos duplicados: el usuario revisa las operaciones. No hay replay automático ni rollback.
 - Se conserva la minimización de datos: no se persiste el texto del plan ni prompt ni evidencia completa. El usuario debe suministrar nuevamente la información necesaria; la recuperación no es una continuación transparente de sesión ni reactivación de un estado terminal. Un nuevo intento inicia versión de plan 1 bajo un UUID nuevo. Se mantiene compatibilidad de lectura con registros previos.
-- Tests de vínculo, aislamiento, rechazo, cancelación, modificación del padre y no importación de permisos; smoke sin TTY. CI pendiente. [Guía de aceptación manual](../spikes/milestone-3-acceptance.md) incluye casos de clasificación, planificación, gates, pruebas, journal y recuperación. No se declara aceptado el workflow con modelo real.
+- Tests de vínculo, aislamiento, rechazo, cancelación, modificación del padre y no importación de permisos; smoke sin TTY. CI del PR #20 exitoso (run 45501224735). [Guía de aceptación manual](../spikes/milestone-3-acceptance.md) incluye casos de clasificación, planificación, gates, pruebas, journal y recuperación. No se declara aceptado el workflow con modelo real.
+
+## Incremento 3.D.3 — Memoria agéntica opcional
+
+Decisión acordada: adelantar parte de Hito 4 para mejorar recuperación, sin acoplar los proyectos. [ADR-004](../adr/ADR-004-optional-agent-memory.md). Se revisaron contratos y handlers reales de YTK Go, incluidos owner de sesión, lifecycle, scope fijo y respuestas structuredContent. La implementación histórica de v0 cargaba un módulo TS ya superado; se reutiliza MCP stdio de Pi.
+
+- Puerto MemoryProvider y adaptador con seis operaciones YTK (list/search/get/start/save/finish), límites, scope y validación de resultado. La sesión activa pertenece a la misma conexión. No se exponen herramientas nuevas a los modelos. Las escrituras están desactivadas en CLI; no se envía memoria a LLM todavía.
+- Configuración del usuario en ~/.your-gear/memory.json por ruta canónica exacta del workspace; ejecutable y DB absolutos existentes, project explícito y area opcional. No autoinstalación, no se ejecuta configuración del repositorio. YTK requiere configuración local propia previa. Se exige autorización de inicio y TTY para consultar un proveedor configurado. El binario puede migrar la base y tiene permisos del usuario; no es sandbox.
+- Comandos memory status/list/search/get no requieren autenticación LLM. Ausencia de configuración devuelve disabled en status; errores de consulta no afectan workflows normales. Conexión y llamadas con presupuesto temporal 10 s, cierre en finally. No se garantiza límite de memoria del protocolo antes de recibir una respuesta ni cierre de descendientes.
+- Tests de configuración, aislamiento, sesión, modo sin escritura y servidor fixture MCP stdio; smoke del paquete. CI pendiente. Interoperabilidad contra binario YTK real aún no validada. No guardar checkpoints ni activar autoRecall/autoSave en este incremento.
 
 ## Próximo paso
 
-3.E: evaluar integración SDD opcional (OpenSpec), comenzar por descubrimiento de capacidades y flujo de propuesta sin efectos automáticos. Mantener pendientes la aceptación manual de Hitos 2 y 3 y evaluación semántica real. No declarar cerrado el Hito 3 solo por CI.
+3.D.4: validar con binario YTK real, integrar bootstrap y checkpoints curados en fases del workflow, registrar IDs/digests en journal, recuperar por ID y seleccionar tarea sin reconstrucción manual. Autorización explícita de alcance antes de automatizar memoria, fallos degradan a recuperación manual. No importar permisos ni repetir efectos. Luego 3.E OpenSpec opcional. Mantener pendientes aceptación de Hitos 2/3 y evaluación semántica real.
