@@ -82,7 +82,7 @@ test('configuración del clasificador hereda y combina usuario y proyecto sin mo
   assert.equal(readConfiguration(['hola'], { YOUR_GEAR_CLASSIFIER_MODEL: 'role-env' }, settings).modelId, 'default');
   assert.equal(readConfiguration(['hola'], {}, settings, 'classifier').authMode, 'pi-subscription');
   assert.throws(() => readConfiguration(['hola'], { YOUR_GEAR_PROVIDER: 'other', YOUR_GEAR_AUTH_MODE: 'api-key', YOUR_GEAR_API_KEY: 'secret' }, settings, 'classifier'), /proveedor de autenticación/);
-  for (const agents of [null, [], { planner: {} }, { classifier: { apiKey: 'secret' } }, { classifier: { authMode: 'api-key' } }, { classifier: { model: 123 } }]) {
+  for (const agents of [null, [], { executor: {} }, { classifier: { apiKey: 'secret' } }, { classifier: { authMode: 'api-key' } }, { classifier: { model: 123 } }]) {
     writeFileSync(join(cwd, '.your-gear', 'config.json'), JSON.stringify({ agents }));
     assert.throws(() => readSettings(cwd, agent), /Opción de configuración inválida/);
   }
