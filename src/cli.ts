@@ -34,6 +34,19 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     stdout.write(manifest.version + '\n');
     return;
   }
+  if (args[0] === 'memory') {
+    const { parseMemoryCommand, runMemoryCommand } = await import('./memory/commands.ts');
+    const { connectYtk } = await import('./memory/ytk.ts');
+    const { safePreview } = await import('./verification-evidence.ts');
+    const result = await runMemoryCommand(parseMemoryCommand(args.slice(1)), {
+      cwd: process.cwd(), agentDir: join(homedir(), '.your-gear'),
+      interactive: Boolean(stdin.isTTY && stderr.isTTY), signal: controller.signal,
+      approve: description => requestApproval(description, controller.signal, () => controller.abort()),
+      connect: config => connectYtk(config, controller.signal),
+    });
+    stdout.write(safePreview(result) + '\n');
+    return;
+  }
   if (args[0] === 'workflows' && args.length === 1) {
     stdout.write(JSON.stringify(listWorkflows(process.cwd(), join(homedir(), '.your-gear')), null, 2) + '\n');
     return;
