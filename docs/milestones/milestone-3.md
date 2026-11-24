@@ -1,6 +1,6 @@
 # Hito 3 — Workflows con humanos en el circuito
 
-**Estado:** diseño inicial, no implementado. Entrada: Hito 2 aceptado o desviación explícita de alcance documentada.
+**Estado:** incremento 3.A propuesto, análisis aislado y sin efectos. La aceptación manual del Hito 2 sigue pendiente; no se habilitan workflows hasta resolverla.
 
 ## Referencias y decisiones
 
@@ -33,6 +33,16 @@ El orden se revisará con evidencia. No introducir abstracciones públicas ni pe
 
 El clasificador recomienda, no autoriza. La confirmación del workflow no sustituye las aprobaciones de herramientas. La ejecución conserva las políticas y cancelación actuales. El contexto del repositorio y del prompt se trata como datos no confiables; no concede permisos. La ruta directa existente debe seguir funcionando sin activar workflows.
 
+## Incremento 3.A — Clasificador determinista
+
+Se revisaron también los archivos de referencia [src/assessment.ts](https://github.com/lucasjaviluna/your-harness-v0/blob/main/src/assessment.ts), [src/task.ts](https://github.com/lucasjaviluna/your-harness-v0/blob/main/src/task.ts) y [tests/assessment.test.ts](https://github.com/lucasjaviluna/your-harness-v0/blob/main/tests/assessment.test.ts). Se adopta la idea de prioridad por riesgo, no su estado de tareas ni sus gates persistentes.
+
+- `src/assessment.ts`: contrato mínimo con ruta recomendada, fuente, confianza cualitativa, razones, áreas e incógnitas.
+- `your-gear --analyze-only "tarea"`: JSON en stdout; no lee configuración, crea sesiones, carga SDK de Pi, solicita modelos ni ejecuta herramientas. No admite opciones de sesión/MCP/skills; usar `--` para texto literal.
+- Reglas en español e inglés, normalización de acentos, riesgo explícito > ambigüedad > varios pasos > cambio local explícito > task conservador.
+- No se interpreta la confianza como probabilidad calibrada. Reglas léxicas pueden producir falsos positivos y omitir riesgos implícitos; el resultado no concede permisos ni activa workflows.
+- Tests unitarios y smoke del ejecutable instalado. CI del nuevo PR pendiente.
+
 ## Próximo paso
 
-Después de cerrar el Hito 2, comenzar por 3.A: revisar código real y pruebas de clasificación de v0, definir contratos mínimos y tests, implementar análisis sin efectos y conservar el comportamiento CLI actual.
+Validar el CI de 3.A. Resolver aceptación del Hito 2 antes de habilitar ejecución de workflows. Después implementar 3.B: evaluación asistida por el modelo con esquema validado, sin herramientas y confirmación humana.
