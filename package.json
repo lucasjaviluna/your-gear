@@ -24,7 +24,8 @@
     "eval:classifier": "npm run build && node scripts/eval-classifier.mjs"
   },
   "dependencies": {
-    "@earendil-works/pi-coding-agent": "1.6.0"
+    "@earendil-works/pi-coding-agent": "1.6.0",
+    "@earendil-works/pi-mcp": "1.6.0"
   },
   "devDependencies": {
     "typescript": "^5.8.3",
