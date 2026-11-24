@@ -1,61 +1,70 @@
-# Arquitectura candidata — Your Gear
+# Arquitectura vigente — Your Gear
 
-**Estado:** arquitectura evolutiva; el prototipo implementa parcialmente el flujo · actualización 2026-11-23
+**Corte:** main tras PR #22 (2026-11-24). Hitos 0/1 aceptados para el alcance validado; 2.A–3.D.4 integrados y con CI exitoso, con aceptación real pendiente. Consultar [roadmap](roadmap.md) para el estado y [seguridad](security.md) para límites. Este documento distingue implementación de objetivos de evolución.
 
-El prototipo usa Pi SDK 1.6.0 y sesiones en memoria por defecto, con persistencia y reanudación optativas. El Hito 1 completó el flujo validado en Windows, incluida la trazabilidad básica; el usuario reportó recuperación de contexto tras cancelar una generación y un comando en espera. No se han validado todas las formas de cancelación ni una auditoría completa. Una skill del workspace puede seleccionarse explícitamente; extensiones externas siguen deshabilitadas. El incremento 2.A incorporó MCP stdio con selección explícita, registro de usuario y doble autorización. Ver [Hito 1](milestones/milestone-1.md), [Hito 2](milestones/milestone-2.md), [ADR-001](decisions/ADR-001-runtime.md) y [ADR-003](decisions/ADR-003-extensibility.md).
+## Componentes implementados
 
 ```text
-Human / terminal
-    |
- CLI / TUI (futura)
-    |
- Your Gear application layer
-    |-- config + provider resolution
-    |-- execution policy / approval UX
-    |-- execution trace + user-visible errors
-    |
- Agent runtime boundary
-    |-- agent loop + streaming
-    |-- session lifecycle + compaction
-    |-- tools / extension integration
-    |
- Providers, filesystem, shell, persistent sessions
+Usuario / terminal (CLI)
+  |
+  |-- Modo directo (prompt)
+  |     Pi AgentSession -> read/write/edit/bash
+  |     Skill explícita y MCP stdio opcional
+  |     SessionManager -> memoria o JSONL de conversaciones
+  |
+  |-- Workflow optativo (--analyze-only / --review-route / --plan / --run-task)
+  |     Classifier -> revisión de ruta -> Context Engine -> Planner
+  |     -> revisión de plan -> inicio autorizado -> Executor
+  |     -> pruebas Node seleccionadas -> Verifier -> revisión humana
+  |     Workflow Journal JSONL (opt-in; obligatorio al recuperar)
+  |     MemoryProvider -> adaptador YTK -> Pi MCP client -> proceso YTK
+  |
+  |-- Consulta / recuperación (--recover, workflows, workflow, memory)
+  |     journal + checkpoints opcionales -> nuevo intento con gates
+  |
+  +-- Configuración, selección de modelo, auth Pi, policy, aprobación y cancelación
 ```
 
-## Responsabilidades
-- **CLI:** entrada/salida, comandos, presentación, Ctrl+C. No contiene lógica de permisos.
-- **Aplicación:** prepara contexto, inicia sesión y aplica configuración/políticas.
-- **Runtime boundary:** encapsula crear sesión, enviar prompt, escuchar eventos, cancelar y cerrar; empezar con la API del SDK y crear interfaz propia solo si lo justifican pruebas de migración.
-- **Herramientas:** ejecutar con identidad/argumentos conocidos y revisión previa. La política se aplica antes del efecto real, independientemente de la UI.
-- **Autenticación:** pasar credenciales admitidas por proveedor sin persistir tokens en el repositorio ni loguearlos.
-- **Sesiones:** usar mecanismo existente si entrega continuidad, aislamiento por workspace y cierre limpio.
-- **Trazabilidad:** eventos mínimos de prompt, permiso, tool start/end, error y cancelación; redactar secretos.
-- **Extensibilidad:** skills, extensiones y MCP por pasos. Ninguna ruta de extensión puede evadir el gate.
+Pi SDK 1.6.0 proporciona runtime, eventos, herramientas, recursos y sesiones. `@earendil-works/pi-mcp` 1.6.0 proporciona el cliente stdio para memoria. Your Gear no es un fork, ni YTK es una dependencia obligatoria del proceso directo. No hay TUI, servidor web, motor declarativo genérico ni integración OpenSpec activa.
 
-## Flujo esperado
-1. Usuario inicia CLI con `cwd` y configuración explícitos.
-2. Se selecciona proveedor y se valida auth permitida; mensaje accionable si falta.
-3. Runtime crea/recupera sesión y el usuario envía un prompt.
-4. Streams de texto/eventos llegan a UI.
-5. Si el modelo solicita herramienta de riesgo, el gate revisa operación, argumentos, alcance y aprobación.
-6. Se ejecuta o deniega la herramienta, registrando resultado sin secretos.
-7. Persistencia de sesión y cierre/cancelación limpios.
+| Área | Implementación principal |
+| --- | --- |
+| Entrada, salida y coordinación | `src/cli.ts`, `src/response-output.ts`, `src/tool-trace.ts` |
+| Configuración y auth | `config.ts`, `model-selection.ts`, ModelRuntime de Pi |
+| Política de herramientas | `policy.ts`, `gate.ts`, `approval.ts` |
+| Sesiones y extensibilidad directa | `sessions.ts`, `skills.ts`, `mcp.ts` |
+| Clasificación y decisión de ruta | `assessment.ts`, `assessment-agent.ts`, `route-review.ts` |
+| Contexto y planificación | `context-engine.ts`, `plan.ts`, `planner-agent.ts` |
+| Ejecución de task | `task-orchestrator.ts`, `executor-agent.ts` |
+| Evidencia y revisión | `verification-evidence.ts`, `verification.ts`, `verifier-agent.ts` |
+| Persistencia y recuperación | `workflow-journal.ts`, `workflow-recovery.ts` |
+| Memoria opcional | `memory/provider.ts`, `memory/config.ts`, `memory/ytk.ts`, `memory/checkpoint.ts`, `memory/workflow-memory.ts`, `memory/commands.ts` |
 
-## Políticas (diseño propuesto)
-- `read`: inicialmente permitida solo dentro del workspace, sin leer secretos conocidos ni seguir rutas fuera del alcance; revisar riesgos de symlinks.
-- `write/edit`: solicitar aprobación, presentar ruta y cambio; deny por defecto en no interactivo.
-- `shell`: aprobación por comando, cwd y alcance; deny por defecto en no interactivo.
-- Acceso a red/MCP: evaluación específica por servidor y operación; no clasificar arbitrariamente como seguro.
-- Modo autoaprobación futura: habilitación explícita y limitada por configuración verificada, nunca como default.
+El CLI todavía coordina partes del workflow; no existe una API pública independiente de orquestación. El runtime usa directamente primitivas del SDK y helpers concretos (por ejemplo `tool-free-agent.ts`), no una capa universal de adaptadores.
 
-## Consideraciones de seguridad
-Prompt injection no debe alterar políticas; las decisiones se ejecutan fuera del contexto del modelo. Capturar cambios no basta: bloquear antes del efecto. El proceso no es un sandbox por defecto; para contenido no confiable se necesitará aislamiento adicional.
+## Modos de trabajo y fronteras
 
-## Referencias
+- **Directo:** comportamiento por defecto. Sesión Pi efímera, streaming, lectura dentro del workspace y gate de escritura/edición/shell. `--persist` y `--continue` conservan conversaciones, no estados globales del workflow. Una skill y un servidor MCP pueden seleccionarse explícitamente; no se cargan extensiones externas automáticamente.
+- **Clasificación:** LLM sin herramientas, salida JSON validada; rutas simple/task/sdd/clarify. No regex, fallback léxico ni ejecución automática de la recomendación. `--review-route` permite decidir sin efectos. `--plan` solo planifica task. SDD todavía es una recomendación, no un ejecutor.
+- **Task experimental:** requiere recomendación y selección task, aprobación de contexto y plan, y gate de inicio. Classifier, Planner, Executor y Verifier son sesiones independientes, no un sistema de delegación autónoma. El Context Engine lee hasta ocho archivos textuales (8000 bytes por archivo, 24000 bytes JSON), raíz conocida y selección explícita; no búsqueda recursiva ni RAG. Plan y entrada quedan ligados por hashes.
+- **Executor:** solo read/write/edit, cada llamada con revisión humana, incluso read. Revalida política y snapshot antes de ejecutar; el alcance semántico depende del modelo y revisión humana. Sin shell, skills, extensiones MCP del modelo ni persistencia de conversaciones en task.
+- **Verifier:** no tiene herramientas. El harness puede lanzar hasta tres archivos de prueba Node elegidos por el usuario, con autorización individual y límites. Una salida de proceso cero no demuestra cobertura. El LLM contrasta evidencia acotada y criterios; accepted exige pruebas seleccionadas con código cero, sin truncamiento ni errores/bloqueos del executor, criterios respaldados y revisión humana final. No es certificación del repositorio completo.
+- **Recuperación:** solo registros sin cierre, por UUID; no demuestra que el proceso original esté detenido. Recuperación manual con trabajo restante o asistida por checkpoint, nuevo UUID, clasificación y planificación frescas, nuevas aprobaciones. Sin replay automático ni rollback. El estado terminal no se reactiva.
 
-Consultar [referencias técnicas](references.md), especialmente Your Harness v0 para workflows, gates, distribución y memoria. Your Gear conserva sus propias decisiones y pruebas de aceptación.
+## Tres responsabilidades de persistencia
 
-## No introducir aún
-- Sistema universal de eventos/DI, colas, microservicios, registro distribuido de plugins.
-- Persistencia adicional si la de Pi satisface la prueba.
-- Contratos públicos definitivos de SDK hasta evaluar límites reales.
+| Capa | Qué almacena | Activación |
+| --- | --- | --- |
+| Pi SessionManager | Conversaciones y resultados de tools del modo directo | --persist / --continue |
+| Workflow Journal | Eventos, estados, decisiones, contadores, hashes y referencias de checkpoints | --record; --memory implica registro; recuperación crea otro |
+| YTK externo | Resumen de plan aprobado, rutas, observaciones de ejecución/verificación | --memory, configuración de usuario y autorización explícita |
+
+El journal reside en `~/.your-gear/workflows/<hash cwd canónico>/<uuid>.jsonl`; sesiones en `~/.your-gear/sessions/<hash cwd canónico>/`. El journal no almacena prompt, código o plan completo. Los checkpoints se guardan en la DB externa configurada; son evidencia histórica, no permisos. `MemoryProvider` aísla el contrato; YTK MCP se conecta por fuera del registro de herramientas de los modelos, y la sesión de memoria conserva su conexión. Referencias exactas por ID/digest/scope, no similitud. No hay transacción conjunta, lock global, cifrado ni garantía de idempotencia. Si falla memoria, la recuperación manual sigue disponible. El recall general entre tareas y RAG documental aún no están implementados.
+
+## Configuración y autoridad
+
+`~/.your-gear/config.json` y `.your-gear/config.json` definen modelos; entorno > proyecto > usuario (con prioridad por rol descrita en README). MCP y memoria usan únicamente registros del usuario `mcp.json` y `memory.json`. El segundo vincula un workspace canónico, ejecutable absoluto, proyecto, base existente y área opcional. Ningún dato de memoria, output o instrucción del proyecto concede permisos. Autenticación mediante Pi y modo API explícito según [ADR-002](decisions/ADR-002-model-auth.md).
+
+## Evolución
+
+Reutilizar SDK antes de abstraer. Mantener políticas fuera del LLM; validar nuevas vías de efectos y divulgación. El siguiente incremento es evaluar SDD/OpenSpec opcional (3.E), sin confundir integración con aceptación real. No introducir DI/event bus universal, colas, microservicios, marketplace ni una base vectorial propia sin caso comprobado. Ver [decisiones](decisions/ADR-001-runtime.md), [extensibilidad](decisions/ADR-003-extensibility.md), [memoria](adr/ADR-004-optional-agent-memory.md) y [referencias](references.md).

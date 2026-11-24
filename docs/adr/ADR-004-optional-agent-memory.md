@@ -1,19 +1,23 @@
 # ADR-004 — Memoria agéntica opcional mediante MCP
 
-Estado: propuesto (decisión de alcance acordada con el usuario). Fecha: 2026-11-24.
+Estado: aceptado como decisión arquitectónica, implementación experimental integrada en PR #21 y #22 con CI exitoso; aceptación con binario YTK real pendiente. Fecha: 2026-11-24.
 
 ## Contexto
 
-El journal de workflows guarda transiciones, decisiones y hashes, no el objetivo o plan completo. Para recuperar una tarea interrumpida, hoy se exige describir el trabajo pendiente. Your Team Knowledge (YTK) ya ofrece memoria local en Go/SQLite/FTS5, con MCP stdio, sesiones, subjectKey y lectura por ID.
+El journal de workflows guarda transiciones, decisiones y hashes, no el objetivo o plan completo. Antes de 3.D.4 recuperar una tarea interrumpida exigía describir el trabajo pendiente. La recuperación asistida es ahora optativa; la manual sigue disponible. Your Team Knowledge (YTK) ya ofrece memoria local en Go/SQLite/FTS5, con MCP stdio, sesiones, subjectKey y lectura por ID.
 
 ## Decisión
 
 - Your Gear conserva la autoridad sobre el ciclo de vida, las políticas, aprobaciones y ejecución; Pi conserva conversaciones; YTK conserva conocimiento y, en 3.D.4, checkpoints curados. Ninguna memoria autoriza herramientas ni demuestra el estado actual del código.
 - Integración optativa mediante un puerto MemoryProvider pequeño, un adaptador YTK MCP y configuración exclusiva del usuario, asociada a la ruta canónica exacta del workspace. Sin importación de módulos Go, lectura de tablas SQLite ni dependencia del código fuente de YTK. Se reutiliza pi-mcp 1.6.0, ya presente transitivamente en el lockfile, como dependencia directa.
-- En 3.D.3 solo se exponen comandos locales de consulta y diagnóstico; no se añade MCP a los agentes. El arranque del binario explícito exige autorización; el servidor podría aplicar migraciones al abrir la base. El adaptador implementa start/save/finish para el siguiente incremento, deshabilitados salvo opt-in interno. Una sesión requiere mantener la misma conexión por ownership de YTK. La configuración no puede venir del workspace.
-- En 3.D.4, una autorización de alcance/configuración permitirá operaciones ordinarias de memoria sin gates por operación; la divulgación al LLM seguirá sujeta a política de contexto. Guardar checkpoints antes de efectos y al avanzar; asociar ID exacto de memoria y digest al journal. Recuperar por ID, validar alcance, lifecycle, contenido y vigencia; no buscar por similitud como fuente de verdad. El resultado de memoria es dato no confiable; replanificar con el estado actual y nuevas aprobaciones. Nunca restaurar autorizaciones ni hacer replay.
-- Ausencia o fallo de YTK no impide los workflows existentes. Ante una futura escritura cuyo resultado sea incierto, no repetir automáticamente; usar subjectKey y reconciliar. No prometer atomicidad entre SQLite y journal. La recuperación manual permanece disponible.
+- En 3.D.3 se expusieron inicialmente comandos locales de consulta y diagnóstico; no se añade MCP a los agentes. El arranque del binario explícito exige autorización; el servidor podría aplicar migraciones al abrir la base. El adaptador implementó start/save/finish, habilitados en 3.D.4 solo por opt-in del workflow. Una sesión requiere mantener la misma conexión por ownership de YTK. La configuración no puede venir del workspace.
+- En 3.D.4, --memory y la autorización explícita del resumen y scope permiten checkpoints sin gates por operación; la divulgación al LLM requiere revisión del contexto recuperado. Guardar checkpoints antes de efectos y al avanzar; asociar ID exacto de memoria y digest al journal. Recuperar por ID, validar alcance, lifecycle, contenido y vigencia; no buscar por similitud como fuente de verdad. El resultado de memoria es dato no confiable; replanificar con el estado actual y nuevas aprobaciones. Nunca restaurar autorizaciones ni hacer replay.
+- Ausencia o fallo de YTK no impide los workflows existentes. Ante una escritura cuyo resultado sea incierto, no se reintenta automáticamente; subjectKey por UUID/fase y lectura de confirmación, sin reconciliación automática de memorias huérfanas. No prometer atomicidad entre SQLite y journal. La recuperación manual permanece disponible.
 - No guardar secretos, prompts/transcripciones crudos ni código completo automáticamente. Checkpoints serán resúmenes curados, explícitamente autorizados, con presupuesto. El filtro de YTK no es DLP exhaustivo.
+
+## Alcance actual
+
+El checkpoint contiene objetivo, alcance, pasos, criterios, rutas y una observación acotada, hasta 12000 caracteres UTF-16. No es un registro de herramientas ni conserva el plan íntegro. El journal mantiene ID, hash del contenido y hash del scope (workspace canónico, proyecto, DB y área configurada); no guarda el texto. El cierre de memoria es best-effort sin resumen adicional: los checkpoints ya contienen las observaciones. El briefing general devuelto al iniciar sesión aún no se usa. No se guardan checkpoints antes del plan aprobado ni durante cada llamada individual del executor. --recover lista candidatos recientes y --recover ID recupera datos históricos, no permisos. Ver [Hito 3](../milestones/milestone-3.md).
 
 ## Alternativas descartadas
 

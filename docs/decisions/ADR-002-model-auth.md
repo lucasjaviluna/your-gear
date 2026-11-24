@@ -1,7 +1,7 @@
 # ADR-002 — Modos de autenticación autorizados
 
 **Estado:** Aceptado para el prototipo de Hito 0; inferencia real reportada en Windows.
-**Actualización:** 2026-11-23.
+**Actualización de alcance:** 2026-11-24 (PR #22). Las fuentes de política de proveedores corresponden a la evaluación original; revalidar antes de cambiar auth/SDK.
 
 ## Decisión
 
@@ -11,6 +11,10 @@
 - API key: solo con `YOUR_GEAR_AUTH_MODE=api-key` y `YOUR_GEAR_API_KEY`; sin fallback silencioso. Se usa un runtime separado bajo `~/.your-gear`.
 - La selección de modelo en suscripción toma la intersección de `getAvailable('openai')` y los IDs del catálogo `openai-codex`; el usuario puede fijar `YOUR_GEAR_MODEL` o usar el primero. Es un filtro conservador, no una garantía de acceso de la cuenta.
 - No se registran tokens, códigos ni API keys en archivos del proyecto; no imprimir el resultado bruto de auth.
+
+## Configuración por rol (Hito 3)
+
+Classifier, Planner, Executor y Verifier permiten modelos distintos pero comparten el proveedor efectivo y el modo de auth. Cada variable YOUR_GEAR_<ROL>_MODEL precede a YOUR_GEAR_MODEL, luego al modelo por rol en archivos (proyecto > usuario), modelo general de archivos y default. Si el proveedor de un rol difiere del efectivo, se rechaza. El comando models lista candidatos de suscripción; auth status indica detección de sesión, no prueba inferencia. Los comandos locales de journal/memoria no necesitan LLM. Ver [README](../../README.md).
 
 ## Fundamento
 

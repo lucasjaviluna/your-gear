@@ -1,6 +1,6 @@
 # Pi SDK — evidencia incremental
 
-**Actualización:** 2026-11-23. Hito 0 y ADR-001 aceptados para el alcance validado; ver [seguimiento](../milestones/milestone-0.md).
+**Registro histórico:** evidencia inicial del Hito 0 (2026-11-23). Actualizado el 2026-11-24 para enlazar evidencia posterior; no reemplaza el registro de cada hito. Ver [seguimiento](../milestones/milestone-0.md).
 
 ## Pruebas automatizadas
 
@@ -10,11 +10,11 @@
 - El código de Your Gear no lee `auth.json` directamente; entrega la responsabilidad de credenciales a `ModelRuntime` de Pi.
 - En modo de suscripción solo se habilita `openai`. Se requiere una sesión Pi válida con **Sign in with ChatGPT**.
 
-## Pendientes
+## Evidencia posterior y pendientes
 
 - El usuario reportó exitosas las pruebas manuales de streaming, errores, cancelación, herramientas, rutas externas y escritura sin TTY en Windows: [registro y guía](manual-smoke-windows.md). No se registraron modelo ni versión exacta de Node.
-- Probar persistencia y reanudación (el SDK sigue configurado con `SessionManager.inMemory`).
-- Verificar exhaustivamente los límites de permisos de extensiones y MCP cuando se activen.
+- Hito 1: persistencia/reanudación optativas de Pi; el usuario confirmó continuidad y casos de cancelación en Windows. Ver [Hito 1](../milestones/milestone-1.md).
+- Hito 2: fixtures de skills/MCP, arranque, gates y cierre; aceptación instalada con modelo real pendiente. Hito 3: agentes y workflows, journal, YTK opcional; CI [#22](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165) exitoso en tres SO. Siguen pendientes [aceptación Hito 2](milestone-2-acceptance.md), [Hito 3](milestone-3-acceptance.md), evaluación real y binario YTK real. La cobertura de todas las vías de efectos sigue siendo una condición de seguridad.
 
 ## Advertencia
 

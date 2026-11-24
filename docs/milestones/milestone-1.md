@@ -15,4 +15,8 @@
 - La cancelación observada es evidencia de casos puntuales; no garantiza detener todos los procesos ni deshacer efectos ya ocurridos.
 - Las sesiones JSONL pueden contener conversaciones y resultados de herramientas sin cifrar. Sus permisos dependen del sistema; las ACL heredadas en Windows y los permisos en instalaciones reales no fueron verificados.
 - La vista previa puede mostrar contenido sensible y textos largos; usa cadenas escapadas, no un diff con contexto. La traza básica omite argumentos y resultados, pero no constituye una auditoría completa.
-- Las pruebas manuales reportadas fueron en Windows. No se afirma validación real en Linux o macOS; la compatibilidad y distribución multiplataforma corresponden al Hito 2.
+- Las pruebas manuales reportadas fueron en Windows. No se afirma validación real en Linux o macOS; la distribución automatizada se incorporó en Hito 2 y sigue vigente en CI #22; inferencia real en Linux/macOS pendiente.
+
+## Seguimiento posterior
+
+Este hito describe la sesión conversacional del modo directo. Desde Hito 3, el estado de workflow se registra por separado y la recuperación asistida utiliza memoria YTK optativa; no se equipara `--continue` con `--recover`. Ver [arquitectura vigente](../architecture.md).

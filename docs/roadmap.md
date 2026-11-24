@@ -1,6 +1,8 @@
 # Roadmap evolutivo — Your Gear
 
-**Estado:** propuesto; reevaluar al cerrar cada hito.
+**Estado al 2026-11-24:** implementación integrada hasta 3.D.4 (PR #22). El siguiente incremento es 3.E. Reevaluar aceptación y límites antes de ampliar capacidades.
+
+CI de referencia: [PR #22, run 45504735165](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165), exitoso en Windows, Linux y macOS: typecheck, tests, build, pack, instalación y smoke del CLI. No incluye inferencia real ni binario YTK real.
 
 ## Hito 0 — Fundaciones (completado para el alcance validado)
 Visión, ADR, opciones de stack, riesgos de auth, seguridad, spike SDK Pi y scaffold mínimo. Entrega: decisiones reproducibles y criterios de aceptación.
@@ -21,8 +23,27 @@ Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramie
 
 **Estado:** incrementos 2.A–2.D integrados, CI multiplataforma exitoso. [Hito 2](milestones/milestone-2.md) y [matriz de aceptación](spikes/milestone-2-acceptance.md) registran los límites y las pruebas manuales pendientes.
 
-## Hito 3 — Workflows con humanos en el circuito
-Clasificación simple de tareas, plan opcional, gates por pasos, verificación de resultados y auditoría. Integración futura de especificaciones SDD, sin exigirlas a cada operación. Ver [diseño inicial](milestones/milestone-3.md); 3.A, 3.B, 3.C.1 y 3.C.2 integrados con CI exitoso; 3.C.3.A integrado con CI exitoso: executor experimental limitado a read/write/edit. 3.C.3.B integrado con CI exitoso: verificación de archivos seleccionados y pruebas Node explícitas, evaluación LLM y aceptación humana. 3.D.1 integrado con CI exitoso; 3.D.2 integrado con CI exitoso: recuperación guiada con nuevo UUID, vínculo al padre y aprobaciones nuevas, sin replay. Por decisión del usuario, adelantar memoria agéntica opcional: 3.D.3 integrado con CI exitoso (puerto y adaptador YTK MCP); 3.D.4 propone checkpoints opt-in y recuperación asistida por referencias exactas, con smoke real pendiente; luego 3.E OpenSpec. [Aceptación manual del Hito 3](spikes/milestone-3-acceptance.md) pendiente. 3.E evaluará integración SDD opcional. Las pruebas manuales diferidas del Hito 2 no se declaran aprobadas; la ejecución experimental se limita a un workspace descartable hasta aceptación real.
+## Hito 3 — Workflows con humanos en el circuito (implementado hasta 3.D.4; aceptación pendiente)
+
+| Incremento | Entrega integrada | PR |
+| --- | --- | --- |
+| 3.A | Clasificador semántico LLM sin herramientas, sin fallback léxico | [#13](https://github.com/lucasjaviluna/your-gear/pull/13) |
+| 3.B | Decisión humana de ruta, modelos por rol, evaluación sintética | [#14](https://github.com/lucasjaviluna/your-gear/pull/14) |
+| 3.C.1 | Planner Agent y revisión de plan | [#15](https://github.com/lucasjaviluna/your-gear/pull/15) |
+| 3.C.2 | Context Engine de lectura acotada | [#16](https://github.com/lucasjaviluna/your-gear/pull/16) |
+| 3.C.3.A | Orquestador y executor read/write/edit | [#17](https://github.com/lucasjaviluna/your-gear/pull/17) |
+| 3.C.3.B | Pruebas Node explícitas y verificación basada en evidencia | [#18](https://github.com/lucasjaviluna/your-gear/pull/18) |
+| 3.D.1 | Journal local JSONL y consulta | [#19](https://github.com/lucasjaviluna/your-gear/pull/19) |
+| 3.D.2 | Recuperación guiada con nuevo UUID y gates | [#20](https://github.com/lucasjaviluna/your-gear/pull/20) |
+| 3.D.3 | MemoryProvider y adaptador YTK MCP opcional | [#21](https://github.com/lucasjaviluna/your-gear/pull/21) |
+| 3.D.4 | Checkpoints opt-in y recuperación asistida por referencia exacta | [#22](https://github.com/lucasjaviluna/your-gear/pull/22) |
+| 3.E | Evaluación e integración SDD/OpenSpec opcional | Pendiente |
+
+Los PR #13–22 están integrados; el detalle de sus CI y alcance se conserva en [seguimiento del Hito 3](milestones/milestone-3.md). El modo directo permanece por defecto, la ruta task es optativa y experimental. Por decisión del usuario se adelantó memoria agéntica para recuperación antes de SDD ([ADR-004](adr/ADR-004-optional-agent-memory.md)); YTK no es obligatorio. OpenSpec todavía no se ejecuta.
+
+**Pendientes antes de declarar aceptación:** [guía del Hito 2](spikes/milestone-2-acceptance.md), [guía del Hito 3](spikes/milestone-3-acceptance.md) (incluye recuperación con YTK), evaluación semántica con modelo real y smoke YTK real. La desviación acordada permite continuar incrementos acotados, no habilitar por defecto capacidades no validadas ni usar datos reales. No certificar seguridad de producción.
+
+**Siguiente:** 3.E, comenzar por evaluación de necesidad y compatibilidad de OpenSpec y propuesta sin efectos automáticos. Mantener seguimiento explícito de la deuda de aceptación.
 
 ## Hito 4 — Contexto y memoria opcional
 Ampliar memoria agéntica opcional según casos reales e integrar una interfaz con RAG documental externo; no crear una base vectorial dentro del core. Políticas de contexto y minimización de información.

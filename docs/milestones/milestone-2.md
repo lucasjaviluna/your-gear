@@ -6,11 +6,11 @@
 
 El roadmap incluye skills y MCP bajo política, configuración por usuario y proyecto, pruebas de herramientas, empaquetado npm y documentación multiplataforma. Se avanzará por incrementos; la TUI se evaluará solo si aporta una mejora concreta.
 
-## Primera evaluación: recursos y herramientas de Pi
+## Primera evaluación histórica: recursos y herramientas de Pi
 
-Inspección estática de la dependencia instalada `@earendil-works/pi-coding-agent` 1.6.0 y del CLI actual:
+Evidencia previa a los incrementos de integración (no describe todas las capacidades actuales). Inspección estática de la dependencia instalada `@earendil-works/pi-coding-agent` 1.6.0 y del CLI actual:
 
-- Your Gear crea un `DefaultResourceLoader` con `noExtensions`, `noSkills`, `noPromptTemplates` y `noContextFiles`, y añade explícitamente la fábrica que registra el gate. No configura servidores MCP.
+- Your Gear crea un `DefaultResourceLoader` con `noExtensions`, `noSkills`, `noPromptTemplates` y `noContextFiles`, y añade explícitamente la fábrica que registra el gate. En ese momento no configuraba servidores MCP.
 - Pi admite rutas adicionales de skills y extensiones incluso con las opciones `noSkills` y `noExtensions`, respectivamente. Por lo tanto, cualquier ruta explícita futura debe evaluarse por separado; las opciones actuales no son una prohibición universal.
 - Una prueba local con `DefaultResourceLoader` real confirmó que `noSkills` omite una skill del proyecto y que una ruta añadida explícitamente se carga aun con `noSkills`. Es una prueba del loader, no del CLI completo ni de la ejecución de la skill. Pasaron 45 tests y typecheck localmente.
 - Pi puede expandir comandos de skill a contenido en el mensaje. Esa carga es una ruta distinta de una llamada normal a `read`; la política de rutas actual no demuestra control sobre ella.
@@ -52,8 +52,8 @@ Inspección estática de la dependencia instalada `@earendil-works/pi-coding-age
 - [Diseño inicial del Hito 3](milestone-3.md) basado en las referencias, sin activar workflows ni cambiar la regla de avance.
 - CI del PR #12 exitoso (run 45312487354); la confirmación manual del usuario sigue pendiente. No se declara el hito completamente cerrado.
 
-## Próximo incremento
+## Seguimiento y aceptación pendiente
 
-El usuario acordó continuar el desarrollo del Hito 3 y diferir la aceptación manual. Registrar los ocho resultados de la guía cuando disponga de su entorno. El Hito 2 no se declara completamente aceptado; la desviación permitió avanzar con planificación. Se propone en 3.C.3.A un executor experimental restringido a read/write/edit, ya ejercitadas en Hitos 0/1, con aprobaciones separadas y sin shell/MCP. Solo para workspace descartable hasta aceptación real; las pruebas pendientes no se dan por aprobadas. No habilitar servidores arbitrarios ni extensiones externas.
+El usuario acordó continuar el desarrollo del Hito 3 y diferir la aceptación manual. Registrar los ocho resultados de la guía cuando disponga de su entorno. El Hito 2 no se declara completamente aceptado; la desviación permitió avanzar con planificación. Se integró 3.C.3.A con executor experimental restringido a read/write/edit, ya ejercitadas en Hitos 0/1, con aprobaciones separadas y sin shell ni MCP del modelo. 3.C.3.B incorpora pruebas Node seleccionadas, y 3.D.3–3.D.4 memoria YTK opcional mediante cliente MCP fuera de las herramientas del agente. Solo para workspace descartable hasta aceptación real; las pruebas pendientes no se dan por aprobadas. No habilitar servidores arbitrarios ni extensiones externas.
 
-Las extensiones externas siguen deshabilitadas. MCP queda deshabilitado por defecto; la habilitación explícita integrada requiere aceptación manual. El proceso no es un sandbox, y el ADR-003 requiere verificar cada vía nueva antes de incorporarla.
+Las extensiones externas siguen deshabilitadas. MCP queda deshabilitado por defecto; la habilitación explícita integrada requiere aceptación manual. El proceso no es un sandbox, y el ADR-003 requiere verificar cada vía nueva antes de incorporarla. CI #22 sigue pasando en los tres sistemas; no reemplaza los ocho resultados manuales. Próximo incremento del roadmap: 3.E; deuda de aceptación permanece.
