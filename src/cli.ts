@@ -2,7 +2,7 @@
 import { mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { stdout, stderr } from 'node:process';
+import { stdin, stdout, stderr } from 'node:process';
 import { requestApproval, serializeApprovals } from './approval.ts';
 import { readConfiguration, readSettings, USAGE } from './config.ts';
 import { createToolCallHandler } from './gate.ts';
@@ -32,6 +32,11 @@ async function main(controller: AbortController): Promise<void> {
   const showStatus = args.length === 2 && args[0] === 'auth' && args[1] === 'status';
   const listModels = args.length === 1 && args[0] === 'models';
   const sessionArgs = parseSessionArgs(args);
+  // No MCP server may start without an interactive startup approval.
+  // Reject before settings, provider authentication or extension loading.
+  if (sessionArgs.mcpName && (!stdin.isTTY || !stdout.isTTY)) {
+    throw new Error('MCP requiere una terminal interactiva para autorizar el inicio.');
+  }
   const agentDir = join(homedir(), '.your-gear');
   const config = showStatus || listModels ? undefined : readConfiguration(sessionArgs.promptArgs, process.env, readSettings(process.cwd(), agentDir));
 
