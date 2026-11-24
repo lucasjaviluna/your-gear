@@ -1,6 +1,6 @@
 # Hito 2 — Extensiones y distribución
 
-**Estado:** iniciado; evaluación de las rutas de extensibilidad de Pi 1.6.0.
+**Estado:** implementación 2.A–2.C integrada y CI exitoso; aceptación 2.D en progreso.
 
 ## Alcance previsto
 
@@ -20,7 +20,7 @@ Inspección estática de la dependencia instalada `@earendil-works/pi-coding-age
 - Una prueba con la extensión MCP de Pi habilitada explícitamente confirmó que, al iniciar la sesión, intenta crear la conexión antes de cualquier `tool_call`, incluso con la lista de herramientas integradas. El transporte de prueba falla deliberadamente: no inicia un proceso ni conecta un servidor, y no valida la ejecución de herramientas MCP ni el cierre de conexiones. Esto implica que una política futura también deberá controlar la habilitación y el arranque del servidor, antes del gate de herramientas. La suite local pasó con 47 tests y typecheck.
 - Una prueba posterior con un servidor MCP local descartable comprobó la conexión stdio, el bloqueo de una llamada y la ejecución de otra autorizada a través del hook, y el cierre del proceso mediante `session_shutdown`. El modelo se simuló y la política de autorización se limitó a la prueba; no demuestra seguridad de servidores arbitrarios.
 - La configuración local permite seleccionar `provider` y `model` mediante archivos de usuario y proyecto, con prioridad de las variables de entorno. El modo API y la clave siguen siendo explícitos en el entorno. La suite pasó con 48 tests y typecheck en Windows.
-- Se agregó compilación a JavaScript y entrada `your-gear` para un paquete npm privado. En Windows se generó un tarball, se instaló en un directorio temporal y el comando instalado mostró el mensaje de uso. Se agregó una matriz de CI para Windows, Linux y macOS, con CI del PR #8 exitoso en las tres plataformas (run 45281357403). No se ha probado el paquete instalado en Linux ni macOS.
+- Se agregó compilación a JavaScript y entrada `your-gear` para un paquete npm privado. En Windows se generó un tarball, se instaló en un directorio temporal y el comando instalado mostró el mensaje de uso. Se agregó una matriz de CI para Windows, Linux y macOS, con CI del PR #8 exitoso en las tres plataformas (run 45281357403). El PR #11 añadió y validó el smoke de instalación en las tres plataformas (ver 2.C).
 - El CLI admite seleccionar explícitamente un único `SKILL.md` del workspace con `--skill`; la carga automática sigue deshabilitada. Se validan rutas externas, protegidas y enlaces externos antes de cargar. El usuario confirmó en Windows el uso de la skill con un modelo real y el rechazo de una ruta externa. Las pruebas automatizadas ejercitan la selección y el loader de Pi; la suite local pasó con 50 tests y typecheck.
 
 ## Incremento 2.A — MCP explícito (PR #9 integrado)
@@ -37,16 +37,23 @@ Inspección estática de la dependencia instalada `@earendil-works/pi-coding-age
 - Pruebas de cola, rechazo posterior a cancelación y herramientas extra con servidor stdio descartable. El cierre continúa utilizando session_shutdown del SDK.
 - Limitaciones: no se garantiza interrumpir bindExtensions o conexiones internas del SDK, detener procesos descendientes ni revertir efectos. CI del PR #10 exitoso (run 45310838794); smoke manual pendiente.
 
-## Incremento 2.C — Distribución y smoke del paquete (propuesto)
+## Incremento 2.C — Distribución y smoke del paquete (PR #11 integrado)
 
 - Comandos `--help` y `--version` con salida exitosa, sin configuración de proveedor ni credenciales.
 - `npm run pack:check`: compila, genera un tarball real, verifica sus entradas, instala dependencias de producción en un directorio temporal y ejecuta el bin instalado mediante npm. Comprueba ayuda, versión y error de opción inválida, sin invocar un modelo. Elimina el directorio temporal al finalizar.
 - La matriz CI ejecuta el smoke en Linux, Windows y macOS. No se publica el paquete ni se altera la instalación global.
 - Referencias: se incorpora Your Harness v0 a [referencias técnicas](../references.md). El CLI de Your Gear sigue siendo independiente.
-- CI y smoke manual real pendientes de evidencia.
+- CI del PR #11 exitoso (run 45311599196): typecheck, tests, build, tarball, instalación y smoke del ejecutable en Windows, Linux y macOS. Smoke con modelo real pendiente.
+
+## Incremento 2.D — Aceptación integral (propuesto)
+
+- Rechazo de MCP sin TTY antes de cargar configuración, autenticación o extensiones; smoke del bin instalado con un servidor que dejaría un marcador si se iniciara.
+- [Matriz de aceptación y guía reproducible](../spikes/milestone-2-acceptance.md), con separación entre evidencia CI, evidencia previa de usuario y pruebas manuales pendientes.
+- [Diseño inicial del Hito 3](milestone-3.md) basado en las referencias, sin activar workflows ni cambiar la regla de avance.
+- El CI de 2.D y la confirmación manual del usuario siguen pendientes. No se declara el hito completamente cerrado.
 
 ## Próximo incremento
 
-Después de revisar el CI del incremento 2.C, preparar la aceptación integral y cierre (2.D). Mantener las pruebas de aceptación real de MCP, cancelación y cierre como pendientes hasta contar con evidencia. No habilitar servidores arbitrarios ni extensiones externas.
+Completar CI de 2.D y registrar los resultados de la guía de aceptación. Cerrar el Hito 2 únicamente con evidencia suficiente o una desviación de alcance explícitamente acordada. Después comenzar la implementación del Hito 3. No habilitar servidores arbitrarios ni extensiones externas.
 
 Las extensiones externas siguen deshabilitadas. MCP queda deshabilitado por defecto; la habilitación explícita propuesta requiere revisión y aceptación. El proceso no es un sandbox, y el ADR-003 requiere verificar cada vía nueva antes de incorporarla.
