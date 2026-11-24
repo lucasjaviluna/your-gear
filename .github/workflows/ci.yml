@@ -27,7 +27,5 @@ jobs:
         run: npm run typecheck
       - name: Run tests
         run: npm test
-      - name: Build
-        run: npm run build
-      - name: Inspect package
-        run: npm pack --dry-run --ignore-scripts
+      - name: Build, pack, install and smoke CLI
+        run: npm run pack:check
