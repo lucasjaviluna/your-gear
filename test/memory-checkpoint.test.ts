@@ -8,7 +8,7 @@ import { versionPlan } from '../src/plan.ts';
 import { createYtkProvider } from '../src/memory/ytk.ts';
 import { readMemoryConfig } from '../src/memory/config.ts';
 import { latestCheckpoint, memoryScope, readCheckpoint } from '../src/memory/checkpoint.ts';
-import { openWorkflowMemory, recoverFromMemory } from '../src/memory/workflow-memory.ts';
+import { openWorkflowMemory, recoverFromMemory, listRecoveries } from '../src/memory/workflow-memory.ts';
 
 function fixture(t: {after:(fn:()=>void)=>void}) {
   const cwd=realpathSync(mkdtempSync(join(tmpdir(),'gear-checkpoints-')));
@@ -61,6 +61,9 @@ test('persist confirmed plan before effects, later checkpoint, recover without o
   assert.deepEqual(restored.files,['retry.js']);
   assert.deepEqual(inspectWorkflow(f.cwd,f.agentDir,f.journal.id),original);
   assert.equal(f.counts().closed,2);
+  const candidates=await listRecoveries(f.options);
+  assert.match(JSON.stringify(candidates),/Retry HTTP/);
+  assert.match(JSON.stringify(candidates),new RegExp(f.journal.id));
   assert.ok(original.events.every(e=>!JSON.stringify(e).includes('Retry HTTP')));
 });
 test('wrong scope, tampered memory and invalid source do not recover',async t=>{
