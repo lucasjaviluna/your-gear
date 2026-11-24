@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { setTimeout as delay } from 'node:timers/promises';
 import { isAbsolute, join } from 'node:path';
 import { createMcpExtension } from '@earendil-works/pi-coding-agent';
 import type { Approval } from './policy.ts';
@@ -49,10 +50,17 @@ export function controlledMcpExtension(server: McpServer, agentDir: string) {
 }
 
 /** The SDK registers tools asynchronously on session start. No prompt before readiness. */
-export async function waitForMcpTools(expected: string[], available: () => string[], timeoutMs = 10000): Promise<void> {
+export async function waitForMcpTools(expected: string[], available: () => string[], timeoutMs = 10000, signal?: AbortSignal): Promise<void> {
   const deadline = Date.now() + timeoutMs;
-  while (!expected.every(name => available().includes(name))) {
+  while (true) {
+    if (signal?.aborted) throw new Error('La ejecución fue cancelada.');
+    const names = available();
+    if (expected.every(name => names.includes(name))) return;
     if (Date.now() >= deadline) throw new Error('MCP no registró todas las herramientas configuradas.');
-    await new Promise(resolve => setTimeout(resolve, 50));
+    try { await delay(Math.min(50, Math.max(0, deadline - Date.now())), undefined, { signal }); }
+    catch (error) {
+      if (signal?.aborted) throw new Error('La ejecución fue cancelada.');
+      throw error;
+    }
   }
 }

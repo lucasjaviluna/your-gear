@@ -28,7 +28,7 @@ export function parseSessionArgs(args: readonly string[]): { mode: SessionMode; 
       continue;
     }
     if (arg !== '--persist' && arg !== '--continue') {
-      throw new Error(`Opción desconocida: ${arg}. Usá --persist, --continue --skill o --mcp.`);
+      throw new Error(`Opción desconocida: ${arg}. Usá --persist, --continue, --skill o --mcp.`);
     }
     if (mode !== 'memory') throw new Error('Elegí solo una opción de sesión.');
     mode = arg === '--persist' ? 'persist' : 'continue';

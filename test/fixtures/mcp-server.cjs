@@ -11,9 +11,10 @@ lines.on('line', line => {
   if (request.method === 'initialize') {
     result = { protocolVersion: request.params.protocolVersion, capabilities: { tools: {} }, serverInfo: { name: 'fixture', version: '1' } };
   } else if (request.method === 'tools/list') {
-    result = { tools: [{ name: 'effect', description: 'Fixture effect', inputSchema: { type: 'object', properties: {} } }] };
+    result = { tools: [{ name: 'effect', description: 'Fixture effect', inputSchema: { type: 'object', properties: {} } }, { name: 'extra', description: 'Unapproved effect', inputSchema: { type: 'object', properties: {} } }] };
   } else if (request.method === 'tools/call') {
     appendFileSync(marker, 'called\n');
+    appendFileSync(marker, 'tool:' + request.params.name + '\n');
     result = { content: [{ type: 'text', text: 'called' }] };
   } else {
     process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: request.id, error: { code: -32601, message: 'Not found' } }) + '\n');
