@@ -82,7 +82,7 @@ test('configuración del clasificador hereda y combina usuario y proyecto sin mo
   assert.equal(readConfiguration(['hola'], { YOUR_GEAR_CLASSIFIER_MODEL: 'role-env' }, settings).modelId, 'default');
   assert.equal(readConfiguration(['hola'], {}, settings, 'classifier').authMode, 'pi-subscription');
   assert.throws(() => readConfiguration(['hola'], { YOUR_GEAR_PROVIDER: 'other', YOUR_GEAR_AUTH_MODE: 'api-key', YOUR_GEAR_API_KEY: 'secret' }, settings, 'classifier'), /proveedor de autenticación/);
-  for (const agents of [null, [], { verifier: {} }, { classifier: { apiKey: 'secret' } }, { classifier: { authMode: 'api-key' } }, { classifier: { model: 123 } }]) {
+  for (const agents of [null, [], { unknownAgent: {} }, { classifier: { apiKey: 'secret' } }, { classifier: { authMode: 'api-key' } }, { classifier: { model: 123 } }]) {
     writeFileSync(join(cwd, '.your-gear', 'config.json'), JSON.stringify({ agents }));
     assert.throws(() => readSettings(cwd, agent), /Opción de configuración inválida/);
   }
@@ -120,4 +120,13 @@ test('executor usa modelo independiente y conserva credenciales del proveedor', 
   assert.equal(readConfiguration(['hola'], {}, settings, 'planner').modelId, 'plan');
   assert.equal(readConfiguration(['hola'], {}, settings).modelId, 'default');
   assert.throws(() => readConfiguration(['hola'], { YOUR_GEAR_PROVIDER: 'other' }, settings, 'executor'), /proveedor de autenticación/);
+});
+
+test('verifier usa modelo independiente sin modificar los otros roles', () => {
+  const settings = { model: 'default', agents: { verifier: { provider: 'openai', model: 'verify' }, executor: { model: 'execute' } } };
+  assert.equal(readConfiguration(['hola'], {}, settings, 'verifier').modelId, 'verify');
+  assert.equal(readConfiguration(['hola'], { YOUR_GEAR_VERIFIER_MODEL: 'env-verify' }, settings, 'verifier').modelId, 'env-verify');
+  assert.equal(readConfiguration(['hola'], {}, settings, 'executor').modelId, 'execute');
+  assert.equal(readConfiguration(['hola'], {}, settings).modelId, 'default');
+  assert.throws(() => readConfiguration(['hola'], { YOUR_GEAR_PROVIDER: 'other' }, settings, 'verifier'), /proveedor de autenticación/);
 });
