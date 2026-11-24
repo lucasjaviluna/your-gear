@@ -72,7 +72,13 @@ En una terminal interactiva muestra recomendación, razones e incógnitas. Permi
 your-gear --plan "Agregar reintentos HTTP con pruebas"
 ```
 
-En una terminal interactiva, clasifica la solicitud y pide confirmar la ruta. Si seleccionás `task`, un Planner Agent genera un plan preliminar con objetivo, alcance, pasos, criterios de aceptación, riesgos, supuestos e incógnitas. Podés aprobar exactamente la versión presentada o cancelar. Si hay incógnitas bloqueantes, no se solicita aprobación. El resultado es JSON; no hay implementación, persistencia ni ejecución de herramientas. El planificador no inspecciona archivos; no confundir un plan propuesto con evidencia real.
+En una terminal interactiva, clasifica la solicitud y pide confirmar la ruta. Si seleccionás `task`, el harness recopila contexto local de solo lectura y solicita autorización para enviarlo al proveedor. Después, el Planner Agent genera un plan con objetivo, alcance, pasos, criterios de aceptación, riesgos, supuestos e incógnitas. Podés aprobar exactamente la versión presentada o cancelar. Si hay incógnitas bloqueantes, no se solicita aprobación. El resultado es JSON; no hay implementación, persistencia ni ejecución de herramientas. El planificador recibe únicamente el snapshot aprobado, no tiene acceso directo al filesystem.
+
+```sh
+your-gear --plan --context src/retry.ts --context docs/design.md "Agregar reintentos HTTP con pruebas"
+```
+
+El Context Engine considera archivos conocidos de la raíz (README.md, AGENTS.md y manifiestos de proyecto) y permite seleccionar hasta 8 archivos relativos al directorio actual; los explícitos tienen prioridad. Solo acepta texto UTF-8 y aplica política de lectura, exclusiones de rutas sensibles y enlaces, máximo 8000 bytes por archivo y 24000 bytes del JSON de contexto. Los archivos opcionales fuera de límites se omiten; un archivo explícito inválido detiene el flujo. Revisá la vista previa antes de autorizar el envío: la protección por nombres no detecta todos los secretos. Rechazarla cancela la planificación. El plan queda vinculado al hash de la entrada y a su versión; esto no garantiza que los archivos no cambien luego ni sustituye las políticas de herramientas.
 
 Opcionalmente agregá `"planner": { "model": "MODELO_PLANIFICADOR" }` dentro de `agents` o definí `YOUR_GEAR_PLANNER_MODEL`. Usa las mismas reglas de precedencia y autenticación que classifier.
 
