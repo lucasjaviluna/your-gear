@@ -44,6 +44,28 @@ your-gear --analyze-only "Agregar permisos por rol"
 
 El clasificador usa el modelo configurado mediante la autenticación existente de Pi y devuelve JSON validado con ruta recomendada (`simple`, `task`, `sdd` o `clarify`), confianza cualitativa, razones, áreas e incógnitas. Utiliza una sesión aislada en memoria sin herramientas, skills, MCP ni instrucciones del proyecto. Envía la solicitud al proveedor y consume uso del modelo. Si falla la evaluación, informa el error sin recomendar una ruta por defecto. No concede permisos ni ejecuta workflows. Usá el comando directo habitual para conservar el comportamiento anterior.
 
+### Modelo específico y revisión de ruta
+
+En la configuración de usuario o proyecto:
+
+```json
+{
+  "provider": "openai",
+  "model": "MODELO_GENERAL",
+  "agents": {
+    "classifier": { "provider": "openai", "model": "MODELO_CLASIFICADOR" }
+  }
+}
+```
+
+El modelo del clasificador se selecciona en este orden: `YOUR_GEAR_CLASSIFIER_MODEL`, `YOUR_GEAR_MODEL`, configuración del agente (proyecto sobre usuario), modelo general (proyecto sobre usuario) y selección por defecto. Si el agente declara proveedor, debe coincidir con el proveedor efectivo de autenticación; no se comparten claves entre proveedores ni se cambia el modo de facturación. El CLI directo no usa la configuración del clasificador.
+
+```sh
+your-gear --review-route "Agregar permisos por rol"
+```
+
+En una terminal interactiva muestra recomendación, razones e incógnitas. Permite aceptar, elegir otra ruta o cancelar; si el modelo solicita aclaración no permite saltarla. Devuelve JSON con evaluación y decisión, sin ejecutar ni persistir workflows. Para reevaluar, emitir una nueva solicitud con la aclaración. `npm run eval:classifier` ejecuta 12 casos sintéticos con el modelo real (consume uso; no se ejecuta automáticamente en CI).
+
 ### Continuar una sesión
 
 Las ejecuciones son efímeras por defecto. Para guardar una conversación y luego continuar la más reciente del mismo directorio de trabajo:
