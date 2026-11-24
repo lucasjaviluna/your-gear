@@ -9,6 +9,8 @@ import { readConfiguration, readSettings, USAGE } from './config.ts';
 import { createToolCallHandler } from './gate.ts';
 import { analysisPrompt } from './assessment.ts';
 import { approveContext, collectContext, parsePlanningArgs } from './context-engine.ts';
+import { parseTaskArgs, runSelectedTest, type TestEvidence } from './verification-evidence.ts';
+import { type VerificationResult } from './verification.ts';
 import { selectModel } from './model-selection.ts';
 import { createResponseOutput, redactError } from './response-output.ts';
 import { resolveSkill } from './skills.ts';
@@ -37,7 +39,8 @@ async function main(controller: AbortController): Promise<void> {
   if (review && (!stdin.isTTY || !stderr.isTTY)) {
     throw new Error('La revisión de ruta requiere una terminal interactiva.');
   }
-  const planningArgs = planning ? parsePlanningArgs(args.slice(1)) : undefined;
+  const taskArgs = executing ? parseTaskArgs(args.slice(1)) : undefined;
+  const planningArgs = taskArgs ?? (planning ? parsePlanningArgs(args.slice(1)) : undefined);
   const classificationRequest = classify ? analysisPrompt(planningArgs?.promptArgs ?? args.slice(1)) : undefined;
   const { createSessionManager, parseSessionArgs } = await import('./sessions.ts');
   const { approveMcpStart, controlledMcpExtension, mcpToolNames, readMcpServer, waitForMcpTools } = await import('./mcp.ts');
@@ -54,6 +57,7 @@ async function main(controller: AbortController): Promise<void> {
   const config = showStatus || listModels ? undefined : readConfiguration(sessionArgs.promptArgs, process.env, settings, classify ? 'classifier' : 'default');
   const plannerConfig = planning ? readConfiguration(['plan'], process.env, settings, 'planner') : undefined;
   const executorConfig = executing ? readConfiguration(['execute'], process.env, settings, 'executor') : undefined;
+  const verifierConfig = executing ? readConfiguration(['verify'], process.env, settings, 'verifier') : undefined;
 
   const { createAgentSession, DefaultResourceLoader, ModelRuntime, SettingsManager } =
     await import('@earendil-works/pi-coding-agent');
@@ -156,8 +160,38 @@ async function main(controller: AbortController): Promise<void> {
             return executeWithSession(executor, message, controller.signal);
           },
         });
-        stdout.write(JSON.stringify({ assessment, decision, context: contextSummary, plan, planDecision, execution }, null, 2) + '\n');
-        if (execution.status !== 'awaiting-verification' || execution.report.blockedCalls || execution.report.toolErrors) process.exitCode = 1;
+        const tests: TestEvidence[] = [];
+        let verification: VerificationResult | undefined;
+        if (execution.status === 'awaiting-verification' && verifierConfig) {
+          try {
+            if (!execution.report.blockedCalls && !execution.report.toolErrors) {
+              for (const path of taskArgs?.tests ?? []) {
+                const test = await runSelectedTest(cwd, path, ask, controller.signal);
+                tests.push(test);
+                if (test.status !== 'exit-zero') break;
+              }
+            }
+            const after = refreshContext();
+            const { verifyTask } = await import('./verification.ts');
+            const { createVerifierSession, verifyWithSession } = await import('./verifier-agent.ts');
+            verification = await verifyTask({ request: classificationRequest, plan, report: execution.report, before: context, after, tests }, {
+              ask, signal: controller.signal, refreshDigest: () => refreshContext().digest,
+              complete: async message => {
+                const verifierModel = await selectModel(verifierConfig, modelRuntime);
+                stderr.write(`Your Gear verifier: ${verifierModel.provider}/${verifierModel.id}\n`);
+                const verifier = await createVerifierSession({ cwd, agentDir, modelRuntime, model: verifierModel });
+                return verifyWithSession(verifier, message, controller.signal);
+              },
+            });
+          } catch {
+            verification = { status: controller.signal.aborted ? 'cancelled' : 'inconclusive', criteria: [],
+              evidence: [], reason: 'No se pudo completar la verificación; los cambios previos pueden permanecer.' };
+          }
+        }
+        stdout.write(JSON.stringify({ assessment, decision, context: contextSummary, plan, planDecision, execution,
+          tests: tests.map(({ path, status, exitCode, outputTruncated }) => ({ path, status, exitCode, outputTruncated })), verification }, null, 2) + '\n');
+        if (controller.signal.aborted) process.exitCode = 130;
+        else if (verification?.status !== 'accepted') process.exitCode = 1;
         return;
       }
       stdout.write(JSON.stringify({ assessment, decision, context: contextSummary, plan, planDecision }, null, 2) + '\n');
