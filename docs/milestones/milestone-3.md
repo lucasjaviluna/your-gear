@@ -1,6 +1,6 @@
 # Hito 3 — Workflows con humanos en el circuito
 
-**Estado:** incremento 3.A propuesto, análisis aislado y sin efectos. La aceptación manual del Hito 2 sigue pendiente; no se habilitan workflows hasta resolverla.
+**Estado:** 3.A integrado con CI exitoso; 3.B propuesto, análisis y decisión aislados. La aceptación manual del Hito 2 sigue pendiente; no se habilitan workflows hasta resolverla.
 
 ## Referencias y decisiones
 
@@ -42,8 +42,15 @@ Decisión revisada por el usuario: sustituir clasificación mediante regex y pal
 - `your-gear --analyze-only "tarea"`: usa autenticación y modelo configurados, envía la solicitud al proveedor, consume uso del modelo y devuelve solo JSON validado. No admite flags de ejecución; usar `--` para texto literal.
 - Evaluar intención, impacto, alcance, riesgo, reversibilidad, dependencias e incertidumbre. No inferir información del repositorio que no se haya suministrado.
 - Sin fallback léxico ni ruta automática ante errores de proveedor, cancelación o respuesta inválida. La confianza cualitativa no es una probabilidad calibrada; una respuesta válida puede ser semánticamente incorrecta. Ninguna ruta concede permisos.
-- Tests de contrato, errores e integración con SDK y modelo simulado; los casos semánticos se deben evaluar también con un modelo real. CI pendiente.
+- Tests de contrato, errores e integración con SDK y modelo simulado; los casos semánticos se deben evaluar también con un modelo real. CI de PR #13 exitoso (run 45314703177). Evaluación con modelo real pendiente.
+
+## Incremento 3.B — Configuración y revisión humana
+
+- Configuración `agents.classifier` con modelo y proveedor opcional igual al proveedor efectivo; no se reutilizan claves entre proveedores. `YOUR_GEAR_CLASSIFIER_MODEL` prevalece sobre el modelo global del entorno, el modelo específico de archivos y el modelo general de archivos. Herencia usuario/proyecto por campo.
+- `--review-route` exige TTY, muestra razones e incógnitas y solicita aceptar, cambiar o cancelar. `clarify` no se puede saltar. Una selección es una decisión de estrategia, no autorización de ejecución. No persiste estado ni inicia workflows.
+- Tests de precedencia, rechazo de claves/configuración desconocida, revisión y cancelación; smoke de rechazo sin TTY. CI pendiente.
+- `npm run eval:classifier` ejecuta 12 ejemplos sintéticos con el modelo configurado. Reporta aciertos, errores y subclasificación de riesgos explícitos en el conjunto etiquetado. No se ejecuta en CI sin proveedor; no representa una medida general de calidad. No registra prompts ni respuestas completas del modelo. Validación real pendiente.
 
 ## Próximo paso
 
-Validar el CI de 3.A. Resolver aceptación del Hito 2 antes de habilitar ejecución de workflows. Después implementar 3.B: confirmación humana de ruta, configuración específica del clasificador y evaluación de calidad semántica.
+Validar CI de 3.B y ejecutar la evaluación con modelo real cuando haya acceso a una sesión autorizada. Resolver aceptación del Hito 2 antes de habilitar ejecución de workflows. Luego 3.C: plan, gate, ejecución y verificación.
