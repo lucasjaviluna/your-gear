@@ -54,6 +54,11 @@ try {
   assert.match(invoke(['--help']).stdout, /Uso: your-gear/);
   assert.match(invoke(['-h']).stdout, /Uso: your-gear/);
   assert.equal(invoke(['--version']).stdout.trim(), manifest.version);
+  const assessment = JSON.parse(invoke(['--analyze-only', 'Agregar permisos por rol']).stdout);
+  assert.equal(assessment.recommendedRoute, 'sdd');
+  assert.equal(assessment.source, 'deterministic');
+  assert.match(invoke(['--analyze-only', '--mcp', 'fixture', 'hola'], 1).stderr, /no admite otras opciones/);
+  assert.match(invoke(['--analyze-only'], 1).stderr, /Uso/);
   assert.match(invoke(['--invalid-option'], 1).stderr, /Opción desconocida/);
   // Invoke the installed CLI without a TTY, with a registered local server
   // that would create a marker immediately if it ever started.
