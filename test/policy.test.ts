@@ -26,7 +26,7 @@ test('path traversal y ruta absoluta externa se deniegan', t => {
 
 test('se deniegan secretos y directorios internos', t => {
   const cwd = workspace(t);
-  for (const path of ['.env', '.env.local', '.git/config', '.your-gear/auth.json']) {
+  for (const path of ['.env', '.env.local', '.git/config', '.your-gear/auth.json', '.ytk-memory/ytk-memory.sqlite', '.ytk-memory.json']) {
     assert.equal(decideTool({ cwd, toolName: 'read', input: { path } }).type, 'deny');
   }
 });
