@@ -1,6 +1,6 @@
 # Arquitectura vigente — Your Gear
 
-**Corte:** main tras PR #22 (2026-11-24). Hitos 0/1 aceptados para el alcance validado; 2.A–3.D.4 integrados y con CI exitoso, con aceptación real pendiente. Consultar [roadmap](roadmap.md) para el estado y [seguridad](security.md) para límites. Este documento distingue implementación de objetivos de evolución.
+**Corte:** main tras PR #22 (2026-11-24). Hitos 0/1 aceptados para el alcance validado; 2.A–3.D.4 integrados y con CI exitoso, con aceptación real pendiente. Consultar [roadmap](roadmap.md) para el estado y [seguridad](security.md) para límites. Este documento describe implementación; la [arquitectura objetivo acordada](target-architecture.md) y el [ADR-005](decisions/ADR-005-local-agentic-platform.md) registran la evolución prevista.
 
 ## Componentes implementados
 
@@ -67,4 +67,4 @@ El journal reside en `~/.your-gear/workflows/<hash cwd canónico>/<uuid>.jsonl`;
 
 ## Evolución
 
-Reutilizar SDK antes de abstraer. Mantener políticas fuera del LLM; validar nuevas vías de efectos y divulgación. El siguiente incremento es evaluar SDD/OpenSpec opcional (3.E), sin confundir integración con aceptación real. No introducir DI/event bus universal, colas, microservicios, marketplace ni una base vectorial propia sin caso comprobado. Ver [decisiones](decisions/ADR-001-runtime.md), [extensibilidad](decisions/ADR-003-extensibility.md), [memoria](adr/ADR-004-optional-agent-memory.md) y [referencias](references.md).
+Reutilizar SDK antes de abstraer. Mantener políticas fuera del LLM; validar nuevas vías de efectos y divulgación. La dirección aprobada incorpora entrada unificada, conectores opcionales, resiliencia, memoria avanzada, observabilidad, TUI y distribución de producción en Hitos 4–10. El siguiente incremento sigue siendo evaluar SDD/OpenSpec opcional (3.E), sin confundir integración con aceptación real. No introducir DI/event bus universal, colas, microservicios, marketplace ni una base vectorial propia sin caso comprobado. Ver [decisiones](decisions/ADR-001-runtime.md), [extensibilidad](decisions/ADR-003-extensibility.md), [memoria](adr/ADR-004-optional-agent-memory.md) y [referencias](references.md).

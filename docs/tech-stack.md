@@ -41,7 +41,7 @@ Se eligió reutilizar el proveedor `openai` de Pi 1.6.0 y el **Sign in with Chat
 | Agent Memory | YTK Go/SQLite/FTS5 externo, optativo por MCP; no SQLite directo en Your Gear |
 | CI | GitHub Actions: Ubuntu, Windows, macOS |
 
-**Pendiente:** TUI, SDD/OpenSpec (3.E), recall general y RAG documental (Hito 4), robustez de producción (Hito 5). No hay dependencia de OpenSpec ni base vectorial interna todavía.
+**Pendiente:** SDD/OpenSpec (3.E), entrada unificada (4), conectores (5), resiliencia (6), recall general y RAG documental (7), observabilidad (8), TUI (9) y producción (10). Las bibliotecas TUI y exportadores se evaluarán por evidencia; ver [arquitectura objetivo](target-architecture.md). No hay dependencia de OpenSpec ni base vectorial interna todavía.
 
 ## Protocolo histórico de evaluación del spike
 1. Obtener modelo y auth permitidos, sin crear secretos en git.

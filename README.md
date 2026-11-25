@@ -1,6 +1,6 @@
 # Your Gear
 
-**Your Gear** es un harness de agentes de IA configurable y extensible con una experiencia CLI terminal-first.
+**Your Gear** es una plataforma local de ejecución y orquestación de trabajo agéntico, extensible, configurable, resiliente y observable, con una experiencia terminal-first. Esta es la dirección de producto acordada; las capacidades implementadas se detallan debajo.
 
 > **Estado al PR #22 (2026-11-24):** Hitos 0/1 aceptados para el alcance probado en Windows; 2.A–3.D.4 integrados con CI exitoso en Windows, Linux y macOS. Workflows task y memoria YTK optativa son experimentales. Quedan pendientes aceptación manual de Hitos 2/3, evaluación semántica y smoke YTK real. Próximo incremento: 3.E, SDD/OpenSpec opcional. Ver [roadmap](docs/roadmap.md), [arquitectura](docs/architecture.md) y [seguridad](docs/security.md).
 
@@ -262,13 +262,15 @@ El CLI informa en stderr el modo de sesión, el resultado de cada solicitud de a
 
 - [Referencias técnicas](docs/references.md)
 - [Visión](docs/vision.md)
-- [Arquitectura](docs/architecture.md)
+- [Arquitectura vigente](docs/architecture.md)
+- [Arquitectura objetivo de largo plazo](docs/target-architecture.md)
 - [Evaluación tecnológica](docs/tech-stack.md)
 - [Seguridad y límites](docs/security.md)
 - [ADR-001: runtime](docs/decisions/ADR-001-runtime.md)
 - [ADR-002: autenticación autorizada](docs/decisions/ADR-002-model-auth.md)
 - [ADR-003: extensibilidad](docs/decisions/ADR-003-extensibility.md)
 - [ADR-004: memoria opcional](docs/adr/ADR-004-optional-agent-memory.md)
+- [ADR-005: plataforma local de trabajo agéntico](docs/decisions/ADR-005-local-agentic-platform.md)
 - [Hito 0: seguimiento](docs/milestones/milestone-0.md)
 - [Hito 1: seguimiento](docs/milestones/milestone-1.md)
 - [Hito 2: seguimiento](docs/milestones/milestone-2.md)
@@ -280,7 +282,7 @@ El CLI informa en stderr el modo de sesión, el resultado de cada solicitud de a
 
 ## Objetivos
 
-Núcleo pequeño, interfaces justificadas, herramientas con human-in-the-loop, CLI primero, sesiones recuperables y providers autorizados. Skills, MCP, workflow task, journal y memoria YTK optativa tienen implementación inicial. TUI, SDD y RAG siguen pendientes, sin sobreingeniería. [Your Harness v0](https://github.com/lucasjaviluna/your-harness-v0) y [agent-harness-lab](https://github.com/lucasjaviluna/agent-harness-lab) son referencias técnicas; no se copia su arquitectura automáticamente.
+Núcleo pequeño, interfaces justificadas, herramientas con human-in-the-loop, CLI primero, sesiones recuperables y providers autorizados. Skills, MCP, workflow task, journal y memoria YTK optativa tienen implementación inicial. El siguiente incremento es 3.E (SDD/OpenSpec opcional). El [roadmap acordado](docs/roadmap.md) amplía los hitos futuros: entrada unificada (4), gestión de conectores (5), resiliencia y recuperación (6), contexto/memoria avanzada y RAG (7), observabilidad (8), experiencia y TUI (9), producción y distribución (10). Son objetivos, no capacidades ya disponibles. El paquete sigue privado; no se ofrece todavía un setup asistido ni un gestor general de conectores. Sin sobreingeniería. [Your Harness v0](https://github.com/lucasjaviluna/your-harness-v0) y [agent-harness-lab](https://github.com/lucasjaviluna/agent-harness-lab) son referencias técnicas; no se copia su arquitectura automáticamente.
 
 ## Licencia
 
