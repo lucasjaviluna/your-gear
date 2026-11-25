@@ -28,7 +28,7 @@ try {
   assert.equal(packed[0].name, manifest.name);
   assert.equal(packed[0].version, manifest.version);
   const files = new Set(packed[0].files.map(file => file.path));
-  for (const required of ['package.json', 'README.md', 'dist/cli.js', 'dist/config.js', 'dist/assessment.js', 'dist/assessment-agent.js', 'dist/planner-agent.js', 'dist/plan.js', 'dist/tool-free-agent.js', 'dist/context-engine.js', 'dist/task-orchestrator.js', 'dist/executor-agent.js', 'dist/verification-evidence.js', 'dist/verification.js', 'dist/verifier-agent.js', 'dist/workflow-journal.js', 'dist/workflow-recovery.js', 'dist/memory/provider.js', 'dist/memory/config.js', 'dist/memory/ytk.js', 'dist/memory/commands.js', 'dist/memory/checkpoint.js', 'dist/memory/workflow-memory.js', 'docs/references.md']) {
+  for (const required of ['package.json', 'README.md', 'dist/cli.js', 'dist/config.js', 'dist/assessment.js', 'dist/assessment-agent.js', 'dist/planner-agent.js', 'dist/plan.js', 'dist/tool-free-agent.js', 'dist/context-engine.js', 'dist/task-orchestrator.js', 'dist/executor-agent.js', 'dist/verification-evidence.js', 'dist/verification.js', 'dist/verifier-agent.js', 'dist/workflow-journal.js', 'dist/workflow-recovery.js', 'dist/memory/provider.js', 'dist/memory/config.js', 'dist/memory/ytk.js', 'dist/memory/commands.js', 'dist/memory/checkpoint.js', 'dist/memory/workflow-memory.js', 'dist/openspec.js', 'docs/references.md']) {
     assert.ok(files.has(required), `Falta en el tarball: ${required}`);
   }
   for (const file of files) {
@@ -54,6 +54,17 @@ try {
   assert.match(invoke(['--help']).stdout, /Uso: your-gear/);
   assert.match(invoke(['-h']).stdout, /Uso: your-gear/);
   assert.equal(invoke(['--version']).stdout.trim(), manifest.version);
+  const sdd = JSON.parse(invoke(['sdd','status']).stdout);
+  assert.equal(sdd.root, 'missing');
+  assert.equal(sdd.cli, 'not-probed');
+  assert.equal(sdd.ready, false);
+  mkdirSync(join(workspace,'openspec','changes','add-retry'),{recursive:true});
+  writeFileSync(join(workspace,'openspec','config.yaml'),'schema: spec-driven');
+  const discovered = JSON.parse(invoke(['sdd','status']).stdout);
+  assert.equal(discovered.candidates[0].id,'add-retry');
+  assert.equal(discovered.ready,false);
+  assert.match(invoke(['sdd','probe',process.execPath],1).stderr,/terminal interactiva/);
+  assert.match(invoke(['sdd','apply'],1).stderr,/Uso:/);
   // Semantic classification requires a model. CI validates early error paths without credentials.
   assert.match(invoke(['--analyze-only', 'Agregar permisos por rol'], 1).stderr, /JSON inválida/);
   assert.match(invoke(['--analyze-only', '--mcp', 'fixture', 'hola'], 1).stderr, /no admite otras opciones/);
