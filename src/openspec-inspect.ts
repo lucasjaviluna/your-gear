@@ -74,16 +74,23 @@ export async function inspectOpenSpec(options: Options): Promise<unknown> {
     const version = await invoke(executable, ['--version'], root, home, signal);
     if (version.code !== 0 || version.output.trim() !== '2.2.0') throw new Error('Solo se admite OpenSpec 2.2.0.');
     const status = await invoke(executable, ['status', '--change', change, '--json'], root, home, signal);
-    const validation = await invoke(executable, ['validate', change, '--json'], root, home, signal);
-    let s: unknown, v: unknown;
-    try { s = JSON.parse(status.output); v = JSON.parse(validation.output); } catch { throw new Error('Respuesta OpenSpec inválida.'); }
+    let s: unknown;
+    try { s = JSON.parse(status.output); } catch { throw new Error('Respuesta OpenSpec inválida.'); }
     const validRoot = (x: unknown) => record(x) && record(x.root) && typeof x.root.path === 'string' && x.root.source === 'nearest' && realpathSync(x.root.path) === root;
-    if (status.code !== 0 || !record(s) || !validRoot(s) || s.changeName !== change || typeof s.isPlanningComplete !== 'boolean' || !Array.isArray(s.artifacts) || s.artifacts.length > 100 ||
-        !record(v) || !validRoot(v) || v.version !== '1.0' || !Array.isArray(v.items) || v.items.length !== 1 || !record(v.items[0]) || v.items[0].id !== change || v.items[0].type !== 'change' || typeof v.items[0].valid !== 'boolean' || validation.code !== (v.items[0].valid ? 0 : 1)) throw new Error('Respuesta o raíz OpenSpec no admitida.');
+    if (status.code !== 0 || !record(s) || !validRoot(s) || s.changeName !== change || typeof s.isPlanningComplete !== 'boolean' || !Array.isArray(s.artifacts) || s.artifacts.length > 100) throw new Error('Respuesta o raíz OpenSpec no admitida.');
     const artifacts = s.artifacts.map(item => {
       if (!record(item) || typeof item.id !== 'string' || !/^[a-z0-9-]{1,100}$/.test(item.id) || !['done','ready','blocked','skipped'].includes(String(item.status))) throw new Error('Artefacto OpenSpec inválido.');
       return {id:item.id, status:item.status};
     });
+    // Recheck the tree after the external status process, before starting another process.
+    const current = preflight(root, change);
+    if (current.root !== root || current.digest !== before.digest || scriptDigest(executable) !== beforeScript) throw new Error('Archivos modificados durante la inspección.');
+    const validation = await invoke(executable, ['validate', change, '--json'], root, home, signal);
+    let v: unknown;
+    try { v = JSON.parse(validation.output); } catch { throw new Error('Respuesta OpenSpec inválida.'); }
+    if (!record(v) || !validRoot(v) || v.version !== '1.0' || !Array.isArray(v.items) || v.items.length !== 1 || !record(v.items[0]) || v.items[0].id !== change || v.items[0].type !== 'change' || typeof v.items[0].valid !== 'boolean' || validation.code !== (v.items[0].valid ? 0 : 1)) throw new Error('Respuesta o raíz OpenSpec no admitida.');
+    const final = preflight(root, change);
+    if (final.root !== root || final.digest !== before.digest || scriptDigest(executable) !== beforeScript) throw new Error('Archivos modificados durante la inspección.');
     // Do not consume paths, instructions, diagnostics, or content from the external process.
     if (relative(root, realpathSync(join(root, 'openspec'))).startsWith('..')) throw new Error('Raíz OpenSpec inválida.');
     return {provider:'openspec', version:'2.2.0', change, planningComplete:s.isPlanningComplete, artifacts, structurallyValid:v.items[0].valid, note:'La planificación y validación estructural no prueban implementación ni aceptación.'};

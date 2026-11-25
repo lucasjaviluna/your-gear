@@ -43,7 +43,7 @@ Los PR #13–22 están integrados; el detalle de sus CI y alcance se conserva en
 
 **Pendientes antes de declarar aceptación del Hito 3:** [guía del Hito 3](spikes/milestone-3-acceptance.md) (incluye recuperación con YTK), evaluación semántica con modelo real y smoke YTK real. La desviación acordada permite continuar incrementos acotados, no habilitar por defecto capacidades no validadas ni usar datos reales. No certificar seguridad de producción.
 
-**Siguiente:** 3.E, validar el primer corte de inspección optativa y evaluar el workflow posterior conforme a la [evaluación](spikes/3e-openspec-evaluation.md) y [ADR-006](decisions/ADR-006-optional-openspec.md). Mantener seguimiento explícito de la deuda de aceptación.
+**Siguiente:** 3.E, conectar la revisión experimental de artefactos al planificador y ejecutor mediante un contrato SDD y gates propios, y validar el workflow conforme a la [evaluación](spikes/3e-openspec-evaluation.md) y [ADR-006](decisions/ADR-006-optional-openspec.md). Mantener seguimiento explícito de la deuda de aceptación.
 
 ## Hitos 4–10 — Evolución de producto acordada
 
