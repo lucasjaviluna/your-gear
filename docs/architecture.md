@@ -25,7 +25,7 @@ Usuario / terminal (CLI)
   +-- Configuración, selección de modelo, auth Pi, policy, aprobación y cancelación
 ```
 
-Pi SDK 1.6.0 proporciona runtime, eventos, herramientas, recursos y sesiones. `@earendil-works/pi-mcp` 1.6.0 proporciona el cliente stdio para memoria. Your Gear no es un fork, ni YTK es una dependencia obligatoria del proceso directo. No hay TUI, servidor web, motor declarativo genérico ni integración OpenSpec activa.
+Pi SDK 1.6.0 proporciona runtime, eventos, herramientas, recursos y sesiones. `@earendil-works/pi-mcp` 1.6.0 proporciona el cliente stdio para memoria. Your Gear no es un fork, ni YTK es una dependencia obligatoria del proceso directo. No hay TUI, servidor web, motor declarativo genérico ni ejecución SDD activa. 3.E.1 propone diagnóstico OpenSpec separado sin LLM ni efectos de workflow.
 
 | Área | Implementación principal |
 | --- | --- |
@@ -33,6 +33,7 @@ Pi SDK 1.6.0 proporciona runtime, eventos, herramientas, recursos y sesiones. `@
 | Configuración y auth | `config.ts`, `model-selection.ts`, ModelRuntime de Pi |
 | Política de herramientas | `policy.ts`, `gate.ts`, `approval.ts` |
 | Sesiones y extensibilidad directa | `sessions.ts`, `skills.ts`, `mcp.ts` |
+| Diagnóstico SDD (3.E.1) | `openspec.ts`: inventario local y probe autorizado |
 | Clasificación y decisión de ruta | `assessment.ts`, `assessment-agent.ts`, `route-review.ts` |
 | Contexto y planificación | `context-engine.ts`, `plan.ts`, `planner-agent.ts` |
 | Ejecución de task | `task-orchestrator.ts`, `executor-agent.ts` |
@@ -45,7 +46,7 @@ El CLI todavía coordina partes del workflow; no existe una API pública indepen
 ## Modos de trabajo y fronteras
 
 - **Directo:** comportamiento por defecto. Sesión Pi efímera, streaming, lectura dentro del workspace y gate de escritura/edición/shell. `--persist` y `--continue` conservan conversaciones, no estados globales del workflow. Una skill y un servidor MCP pueden seleccionarse explícitamente; no se cargan extensiones externas automáticamente.
-- **Clasificación:** LLM sin herramientas, salida JSON validada; rutas simple/task/sdd/clarify. No regex, fallback léxico ni ejecución automática de la recomendación. `--review-route` permite decidir sin efectos. `--plan` solo planifica task. SDD todavía es una recomendación, no un ejecutor.
+- **Clasificación:** LLM sin herramientas, salida JSON validada; rutas simple/task/sdd/clarify. No regex, fallback léxico ni ejecución automática de la recomendación. `--review-route` permite decidir sin efectos. `--plan` solo planifica task. SDD todavía es una recomendación, no un ejecutor; los diagnósticos sdd status/probe no habilitan esa ruta.
 - **Task experimental:** requiere recomendación y selección task, aprobación de contexto y plan, y gate de inicio. Classifier, Planner, Executor y Verifier son sesiones independientes, no un sistema de delegación autónoma. El Context Engine lee hasta ocho archivos textuales (8000 bytes por archivo, 24000 bytes JSON), raíz conocida y selección explícita; no búsqueda recursiva ni RAG. Plan y entrada quedan ligados por hashes.
 - **Executor:** solo read/write/edit, cada llamada con revisión humana, incluso read. Revalida política y snapshot antes de ejecutar; el alcance semántico depende del modelo y revisión humana. Sin shell, skills, extensiones MCP del modelo ni persistencia de conversaciones en task.
 - **Verifier:** no tiene herramientas. El harness puede lanzar hasta tres archivos de prueba Node elegidos por el usuario, con autorización individual y límites. Una salida de proceso cero no demuestra cobertura. El LLM contrasta evidencia acotada y criterios; accepted exige pruebas seleccionadas con código cero, sin truncamiento ni errores/bloqueos del executor, criterios respaldados y revisión humana final. No es certificación del repositorio completo.
