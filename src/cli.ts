@@ -36,7 +36,18 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     return;
   }
   if (args[0] === 'openspec') {
-    if (args.length !== 4 || args[1] !== 'inspect') throw new Error('Uso: your-gear openspec inspect RUTA_ABSOLUTA_JS CHANGE');
+    if (args[1] === 'review' && args.length >= 8) {
+      if (!stdin.isTTY || !stdout.isTTY) throw new Error('La revisión requiere terminal interactiva.');
+      const { reviewOpenSpec } = await import('./openspec-review.ts');
+      const { safePreview } = await import('./verification-evidence.ts');
+      const result = await reviewOpenSpec({cwd:process.cwd(), script:args[2], change:args[3], files:args.slice(4), interactive:true,
+        signal:controller.signal, approve:description => requestApproval(description, controller.signal, () => controller.abort()),
+        ask:async description => (await requestApproval(description, controller.signal, () => controller.abort())) ? 's' : 'n'});
+      stdout.write(safePreview({status:result.status, ...(result.context ? {paths:result.context.entries.map(e=>e.path), digest:result.context.digest} : {})}) + '\n');
+      if (result.status !== 'reviewed') process.exitCode = 1;
+      return;
+    }
+    if (args.length !== 4 || args[1] !== 'inspect') throw new Error('Uso: your-gear openspec inspect RUTA_ABSOLUTA_JS CHANGE | openspec review RUTA_ABSOLUTA_JS CHANGE ARCHIVOS...');
     const { inspectOpenSpec } = await import('./openspec-inspect.ts');
     const { safePreview } = await import('./verification-evidence.ts');
     const result = await inspectOpenSpec({cwd:process.cwd(), script:args[2], change:args[3], interactive:Boolean(stdin.isTTY && stdout.isTTY), signal:controller.signal, approve:description => requestApproval(description, controller.signal, () => controller.abort())});

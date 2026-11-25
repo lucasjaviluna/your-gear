@@ -193,6 +193,8 @@ Las opciones de contexto y pruebas van después de --record/--memory (si se usan
 
 La inspección experimental `your-gear openspec inspect RUTA_ABSOLUTA_JS CHANGE` consulta un change existente con OpenSpec 2.2.0 y requiere terminal y autorización. La ruta apunta a `bin/openspec.js` instalado por el usuario. Solo admite `openspec/config.yaml` con `schema: spec-driven` y comentarios, sin esquemas locales ni enlaces bajo `openspec/`. Ejecuta Node y el script con permisos del usuario, no como sandbox; puede leer o modificar archivos. No instala ni inicializa OpenSpec y no envía contenido al modelo. El resultado de planificación y validación estructural no acredita implementación ni aceptación. Requiere Node compatible con OpenSpec (>=22.20.0); se probó el CLI interactivo en un fixture temporal de Windows, y la aceptación en macOS sigue pendiente.
 
+Para revisar un change ya preparado, `your-gear openspec review RUTA_ABSOLUTA_JS CHANGE ARCHIVOS...` requiere las rutas relativas a `openspec/changes/CHANGE/` de `proposal.md`, `design.md`, `tasks.md` y al menos una `specs/.../spec.md` (hasta ocho archivos en total). Primero inspecciona OpenSpec con autorización; después muestra los archivos seleccionados y el contexto predeterminado acotado y solicita confirmar su revisión. El resultado identifica rutas y digest, no guarda aprobación ni envía contenido a un modelo. No inicia planificación ni ejecución SDD. Se aplican los límites de contexto de task.
+
 ### Continuar una sesión
 
 Las ejecuciones son efímeras por defecto. Para guardar una conversación y luego continuar la más reciente del mismo directorio de trabajo:

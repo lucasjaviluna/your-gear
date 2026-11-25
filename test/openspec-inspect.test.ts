@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync, linkSync, unlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync, linkSync, unlinkSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { inspectOpenSpec } from '../src/openspec-inspect.ts';
@@ -21,8 +21,14 @@ test('inspección solo usa salida validada y requiere autorización', async () =
     await assert.rejects(inspectOpenSpec({...opts, approve:async()=>{ writeFileSync(script, 'changed'); return true; }}), /modificados/);
     writeFileSync(script, `console.log('2.1.0')`);
     await assert.rejects(inspectOpenSpec(opts), /2\.2\.0/);
-    writeFileSync(script, `const a=process.argv.slice(2); if(a[0]==='--version') console.log('2.2.0'); else console.log(JSON.stringify({root:{path:require('node:os').tmpdir(),source:'nearest'},changeName:'demo',isPlanningComplete:true,artifacts:[]}));`);
+    writeFileSync(script, `const a=process.argv.slice(2); if(a[0]==='--version') console.log('2.2.0'); else if(a[0]==='validate') require('node:fs').writeFileSync('validate-ran','x'); else console.log(JSON.stringify({root:{path:require('node:os').tmpdir(),source:'nearest'},changeName:'demo',isPlanningComplete:true,artifacts:[]}));`);
     await assert.rejects(inspectOpenSpec(opts), /raíz/);
+    assert.equal(existsSync(join(dir,'validate-ran')), false);
+    writeFileSync(script, `const a=process.argv.slice(2); if(a[0]==='--version') console.log('2.2.0'); else if(a[0]==='status'){require('node:fs').writeFileSync('openspec/changes/demo/changed.md','x'); console.log(JSON.stringify({root:{path:process.cwd(),source:'nearest'},changeName:'demo',isPlanningComplete:true,artifacts:[]}));} else require('node:fs').writeFileSync('validate-ran','x');`);
+    await assert.rejects(inspectOpenSpec(opts), /modificados durante la inspección/);
+    assert.equal(existsSync(join(dir,'validate-ran')), false);
+    writeFileSync(script, `const a=process.argv.slice(2),root={path:process.cwd(),source:'nearest'}; if(a[0]==='--version') console.log('2.2.0'); else if(a[0]==='status') console.log(JSON.stringify({root,changeName:'demo',isPlanningComplete:true,artifacts:[]})); else {require('node:fs').writeFileSync('openspec/changes/demo/changed.md','altered'); console.log(JSON.stringify({root,version:'1.0',items:[{id:'demo',type:'change',valid:true}]}));}`);
+    await assert.rejects(inspectOpenSpec(opts), /modificados durante la inspección/);
     await assert.rejects(inspectOpenSpec({...opts, approve:async()=>{writeFileSync(join(dir,'openspec','changes','demo','new.md'),'changed'); return true;}}), /modificados/);
     writeFileSync(script, `console.log(process.argv[2]==='--version'?'2.2.0':'{}')`);
     await assert.rejects(inspectOpenSpec(opts), /respuesta|raíz/i);

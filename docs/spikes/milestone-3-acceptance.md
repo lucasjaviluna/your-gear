@@ -142,6 +142,10 @@ Si se desea guardar los checkpoints del nuevo intento, incluir --memory inmediat
 
 ## Registro de resultados
 
+### Revisión experimental OpenSpec
+
+En un workspace descartable con OpenSpec 2.2.0 instalado por separado y Node compatible, preparar un change con proposal, design, tasks y una spec válida. Ejecutar `your-gear openspec review RUTA_JS CHANGE RUTAS...` con esas rutas explícitas. Confirmar que el primer gate identifica el ejecutable y el workspace; rechazarlo y comprobar que no se inicia el proveedor. Repetir, autorizar el proveedor y revisar el contenido presentado; rechazar y confirmar `cancelled`. Volver a ejecutar y confirmar la revisión: debe devolver rutas y digest, sin ejecutar el workflow ni enviar contenido a un modelo. Repetir con un change estructuralmente inválido y con un archivo modificado durante el gate: ambos deben rechazarse. Registrar versión, plataforma y resultados; esto no acepta el workflow SDD.
+
 Por caso: OK / FAIL / NO EJERCITADO, OS, versión del paquete, modelo, UUID si corresponde, código de salida y observación sin datos sensibles. Registrar cualquier cambio fuera del alcance, salida truncada o test no ejecutado. No declarar completado el Hito 3 solo por CI. La aceptación manual del Hito 2 se mantiene en su guía propia.
 
 ### Ejecución parcial en Windows
