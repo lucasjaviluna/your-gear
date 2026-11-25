@@ -35,6 +35,14 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     stdout.write(manifest.version + '\n');
     return;
   }
+  if (args[0] === 'openspec') {
+    if (args.length !== 4 || args[1] !== 'inspect') throw new Error('Uso: your-gear openspec inspect RUTA_ABSOLUTA_JS CHANGE');
+    const { inspectOpenSpec } = await import('./openspec-inspect.ts');
+    const { safePreview } = await import('./verification-evidence.ts');
+    const result = await inspectOpenSpec({cwd:process.cwd(), script:args[2], change:args[3], interactive:Boolean(stdin.isTTY && stdout.isTTY), signal:controller.signal, approve:description => requestApproval(description, controller.signal, () => controller.abort())});
+    stdout.write(safePreview(result) + '\n');
+    return;
+  }
   if (args[0] === 'memory') {
     const { parseMemoryCommand, runMemoryCommand } = await import('./memory/commands.ts');
     const { connectYtk } = await import('./memory/ytk.ts');

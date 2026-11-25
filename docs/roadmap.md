@@ -37,13 +37,13 @@ Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramie
 | 3.D.2 | Recuperación guiada con nuevo UUID y gates | [#20](https://github.com/lucasjaviluna/your-gear/pull/20) |
 | 3.D.3 | MemoryProvider y adaptador YTK MCP opcional | [#21](https://github.com/lucasjaviluna/your-gear/pull/21) |
 | 3.D.4 | Checkpoints opt-in y recuperación asistida por referencia exacta | [#22](https://github.com/lucasjaviluna/your-gear/pull/22) |
-| 3.E | Evaluación e integración SDD/OpenSpec opcional | Pendiente |
+| 3.E | Evaluación e integración SDD/OpenSpec opcional | Inspección experimental implementada localmente; aceptación e integración del workflow pendientes |
 
-Los PR #13–22 están integrados; el detalle de sus CI y alcance se conserva en [seguimiento del Hito 3](milestones/milestone-3.md). El modo directo permanece por defecto, la ruta task es optativa y experimental. Por decisión del usuario se adelantó memoria agéntica para recuperación antes de SDD ([ADR-004](adr/ADR-004-optional-agent-memory.md)); YTK no es obligatorio. OpenSpec todavía no se ejecuta.
+Los PR #13–22 están integrados; el detalle de sus CI y alcance se conserva en [seguimiento del Hito 3](milestones/milestone-3.md). El modo directo permanece por defecto, la ruta task es optativa y experimental. Por decisión del usuario se adelantó memoria agéntica para recuperación antes de SDD ([ADR-004](adr/ADR-004-optional-agent-memory.md)); YTK no es obligatorio. OpenSpec puede consultarse explícitamente mediante la inspección experimental local; no hay workflow SDD ejecutable.
 
 **Pendientes antes de declarar aceptación del Hito 3:** [guía del Hito 3](spikes/milestone-3-acceptance.md) (incluye recuperación con YTK), evaluación semántica con modelo real y smoke YTK real. La desviación acordada permite continuar incrementos acotados, no habilitar por defecto capacidades no validadas ni usar datos reales. No certificar seguridad de producción.
 
-**Siguiente:** 3.E, comenzar por evaluación de necesidad y compatibilidad de OpenSpec y propuesta sin efectos automáticos. Mantener seguimiento explícito de la deuda de aceptación.
+**Siguiente:** 3.E, validar el primer corte de inspección optativa y evaluar el workflow posterior conforme a la [evaluación](spikes/3e-openspec-evaluation.md) y [ADR-006](decisions/ADR-006-optional-openspec.md). Mantener seguimiento explícito de la deuda de aceptación.
 
 ## Hitos 4–10 — Evolución de producto acordada
 

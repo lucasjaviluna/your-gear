@@ -189,7 +189,9 @@ No reanuda automáticamente efectos ni tareas cerradas, no verifica que el proce
 | `--recover ID` | Nuevo intento con memoria válida o solicitud explícita | Sí, tras revisión |
 | `memory status/list/search/get` | Consulta local, arranque autorizado si configurado | No |
 
-Las opciones de contexto y pruebas van después de --record/--memory (si se usan) y antes de la solicitud. --memory debe ir después de --record o del UUID de recuperación. Los modos de revisión y recuperación requieren terminal interactiva. La ruta SDD solo se recomienda actualmente: OpenSpec todavía no se ejecuta.
+Las opciones de contexto y pruebas van después de --record/--memory (si se usan) y antes de la solicitud. --memory debe ir después de --record o del UUID de recuperación. Los modos de revisión y recuperación requieren terminal interactiva. La ruta SDD solo se recomienda actualmente: no ejecuta workflows OpenSpec.
+
+La inspección experimental `your-gear openspec inspect RUTA_ABSOLUTA_JS CHANGE` consulta un change existente con OpenSpec 2.2.0 y requiere terminal y autorización. La ruta apunta a `bin/openspec.js` instalado por el usuario. Solo admite `openspec/config.yaml` con `schema: spec-driven` y comentarios, sin esquemas locales ni enlaces bajo `openspec/`. Ejecuta Node y el script con permisos del usuario, no como sandbox; puede leer o modificar archivos. No instala ni inicializa OpenSpec y no envía contenido al modelo. El resultado de planificación y validación estructural no acredita implementación ni aceptación. Requiere Node compatible con OpenSpec (>=22.20.0); se probó el CLI interactivo en un fixture temporal de Windows, y la aceptación en macOS sigue pendiente.
 
 ### Continuar una sesión
 
