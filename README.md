@@ -4,6 +4,19 @@
 
 > **Estado al PR #22 (2026-11-24):** Hitos 0/1 aceptados para el alcance probado en Windows; 2.A–3.D.4 integrados con CI exitoso en Windows, Linux y macOS. Workflows task y memoria YTK optativa son experimentales. Quedan pendientes aceptación manual de Hitos 2/3, evaluación semántica y smoke YTK real. Próximo incremento: 3.E, SDD/OpenSpec opcional. Ver [roadmap](docs/roadmap.md), [arquitectura](docs/architecture.md) y [seguridad](docs/security.md).
 
+## Diagnóstico SDD/OpenSpec (experimental)
+
+```sh
+your-gear sdd status
+your-gear sdd probe /ruta/absoluta/openspec
+```
+
+El primer comando inspecciona únicamente marcadores locales bajo `openspec/` del cwd, sin abrir contenidos, resolver stores, buscar en padres ni iniciar un proceso. Devuelve candidatos (hasta 20, máximo 100 entradas escaneadas), estados de archivos/directorios, `cli: not-probed` y `ready: false`. No demuestra que haya una propuesta válida, que OpenSpec esté instalado o que la raíz real se resuelva localmente.
+
+El segundo requiere un ejecutable instalado y confiable, path absoluto y aprobación interactiva de `--version`. En Windows usar el binario nativo `openspec.exe`, no el shim npm .cmd. No utiliza shell ni instala OpenSpec; el proceso puede realizar efectos propios, no es sandbox. El resultado informa una versión declarada y `compatibility: not-validated`, no certifica identidad o compatibilidad. Se revisó v2.2.0; la prueba con el binario real queda pendiente. No cambia el Node mínimo de Gear (OpenSpec npm 2.2.0 pide Node >=22.20.0). Ver [ADR-006](docs/decisions/ADR-006-openspec-cli.md).
+
+`sdd` es un nuevo subcomando reservado; para usarlo como texto literal de un prompt directo, anteponer `--`. La clasificación sdd sigue sin ejecutar workflows SDD; no se crean propuestas ni se ejecuta apply, verify, sync o archive en este incremento.
+
 ## Inicio rápido: suscripción ChatGPT a través de Pi
 
 Requiere **Node.js >=22.19.0**, npm y `@earendil-works/pi-coding-agent@1.6.0`. Your Gear no implementa ni lee tokens OAuth: consulta el **ModelRuntime de Pi** con las credenciales que Pi ya administra.
@@ -271,6 +284,7 @@ El CLI informa en stderr el modo de sesión, el resultado de cada solicitud de a
 - [ADR-003: extensibilidad](docs/decisions/ADR-003-extensibility.md)
 - [ADR-004: memoria opcional](docs/adr/ADR-004-optional-agent-memory.md)
 - [ADR-005: plataforma local de trabajo agéntico](docs/decisions/ADR-005-local-agentic-platform.md)
+- [ADR-006: OpenSpec opcional](docs/decisions/ADR-006-openspec-cli.md)
 - [Hito 0: seguimiento](docs/milestones/milestone-0.md)
 - [Hito 1: seguimiento](docs/milestones/milestone-1.md)
 - [Hito 2: seguimiento](docs/milestones/milestone-2.md)
