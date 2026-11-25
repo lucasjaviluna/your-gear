@@ -199,8 +199,8 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     journal?.transition('route-review');
     const decision = await reviewRoute(assessment, ask, controller.signal);
     journal?.record({ kind: 'route', recommended: assessment.recommendedRoute, decision: decision.status === 'selected' ? decision.route : decision.status });
-    if (executing && (assessment.recommendedRoute !== 'task' || decision.status !== 'selected' || decision.route !== 'task')) {
-      stdout.write(JSON.stringify({ workflowId: journal?.id, assessment, decision, execution: { status: 'blocked', reason: 'La ejecución experimental requiere recomendación y selección de task.' } }, null, 2) + '\n');
+    if (executing && (decision.status !== 'selected' || decision.route !== 'task')) {
+      stdout.write(JSON.stringify({ workflowId: journal?.id, assessment, decision, execution: { status: 'blocked', reason: 'La ejecución experimental requiere selección explícita de task.' } }, null, 2) + '\n');
       journal?.finish(decision.status === 'cancelled' ? 'cancelled' : 'blocked');
       process.exitCode = 1;
       return;
@@ -409,7 +409,7 @@ const workflowState: { journal?: WorkflowJournal; memory?: WorkflowMemory } = {}
 main(controller, workflowState).catch((error: unknown) => {
   try { workflowState.journal?.finish(controller.signal.aborted ? 'cancelled' : 'failed'); }
   catch { stderr.write('Your Gear: no se pudo cerrar el registro; revisar estado antes de retomar.\n'); }
-  stderr.write(`Your Gear: ${redactError(error instanceof Error ? error.message : String(error))}\n`);
+  stderr.write(`Your Gear: ${error instanceof Error ? redactError(error.message) : 'Error inesperado.'}\n`);
   process.exitCode = controller.signal.aborted ? 130 : 1;
 }).finally(async () => {
   try { await workflowState.memory?.close(); }

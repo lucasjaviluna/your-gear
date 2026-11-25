@@ -1,6 +1,6 @@
 # Hito 3 — Workflows con humanos en el circuito
 
-**Estado (2026-11-24):** 3.A–3.D.4 integrados con CI exitoso, incluidos PR #22 [run 45504735165](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165); aceptación real pendiente. 3.E sigue pendiente. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
+**Estado (2026-11-24):** 3.A–3.D.4 integrados con CI exitoso, incluidos PR #22 [run 45504735165](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165); aceptación real pendiente. 3.E sigue pendiente. El [Hito 2](milestone-2.md) está aceptado para el alcance validado, con los límites de evidencia allí registrados.
 
 ## Referencias y decisiones
 

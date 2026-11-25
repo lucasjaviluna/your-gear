@@ -143,3 +143,22 @@ Si se desea guardar los checkpoints del nuevo intento, incluir --memory inmediat
 ## Registro de resultados
 
 Por caso: OK / FAIL / NO EJERCITADO, OS, versión del paquete, modelo, UUID si corresponde, código de salida y observación sin datos sensibles. Registrar cualquier cambio fuera del alcance, salida truncada o test no ejecutado. No declarar completado el Hito 3 solo por CI. La aceptación manual del Hito 2 se mantiene en su guía propia.
+
+### Ejecución parcial en Windows
+
+En el laboratorio `test-your-gear-smoke`, con Node 22.23.2, CLI 0.0.0 instalado y modelo `openai/gpt-5.6-luna` (pi-subscription), se observaron los siguientes resultados. La versión del paquete no identifica el commit del tarball instalado.
+
+- Evaluación del clasificador desde el checkout: 12/12 rutas esperadas, cero fallos y cero subclasificaciones riesgosas en ese conjunto.
+- A1: OK, recomendó `sdd`, código 0. A2: OK, recomendó `clarify` y devolvió `needs-clarification`, código 0.
+- A3: la solicitud original obtuvo `clarify`; tras precisar el alcance obtuvo `task`, pero el planificador devolvió un plan inválido y terminó con código 1. No se aprobó ningún plan.
+- A4: rechazo del envío de contexto OK, código 1 y workflow `1e605f68-0d28-4194-ac12-cdb5e9d8aade` cancelado, sin efectos declarados. Rechazos de plan e inicio no ejercitados.
+- Otro intento de workflow llegó a planificación y terminó con el mismo error de plan inválido; `ccb2d806-aa20-45d1-8587-a9077328af97` quedó `failed`, sin efectos declarados. La causa del plan inválido no está determinada.
+- A11: consulta de lista y detalle OK con credenciales disponibles; mostraron estados y metadatos. La variante sin credenciales no se ejercitó.
+- Y1: FAIL; `smoke:ytk` con YTK 0.1.12 terminó con código 1 y error de conexión, también fuera del sandbox. Con la misma configuración y una base temporal, se confirmó que el servidor inicia y lista herramientas, pero no ofrece `memory_list`, que el adaptador exige al conectar. El smoke utiliza una base temporal independiente.
+- Repetición Y1: OK con binario compilado desde el checkout local de Your Team Knowledge que incluye `memory_list`: persistencia y recuperación por referencia exacta, código 0, base temporal. Esto no valida el binario 0.1.12 anterior ni los casos Y2–Y9.
+- Repetición A3 con el `dist` actualizado de Your Gear: generó un plan válido con modelo real y terminó en `needs-clarification` por incógnitas; no se aprobó el plan. Los intentos anteriores usaron la copia instalada del paquete, que no contenía los cambios locales.
+- Intento A7 con `dist` actualizado, modelo `openai/gpt-5.6-luna` y workflow `f0b9c59f-97c2-4be7-bc12-cca1b0a65be2`: plan aprobado, ediciones autorizadas de retry.cjs y README.md, prueba retry.test.cjs con código 0. Verificador devolvió `inconclusive` y CLI código 1: cinco criterios respaldados y uno insuficiente porque la evidencia no identificó la versión de Node 22. No se obtuvo aceptación final; los cambios en los fixtures permanecen.
+- Repetición A7 `6fc2f4b9-64e2-4fe3-9107-61ac363deb62`: se incluyó la versión 22.23.2 y la prueba pasó; el verificador reconoció Node 22 pero dio `inconclusive` por no poder comparar independientemente el contenido original del test. Se añadió después la inclusión del contenido inicial seleccionado en la evidencia, sujeto a la aprobación de envío; un nuevo intento `a8f66221-5dd4-431a-90dd-09dfeb97a102` se bloqueó antes de planificar porque el clasificador recomendó `simple`. La aceptación final sigue pendiente.
+- Repetición A7 `52357b3c-437f-459a-a0f2-4c41278f3264`: plan aprobado, cambios autorizados, test existente pasó con Node 22.23.2. El verificador respaldó 7 de 8 criterios, incluida la comparación original/final; quedó `inconclusive` porque no recibió evidencia de las tres comprobaciones aisladas exigidas por el plan. Esas comprobaciones se ejecutaron externamente después y pasaron, pero no forman parte de la evidencia del workflow ni convierten su resultado en aceptado.
+- Y2: `memory status` devolvió `disabled` con código 0; el workflow completo sin memoria no se ejercitó por el fallo del planificador.
+- A5–A10, A12–A13 y Y3–Y9: no ejercitados. La aceptación del Hito 3 sigue pendiente.

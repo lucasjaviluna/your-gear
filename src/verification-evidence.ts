@@ -9,6 +9,7 @@ export type TestEvidence = {
   stdout: string;
   stderr: string;
   outputTruncated: boolean;
+  nodeVersion?: string;
 };
 
 export function parseTaskArgs(args: readonly string[]): { files: string[]; tests: string[]; promptArgs: string[] } {
@@ -42,7 +43,7 @@ export async function runSelectedTest(cwd: string, path: string, ask: (descripti
   catch { check(); return result('error'); }
   const args = ['--test', '--test-reporter=tap', join(cwd, before.path)];
   const answer = await ask('Prueba local seleccionada. Puede ejecutar código arbitrario, acceder al entorno y producir efectos; no es sandbox.\n' +
-    safePreview({ executable: process.execPath, args, file: before }) + '\n¿Ejecutar esta prueba? [s/N] ');
+    safePreview({ executable: process.execPath, nodeVersion: process.versions.node, args, file: before }) + '\n¿Ejecutar esta prueba? [s/N] ');
   check();
   if (answer.trim().toLowerCase() !== 's') return result('skipped');
   try {
@@ -61,7 +62,7 @@ export async function runSelectedTest(cwd: string, path: string, ask: (descripti
         const code = error ? (typeof error.code === 'number' ? error.code : null) : 0;
         resolve({
           path, status: !error ? 'exit-zero' : code !== null && !error.killed && !error.signal ? 'failed' : 'error',
-          exitCode: code, stdout: stdout.slice(0, 4000), stderr: stderr.slice(0, 4000),
+          exitCode: code, nodeVersion: process.versions.node, stdout: stdout.slice(0, 4000), stderr: stderr.slice(0, 4000),
           outputTruncated: stdout.length > 4000 || stderr.length > 4000 || error?.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER',
         });
       });

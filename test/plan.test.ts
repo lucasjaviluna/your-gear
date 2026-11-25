@@ -6,6 +6,15 @@ import type { Assessment } from '../src/assessment.ts';
 const assessment: Assessment = { recommendedRoute: 'task', source: 'llm', confidence: 'medium', reasons: ['Varios pasos'], affectedAreas: [], unknowns: [] };
 const draft: PlanDraft = { objective: 'Agregar reintentos', scope: 'Una llamada HTTP', steps: ['Inspeccionar cliente', 'Implementar reintentos'], acceptanceCriteria: ['Los fallos transitorios se reintentan'], risks: ['Repetición de efectos'], assumptions: [], unknowns: [] };
 
+test('normaliza únicamente listas válidas de alcance y conserva validación estricta', async () => {
+  const plan = await generatePlan('tarea', assessment, async () => JSON.stringify({ ...draft, scope: [' archivo A ', 'archivo B'] }));
+  assert.equal(plan.scope, 'archivo A\narchivo B');
+  for (const scope of [[], [42], [''], Array(13).fill('x'), ['x'.repeat(1001)], ['x'.repeat(1000), 'y'.repeat(1000)]]) {
+    await assert.rejects(generatePlan('tarea', assessment, async () => JSON.stringify({ ...draft, scope })), /plan inválido/);
+  }
+  await assert.rejects(generatePlan('tarea', assessment, async () => JSON.stringify({ ...draft, scope: ['a'], approved: true })), /plan inválido/);
+});
+
 test('el modelo recibe solicitud y evaluación como datos y produce plan versionado', async () => {
   const plan = await generatePlan('Agregar reintentos', assessment, async message => {
     assert.deepEqual(JSON.parse(message), { request: 'Agregar reintentos', assessment, selectedRoute: 'task' });

@@ -3,7 +3,7 @@ import type { Plan } from './plan.ts';
 import type { ExecutionReport } from './task-orchestrator.ts';
 import { safePreview, type TestEvidence } from './verification-evidence.ts';
 
-export type Evidence = { id: string; kind: 'file'; path: string; content: string; changed: boolean } |
+export type Evidence = { id: string; kind: 'file'; path: string; content: string; changed: boolean; originalContent?: string } |
   ({ id: string; kind: 'test' } & TestEvidence);
 export type CriterionReview = { index: number; status: 'supported' | 'not-supported' | 'insufficient'; evidenceIds: string[]; reason: string };
 export type VerificationResult = {
@@ -55,8 +55,11 @@ export async function verifyTask(input: { request: string; plan: Plan; report: E
   const check = () => { if (options.signal?.aborted) throw new Error('La ejecución fue cancelada.'); };
   check();
   const evidence: Evidence[] = [
-    ...input.after.entries.map((entry, i): Evidence => ({ id: 'f' + (i + 1), kind: 'file', ...entry,
-      changed: input.before.entries.find(old => old.path === entry.path)?.content !== entry.content })),
+    ...input.after.entries.map((entry, i): Evidence => {
+      const before = input.before.entries.find(old => old.path === entry.path);
+      return { id: 'f' + (i + 1), kind: 'file', ...entry,
+        changed: before?.content !== entry.content, ...(before ? { originalContent: before.content } : {}) };
+    }),
     ...input.tests.map((test, i): Evidence => ({ id: 't' + (i + 1), kind: 'test', ...test })),
   ];
   const metadata = evidence.map(e => ({ id: e.id, kind: e.kind, path: e.path, ...(e.kind === 'test' ? { status: e.status, exitCode: e.exitCode } : {}) }));
