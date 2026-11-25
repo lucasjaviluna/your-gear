@@ -2,7 +2,7 @@
 
 **Your Gear** es una plataforma local de ejecución y orquestación de trabajo agéntico, extensible, configurable, resiliente y observable, con una experiencia terminal-first. Esta es la dirección de producto acordada; las capacidades implementadas se detallan debajo.
 
-> **Estado al PR #22 (2026-11-24):** Hitos 0/1 aceptados para el alcance probado en Windows; 2.A–3.D.4 integrados con CI exitoso en Windows, Linux y macOS. Workflows task y memoria YTK optativa son experimentales. Quedan pendientes aceptación manual de Hitos 2/3, evaluación semántica y smoke YTK real. Próximo incremento: 3.E, SDD/OpenSpec opcional. Ver [roadmap](docs/roadmap.md), [arquitectura](docs/architecture.md) y [seguridad](docs/security.md).
+> **Estado:** Hitos 0–2 aceptados para el alcance validado; 2.A–3.D.4 integrados con CI exitoso en Windows, Linux y macOS. La aceptación del Hito 2 combina pruebas reales en Windows y evidencia simulada para una llamada MCP no autorizada. Workflows task y memoria YTK optativa son experimentales. Quedan pendientes aceptación del Hito 3, evaluación semántica y smoke YTK real. Próximo incremento: 3.E, SDD/OpenSpec opcional. Ver [roadmap](docs/roadmap.md), [arquitectura](docs/architecture.md) y [seguridad](docs/security.md).
 
 ## Inicio rápido: suscripción ChatGPT a través de Pi
 

@@ -79,6 +79,12 @@ test('servidor MCP local conecta, respeta el gate y cierra al terminar', async t
   });
   await session.bindExtensions({});
   await waitForMcpTools(names, () => session.agent.state.tools.map(tool => tool.name));
+  const extraResults: { isError: boolean; result: unknown }[] = [];
+  session.agent.subscribe(event => {
+    if (event.type === 'tool_execution_end' && event.toolName === 'mcp__fixture__extra') {
+      extraResults.push({ isError: event.isError, result: event.result });
+    }
+  });
   let turn = 0;
   let requested = 'mcp__fixture__effect';
   session.agent.streamFunction = () => {
@@ -100,6 +106,12 @@ test('servidor MCP local conecta, respeta el gate y cierra al terminar', async t
   assert.match(readFileSync(marker, 'utf8'), /called/);
   requested = 'mcp__fixture__extra';
   await session.agent.prompt('extra is not authorized');
+  assert.equal(extraResults.length, 1, 'la llamada simulada a extra debe llegar al runtime');
+  assert.equal(extraResults[0].isError, true, 'extra debe ser rechazada');
+  assert.match(JSON.stringify(extraResults[0].result), /not found|no autorizada/i);
+  assert.deepEqual(await authorize({ toolName: requested, input: {} }), {
+    block: true, reason: 'Herramienta no autorizada: mcp__fixture__extra',
+  });
   assert.doesNotMatch(readFileSync(marker, 'utf8'), /tool:extra/);
   requested = 'mcp__fixture__effect';
   controller.abort();

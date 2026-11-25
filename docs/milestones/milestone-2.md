@@ -1,6 +1,6 @@
 # Hito 2 — Extensiones y distribución
 
-**Estado:** implementación 2.A–2.D integrada y CI exitoso; aceptación manual pendiente.
+**Estado:** implementación 2.A–2.D integrada y CI exitoso; aceptado para el alcance validado en Windows, con límites documentados.
 
 ## Alcance previsto
 
@@ -52,7 +52,9 @@ Evidencia previa a los incrementos de integración (no describe todas las capaci
 - [Diseño inicial del Hito 3](milestone-3.md) basado en las referencias, sin activar workflows ni cambiar la regla de avance.
 - CI del PR #12 exitoso (run 45312487354); la confirmación manual del usuario sigue pendiente. No se declara el hito completamente cerrado.
 
-## Seguimiento y aceptación pendiente
+## Seguimiento histórico y cierre
+
+**Cierre para el alcance validado:** la [matriz de aceptación](../spikes/milestone-2-acceptance.md) registra el CLI instalado, MCP, cancelación y continuidad en Windows con modelo real. M4 no provocó una llamada real a `extra`; se complementa con prueba determinista que fuerza la llamada con runtime y servidor reales, modelo simulado, comprueba el error y la ausencia de efecto y verifica la política por separado. Esto no prueba aislamiento de servidores ni inferencia real en Linux/macOS. Los párrafos siguientes conservan el seguimiento histórico previo al cierre.
 
 El usuario acordó continuar el desarrollo del Hito 3 y diferir la aceptación manual. Registrar los ocho resultados de la guía cuando disponga de su entorno. El Hito 2 no se declara completamente aceptado; la desviación permitió avanzar con planificación. Se integró 3.C.3.A con executor experimental restringido a read/write/edit, ya ejercitadas en Hitos 0/1, con aprobaciones separadas y sin shell ni MCP del modelo. 3.C.3.B incorpora pruebas Node seleccionadas, y 3.D.3–3.D.4 memoria YTK opcional mediante cliente MCP fuera de las herramientas del agente. Solo para workspace descartable hasta aceptación real; las pruebas pendientes no se dan por aprobadas. No habilitar servidores arbitrarios ni extensiones externas.
 

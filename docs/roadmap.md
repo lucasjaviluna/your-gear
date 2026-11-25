@@ -18,10 +18,10 @@ CLI ejecutable localmente; configuración de un proveedor permitido; prompt con 
 
 **Aceptación:** el usuario confirmó en Windows el flujo de lectura y edición en un workspace temporal, la inspección y aprobación del cambio, el resultado del archivo y la recuperación del contexto al continuar la sesión. La vista previa se integró mediante el PR #7. El detalle y los límites de la evidencia están en [Hito 1](milestones/milestone-1.md).
 
-## Hito 2 — Extensiones y distribución (aceptación en progreso)
+## Hito 2 — Extensiones y distribución (aceptado para el alcance validado)
 Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramientas, empaquetado `your-gear` con npm, docs de uso para Windows/macOS/Linux. TUI simple si mejora la UX sin acoplar al core.
 
-**Estado:** incrementos 2.A–2.D integrados, CI multiplataforma exitoso. [Hito 2](milestones/milestone-2.md) y [matriz de aceptación](spikes/milestone-2-acceptance.md) registran los límites y las pruebas manuales pendientes.
+**Estado:** incrementos 2.A–2.D integrados, CI multiplataforma exitoso y aceptación Windows para el alcance registrado. [Hito 2](milestones/milestone-2.md) y [matriz de aceptación](spikes/milestone-2-acceptance.md) detallan evidencia real y simulada y sus límites.
 
 ## Hito 3 — Workflows con humanos en el circuito (implementado hasta 3.D.4; aceptación pendiente)
 
@@ -41,7 +41,7 @@ Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramie
 
 Los PR #13–22 están integrados; el detalle de sus CI y alcance se conserva en [seguimiento del Hito 3](milestones/milestone-3.md). El modo directo permanece por defecto, la ruta task es optativa y experimental. Por decisión del usuario se adelantó memoria agéntica para recuperación antes de SDD ([ADR-004](adr/ADR-004-optional-agent-memory.md)); YTK no es obligatorio. OpenSpec todavía no se ejecuta.
 
-**Pendientes antes de declarar aceptación:** [guía del Hito 2](spikes/milestone-2-acceptance.md), [guía del Hito 3](spikes/milestone-3-acceptance.md) (incluye recuperación con YTK), evaluación semántica con modelo real y smoke YTK real. La desviación acordada permite continuar incrementos acotados, no habilitar por defecto capacidades no validadas ni usar datos reales. No certificar seguridad de producción.
+**Pendientes antes de declarar aceptación del Hito 3:** [guía del Hito 3](spikes/milestone-3-acceptance.md) (incluye recuperación con YTK), evaluación semántica con modelo real y smoke YTK real. La desviación acordada permite continuar incrementos acotados, no habilitar por defecto capacidades no validadas ni usar datos reales. No certificar seguridad de producción.
 
 **Siguiente:** 3.E, comenzar por evaluación de necesidad y compatibilidad de OpenSpec y propuesta sin efectos automáticos. Mantener seguimiento explícito de la deuda de aceptación.
 

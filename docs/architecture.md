@@ -1,6 +1,6 @@
 # Arquitectura vigente — Your Gear
 
-**Corte:** main tras PR #22 (2026-11-24). Hitos 0/1 aceptados para el alcance validado; 2.A–3.D.4 integrados y con CI exitoso, con aceptación real pendiente. Consultar [roadmap](roadmap.md) para el estado y [seguridad](security.md) para límites. Este documento describe implementación; la [arquitectura objetivo acordada](target-architecture.md) y el [ADR-005](decisions/ADR-005-local-agentic-platform.md) registran la evolución prevista.
+**Corte:** implementación hasta PR #22. Hitos 0–2 aceptados para el alcance validado; 3.A–3.D.4 integrados con CI exitoso y aceptación real pendiente. Consultar [roadmap](roadmap.md) para el estado y [seguridad](security.md) para límites. Este documento describe implementación; la [arquitectura objetivo acordada](target-architecture.md) y el [ADR-005](decisions/ADR-005-local-agentic-platform.md) registran la evolución prevista.
 
 ## Componentes implementados
 

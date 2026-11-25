@@ -1,6 +1,6 @@
 # Seguridad y ejecución — política vigente y límites
 
-**Corte:** main tras PR #22, 2026-11-24. El prototipo NO es un sandbox ni un sistema DLP. Usar workspaces descartables y código confiable mientras estén pendientes las pruebas reales de Hitos 2 y 3. CI multiplataforma verifica contratos, fixtures y paquete, no aislamiento de OS ni inferencia real.
+**Corte:** implementación hasta PR #22. El prototipo NO es un sandbox ni un sistema DLP. Usar workspaces descartables y código confiable mientras estén pendientes las pruebas reales del Hito 3. CI multiplataforma verifica contratos, fixtures y paquete, no aislamiento de OS ni inferencia real.
 
 ## Fronteras de autorización
 
@@ -34,6 +34,6 @@ Se usan señales de cancelación, aprobaciones serializadas y bloqueos después 
 ## Evidencia y deuda de validación
 
 - Hitos 0/1: usuario reportó Windows con inferencia, streaming, herramientas, rutas externas, no-TTY, cancelación y continuidad; no prueba exhaustiva ni modelo/Node exactos registrados. Ver [registro histórico](spikes/manual-smoke-windows.md).
-- Hito 2: CI/fixtures cubren arranque MCP, gates, cancelación y paquete instalado; [aceptación manual](spikes/milestone-2-acceptance.md) pendiente.
+- Hito 2: CI/fixtures cubren arranque MCP, gates, cancelación y paquete instalado; [aceptación Windows](spikes/milestone-2-acceptance.md) registrada. La llamada extra no autorizada se forzó con modelo simulado, no real; el servidor no está aislado.
 - Hito 3: CI de PR #22 [exitoso](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165) en Linux, Windows y macOS (typecheck, tests, build/pack/install/smoke); modelos simulados y servidor MCP fixture. [Aceptación manual](spikes/milestone-3-acceptance.md), evaluación semántica y smoke con binario YTK real pendientes.
 - Antes de producción: aislamiento de procesos/filesystem, pruebas adversariales de rutas, exposición y concurrencia, políticas de datos/retención, compatibilidad real por plataforma, cancelación de procesos y revisión de logs. No declarar garantía integral a partir de CI.

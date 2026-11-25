@@ -1,6 +1,6 @@
 # Aceptación del Hito 2 — Extensiones y distribución
 
-**Estado al PR #22:** aceptación manual pendiente (diferida por acuerdo del usuario). Los escenarios de YTK y workflows tienen su propia [guía del Hito 3](milestone-3-acceptance.md).
+**Estado:** aceptado para el alcance validado en Windows, con la evidencia y limitaciones indicadas abajo. Los escenarios de YTK y workflows tienen su propia [guía del Hito 3](milestone-3-acceptance.md).
 
 ## Evidencia y alcance
 
@@ -14,8 +14,8 @@ No confundir CI con uso real mediante un proveedor. No se requiere publicar el p
 | Cancelación, cola de aprobaciones y bloqueo posterior | Tests de políticas, fixture stdio, CI #10–11 | Automatizado OK |
 | Empaquetado, instalación y bin | CI #11 en Windows/Linux/macOS | Automatizado OK |
 | MCP sin TTY antes de autenticar | Smoke del paquete, CI #12 | Automatizado OK |
-| CLI instalado con modelo real, MCP y aprobaciones interactivas | Guía siguiente | Manual pendiente |
-| Ctrl+C durante aprobación y continuidad de sesión | Guía siguiente | Manual pendiente |
+| CLI instalado con modelo real, MCP y aprobaciones interactivas | Ejecución Windows registrada abajo | OK para el alcance registrado |
+| Ctrl+C durante aprobación y continuidad de sesión | Ejecución Windows registrada abajo | OK para el alcance registrado |
 
 CI de regresión más reciente: [#22](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165) (Windows/Linux/macOS; sin modelo real). CI histórico comprobado: [#9](https://github.com/lucasjaviluna/your-gear/actions/runs/45310044405), [#10](https://github.com/lucasjaviluna/your-gear/actions/runs/45310838794), [#11](https://github.com/lucasjaviluna/your-gear/actions/runs/45311599196), [#12](https://github.com/lucasjaviluna/your-gear/actions/runs/45312487354).
 
@@ -84,8 +84,22 @@ Esperado: recuperar faro. Confirmar que la sesión de otro directorio no se util
 
 ## Registro de resultados
 
+### Ejecución manual en Windows (2026-11-24)
+
+Node v22.23.2, paquete instalado Your Gear 0.0.0, modelo `openai/gpt-5.6-luna` con suscripción Pi. El usuario informó que la preparación y prueba inicial del CLI instalado fueron satisfactorias. Las siguientes pruebas se realizaron en una terminal interactiva con el fixture descartable:
+
+- M1: OK. Rechazo del arranque, salida 1 y sin marcador.
+- M2: OK. Arranque aprobado y herramienta rechazada; marcador `started`, `closed`, sin `tool:effect`.
+- M3: OK. Arranque y herramienta aprobados; marcador `started`, `called`, `tool:effect`, `closed`.
+- M4: INCONCLUSO para el gate de `extra`. El modelo solicitó `effect` en un intento y, en otro, informó que solo estaba disponible `effect`; no se observó una llamada a `extra`. Marcador sin `tool:extra`.
+- M5: OK al medir el proceso Node directamente: cancelación durante la aprobación, código 130 y marcador `started`, `closed`, sin efecto. La ejecución mediante el wrapper de terminal informó código 1, por lo que no debe confundirse con el código directo de Node.
+- M6: OK. Sin `--mcp` no se creó marcador; el modelo pidió bash y se rechazó.
+- Continuidad: OK. La sesión reanudada recuperó `faro`; otro workspace informó que no tenía sesión guardada.
+
+El commit del paquete instalado no se verificó durante esta ejecución. M4 no acredita una llamada real a `extra`: el modelo no la emitió. La prueba automatizada `test/mcp-lifecycle.test.ts` complementa esa limitación con servidor stdio y runtime Pi reales y modelo simulado: fuerza una llamada a `extra`, verifica resultado de error y ausencia de efecto en el servidor, y comprueba por separado que la política deniega ese nombre. La aceptación del Hito 2 se cierra para este alcance combinado, sin afirmar que un modelo real haya intentado `extra` ni que MCP sea un sandbox.
+
 Completar versión Node, versión Your Gear, sistema operativo, proveedor/modelo (sin secretos), commit, resultado de CLI instalado, M1–M6 y continuidad. Usar OK / FAIL / INCONCLUSO con observación breve. Los fallos de seguridad bloquean el cierre; un modelo que no llamó la herramienta no prueba el gate.
 
 ## Límites
 
-MCP no es un sandbox. El proceso aprobado puede realizar efectos propios, heredar entorno o acceder fuera del workspace. No hay garantía de detener descendientes, interrumpir toda inicialización del SDK ni revertir efectos. Las sesiones y logs pueden contener información sensible. No se declara compatibilidad de modelos reales en Linux/macOS por el éxito del CI. Publicación, licencia y aislamiento de producción quedan fuera de este incremento. La aceptación manual Windows debe registrarse o diferirse mediante decisión explícita del usuario antes de declarar el Hito 2 cerrado.
+MCP no es un sandbox. El proceso aprobado puede realizar efectos propios, heredar entorno o acceder fuera del workspace. No hay garantía de detener descendientes, interrumpir toda inicialización del SDK ni revertir efectos. Las sesiones y logs pueden contener información sensible. No se declara compatibilidad de modelos reales en Linux/macOS por el éxito del CI. Publicación, licencia y aislamiento de producción quedan fuera de este incremento.
