@@ -35,6 +35,19 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     stdout.write(manifest.version + '\n');
     return;
   }
+  if (args[0] === 'sdd') {
+    const { parseSddCommand, discoverOpenSpec, probeOpenSpec } = await import('./openspec.ts');
+    const { safePreview } = await import('./verification-evidence.ts');
+    const command = parseSddCommand(args.slice(1));
+    const result = command.kind === 'status'
+      ? discoverOpenSpec(process.cwd(), controller.signal)
+      : await probeOpenSpec(command.path, {
+          cwd: process.cwd(), interactive: Boolean(stdin.isTTY && stdout.isTTY), signal: controller.signal,
+          approve: description => requestApproval(description, controller.signal, () => controller.abort()),
+        });
+    stdout.write(safePreview(result) + '\n');
+    return;
+  }
   if (args[0] === 'memory') {
     const { parseMemoryCommand, runMemoryCommand } = await import('./memory/commands.ts');
     const { connectYtk } = await import('./memory/ytk.ts');
