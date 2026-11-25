@@ -140,6 +140,27 @@ your-gear --recover UUID --context retry.cjs --context retry.test.cjs --verify-t
 
 Si se desea guardar los checkpoints del nuevo intento, incluir --memory inmediatamente después del UUID. Si la referencia no existe, no coincide o se perdió la base, usar la recuperación manual con solicitud explícita. Registrar si el checkpoint quedó huérfano; no repetir una escritura incierta ni editar directamente SQLite o journals reales. Al finalizar, retirar solo la entrada del laboratorio en memory.json (preservar las demás) y conservar/eliminar la DB temporal según necesidad; si setup alteró otro host, seguir la desinstalación de YTK para ese laboratorio.
 
+## Diagnóstico OpenSpec (3.E.1)
+
+Estado: pendiente de validación real. Usar un workspace descartable y un binario standalone de OpenSpec obtenido del [release v2.2.0](https://github.com/Fission-AI/OpenSpec/releases/tag/v2.2.0), verificando su procedencia y checksum según el release. No instalar ni inicializar automáticamente desde Gear.
+
+```powershell
+your-gear sdd status
+your-gear sdd probe "C:\ruta\confiable\openspec.exe"
+```
+
+| Caso | Acción | Resultado esperado |
+| --- | --- | --- |
+| S1 | status en workspace sin openspec/ | root missing, cli not-probed, ready false; sin auth/modelo ni archivos nuevos |
+| S2 | status en fixture con openspec/config.yaml y changes/add-retry/proposal.md | Marcadores y candidato presentes, ready false; no lee contenido ni ejecuta CLI |
+| S3 | status en raíz con puntero a store o desde subdirectorio | No sigue store ni asciende a padres; no afirmar raíz efectiva |
+| S4 | probe con ejecutable real; rechazar arranque | Código distinto de cero; no iniciar proceso |
+| S5 | probe con ejecutable real; aprobar | Versión reportada por el ejecutable; compatibility not-validated |
+| S6 | probe sin TTY, ruta relativa o binario inexistente | Rechazo; sin fallback a PATH o instalación |
+| S7 | sdd apply o --run-task con recomendación sdd | Rechazo de operación no habilitada; sin cambios SDD |
+
+El probe es un proceso autorizado, no sandbox. Registrar OS, versión exacta, salida y resultado, sin credenciales. No declarar interoperabilidad completa ni permiso de apply a partir del éxito de --version. Los escenarios posteriores de lectura JSON, propuesta y ejecución se añadirán en 3.E.2–3.E.4.
+
 ## Registro de resultados
 
 Por caso: OK / FAIL / NO EJERCITADO, OS, versión del paquete, modelo, UUID si corresponde, código de salida y observación sin datos sensibles. Registrar cualquier cambio fuera del alcance, salida truncada o test no ejecutado. No declarar completado el Hito 3 solo por CI. La aceptación manual del Hito 2 se mantiene en su guía propia.
