@@ -1,6 +1,6 @@
 # Hito 3 — Workflows con humanos en el circuito
 
-**Estado (2026-11-24):** 3.A–3.D.4 integrados con CI exitoso, incluidos PR #22 [run 45504735165](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165); aceptación real pendiente. 3.E sigue pendiente. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
+**Estado (2026-11-24):** 3.A–3.D.4 integrados con CI exitoso, incluidos PR #22 [run 45504735165](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165); aceptación real pendiente. 3.E.1 (diagnóstico OpenSpec) propuesto; 3.E.2–3.E.4 pendientes. El usuario acordó diferir la aceptación manual del Hito 2; no se considera aprobada.
 
 ## Referencias y decisiones
 
@@ -131,6 +131,15 @@ Decisión acordada: adelantar parte de la memoria avanzada (Hito 4 en el roadmap
 - Si no hay checkpoint válido, falla la recuperación asistida con indicación de la alternativa manual. No se reactiva un workflow terminal. No hay exclusión global del workspace. El bootstrap de YTK abre sesión pero no incorpora briefing general al LLM; recall de conocimiento técnico entre tareas se difiere a memoria avanzada (Hito 7 del roadmap vigente).
 - Tests de checkpoints, scope, digest, lectura exacta, rechazo, degradación y recuperación; smoke sin TTY. `npm run smoke:ytk -- /ruta/ytk-memory` crea base descartable y verifica escritura/reconexión/lectura sin LLM. Smoke YTK real pendiente: validar antes de usar datos reales. CI del PR #22 exitoso (run 45504735165), incluidos typecheck, tests, build, pack, install y smoke en los tres SO.
 
+## Incremento 3.E.1 — Descubrimiento y diagnóstico OpenSpec
+
+Referencia versionada: [ADR-006](../decisions/ADR-006-openspec-cli.md), con revisión de OpenSpec v2.2.0 y de Your Harness v0 y Agent Harness Lab. Se propone un límite CLI externo, sin dependencia npm, sin autoinstalación ni carga de skills.
+
+- `sdd status`: inventario metadata-only bajo cwd canónico; no resuelve stores, padres ni defaults globales, no lee YAML ni markdown, no invoca modelos o procesos. Marca archivos/directorios presentes, ausentes, inseguros o ilegibles; hasta 20 candidatos y 100 entradas escaneadas, excluye archive y nombres no admitidos. No confirma readiness ni validez de artefactos.
+- `sdd probe RUTA_ABSOLUTA`: TTY y gate previo al proceso, versión mediante --version, sin shell ni PATH implícito; Windows requiere .exe nativo. Verifica metadatos antes/después del gate, timeout 10 s, buffer 8 KiB, cancelación y parseo de versión. Solicita desactivar telemetría/update; no sandbox ni garantía de red/descendientes. Resultado no certifica compatibilidad.
+- Tests de inventario acotado, enlaces, argumentos, cancelación, rechazo y proceso real con Node como fixture; smoke del paquete sin auth ni OpenSpec. No prueba binario OpenSpec real. CI pendiente.
+- `--run-task` sigue bloqueando ruta sdd; no se altera clasificación, memoria, journal ni políticas de task. Subcomando sdd reservado; usar -- para prompt literal.
+
 ## Próximo paso
 
-3.E: evaluar OpenSpec opcional. El CI #22 ya está verificado; comenzar por compatibilidad y propuesta sin efectos automáticos. La aceptación real de YTK y workflows sigue pendiente; mantener experimental y no activar automáticamente. Tras 3.E, Hito 4: entrada unificada; Hito 5: gestión de conectores; Hito 6: resiliencia; Hito 7: recall contextual general, aprendizaje durable y RAG separado. Ver [roadmap ampliado](../roadmap.md). No declarar cerrado Hito 3 solo por CI.
+3.E.2: validar CLI real y contratos JSON de lectura con scope repo-local verificado, antes de propuesta 3.E.3 y evaluación de apply/verify/sync/archive 3.E.4. Sin stores/worksets automáticos. Aceptación Hitos 2/3, evaluación semántica y YTK real pendientes. Tras 3.E, Hito 4 entrada unificada; ver [roadmap](../roadmap.md).
