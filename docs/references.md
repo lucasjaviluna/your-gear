@@ -10,8 +10,8 @@ Referencia incorporada por decisión del usuario. Consultar antes de diseñar ca
 
 - Hito 2: [validación y distribución](https://github.com/lucasjaviluna/your-harness-v0/blob/main/docs/PHASE_8_VALIDATION.md), compatibilidad y MCP.
 - Hito 3: clasificación, intake, rutas simple/task/SDD, OpenSpec, gates, trazabilidad y UX CLI/TUI. Consultar las fases 2–9 y 16.
-- Hito 3.D / 4: [integración histórica Your Team Knowledge](https://github.com/lucasjaviluna/your-harness-v0/blob/main/docs/YOUR_TEAM_KNOWLEDGE_INTEGRATION.md).
-- Hito 5 y evolución futura: compatibilidad, rendimiento, recuperación, workspace y delegación.
+- Hito 3.D / 7: [integración histórica Your Team Knowledge](https://github.com/lucasjaviluna/your-harness-v0/blob/main/docs/YOUR_TEAM_KNOWLEDGE_INTEGRATION.md).
+- Hitos 4–10: evaluar patrones de intake, conectores, resiliencia, contexto, observabilidad, UX, compatibilidad y producción según [roadmap](roadmap.md). No importar arquitectura completa de v0.
 
 El README de v0 describe estas capacidades y sus documentos; ello no acredita su paridad, seguridad o madurez. Su instalación como extensión de Pi difiere del CLI independiente de Your Gear. Revisar el código y las pruebas reales antes de reutilizar patrones, comprobar compatibilidad con la versión de SDK y preservar las políticas de Your Gear. No incorporar subagentes ni infraestructura antes de que el roadmap y los casos reales lo justifiquen.
 
