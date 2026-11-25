@@ -89,7 +89,7 @@ export async function probeOpenSpec(path:string,options:{
   options.signal.throwIfAborted();
   if(!approved)throw Error('Inicio de OpenSpec no autorizado.');
   if(JSON.stringify(binary(path))!==JSON.stringify(before))throw Error('El ejecutable cambió durante la aprobación.');
-  const env={...process.env,OPENSPEC_TELEMETRY:'0',DO_NOT_TRACK:'1',OPENSPEC_NO_UPDATE_CHECK:'1'};
+  const env:NodeJS.ProcessEnv={...process.env,OPENSPEC_TELEMETRY:'0',DO_NOT_TRACK:'1',OPENSPEC_NO_UPDATE_CHECK:'1'};
   delete env.NODE_OPTIONS;delete env.NODE_PATH;
   const output=await new Promise<string>((resolve,reject)=>{
     execFile(before.path,['--version'],{cwd,shell:false,env,timeout:10000,maxBuffer:8192,encoding:'utf8',windowsHide:true,signal:options.signal},
