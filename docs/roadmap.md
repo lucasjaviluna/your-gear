@@ -37,13 +37,16 @@ Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramie
 | 3.D.2 | Recuperación guiada con nuevo UUID y gates | [#20](https://github.com/lucasjaviluna/your-gear/pull/20) |
 | 3.D.3 | MemoryProvider y adaptador YTK MCP opcional | [#21](https://github.com/lucasjaviluna/your-gear/pull/21) |
 | 3.D.4 | Checkpoints opt-in y recuperación asistida por referencia exacta | [#22](https://github.com/lucasjaviluna/your-gear/pull/22) |
-| 3.E | Evaluación e integración SDD/OpenSpec opcional | Pendiente |
+| 3.E.1 | Diagnóstico OpenSpec local y probe autorizado | Propuesto |
+| 3.E.2 | Contratos JSON de lectura y validación real | Pendiente |
+| 3.E.3 | Propuesta acotada y revisión de artefactos | Pendiente |
+| 3.E.4 | Evaluar apply/verify/sync/archive gobernados | Pendiente |
 
 Los PR #13–22 están integrados; el detalle de sus CI y alcance se conserva en [seguimiento del Hito 3](milestones/milestone-3.md). El modo directo permanece por defecto, la ruta task es optativa y experimental. Por decisión del usuario se adelantó memoria agéntica para recuperación antes de SDD ([ADR-004](adr/ADR-004-optional-agent-memory.md)); YTK no es obligatorio. OpenSpec todavía no se ejecuta.
 
 **Pendientes antes de declarar aceptación:** [guía del Hito 2](spikes/milestone-2-acceptance.md), [guía del Hito 3](spikes/milestone-3-acceptance.md) (incluye recuperación con YTK), evaluación semántica con modelo real y smoke YTK real. La desviación acordada permite continuar incrementos acotados, no habilitar por defecto capacidades no validadas ni usar datos reales. No certificar seguridad de producción.
 
-**Siguiente:** 3.E, comenzar por evaluación de necesidad y compatibilidad de OpenSpec y propuesta sin efectos automáticos. Mantener seguimiento explícito de la deuda de aceptación.
+**Actual:** 3.E.1 propuesto, [ADR-006](decisions/ADR-006-openspec-cli.md). Siguiente 3.E.2 tras CI y revisión; sin activar ejecución SDD automáticamente. Mantener seguimiento explícito de la deuda de aceptación.
 
 ## Hitos 4–10 — Evolución de producto acordada
 
@@ -133,6 +136,6 @@ Los siguientes cortes son una descomposición inicial de la visión acordada. El
 
 ## Regla de avance y trabajo transversal
 
-El próximo incremento sigue siendo **3.E — evaluación e integración opcional de SDD/OpenSpec**. No iniciar Hito 4 ni renumerar Hitos 0–3 como consecuencia de esta actualización documental.
+El incremento actual pertenece a **3.E — evaluación e integración opcional de SDD/OpenSpec**. No declarar 3.E aceptado hasta completar sus pruebas. No iniciar Hito 4 ni renumerar Hitos 0–3 como consecuencia de esta actualización documental.
 
 Reliability, seguridad, observabilidad y UX son responsabilidades transversales: incorporar lo mínimo necesario en cada cambio desde ahora; los hitos 6/8/9 consolidan esas capacidades, no retrasan controles necesarios. No comenzar un hito por volumen de funciones: completar aceptación anterior o acordar y documentar una desviación explícita, sus límites y deuda. La prioridad puede cambiar por evidencia; registrar decisiones y actualizar visión/arquitectura/roadmap cuando corresponda. Mantener tareas pequeñas, tests, CI y revisión humana antes de merge.
