@@ -1,6 +1,6 @@
 # Arquitectura vigente — Your Gear
 
-**Corte:** implementación hasta PR #22. Hitos 0–2 aceptados para el alcance validado; 3.A–3.D.4 integrados con CI exitoso y aceptación real pendiente. Consultar [roadmap](roadmap.md) para el estado y [seguridad](security.md) para límites. Este documento describe implementación; la [arquitectura objetivo acordada](target-architecture.md) y el [ADR-005](decisions/ADR-005-local-agentic-platform.md) registran la evolución prevista.
+**Corte:** implementación hasta PR #27. Hitos 0–2 aceptados para el alcance validado; 3.A–3.E.3 integrados con CI local exitoso y aceptación real del Hito 3 pendiente. 3.E ofrece inspección y revisión OpenSpec experimentales; planificación y aplicación SDD aún no existen. Consultar [roadmap](roadmap.md) para el estado y [seguridad](security.md) para límites. Este documento describe implementación; la [arquitectura objetivo acordada](target-architecture.md) y el [ADR-005](decisions/ADR-005-local-agentic-platform.md) registran la evolución prevista.
 
 ## Componentes implementados
 

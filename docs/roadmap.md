@@ -1,6 +1,6 @@
 # Roadmap evolutivo — Your Gear
 
-**Estado al 2026-11-24:** implementación integrada hasta 3.D.4 (PR #22). El siguiente incremento es 3.E. Reevaluar aceptación y límites antes de ampliar capacidades.
+**Estado al 2026-11-25:** implementación integrada hasta 3.E (PR #27). OpenSpec permite inspección y revisión experimental de artefactos seleccionados; la integración SDD con planificación y ejecución sigue pendiente. La aceptación real del Hito 3 también sigue pendiente.
 
 CI de implementación de referencia: [PR #22, run 45504735165](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165), exitoso en Windows, Linux y macOS: typecheck, tests, build, pack, instalación y smoke del CLI. No incluye inferencia real ni binario YTK real. El [CI del PR #23 documental](https://github.com/lucasjaviluna/your-gear/actions/runs/45506701591) también finalizó correctamente; se encuentra mergeado.
 
@@ -37,13 +37,16 @@ Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramie
 | 3.D.2 | Recuperación guiada con nuevo UUID y gates | [#20](https://github.com/lucasjaviluna/your-gear/pull/20) |
 | 3.D.3 | MemoryProvider y adaptador YTK MCP opcional | [#21](https://github.com/lucasjaviluna/your-gear/pull/21) |
 | 3.D.4 | Checkpoints opt-in y recuperación asistida por referencia exacta | [#22](https://github.com/lucasjaviluna/your-gear/pull/22) |
-| 3.E | Evaluación e integración SDD/OpenSpec opcional | Inspección experimental implementada localmente; aceptación e integración del workflow pendientes |
+| 3.E.1 | Evaluación y decisión de proveedor OpenSpec opcional | Integrado; [ADR-006](decisions/ADR-006-optional-openspec.md) |
+| 3.E.2 | Inspección estructural de change existente | Integrado experimentalmente en PR #26 |
+| 3.E.3 | Revisión explícita de artefactos OpenSpec | Integrado experimentalmente en [PR #27](https://github.com/lucasjaviluna/your-gear/pull/27) |
+| 3.E.4 | Planificación y aplicación SDD con gates propios | Pendiente; no hay workflow ejecutable |
 
-Los PR #13–22 están integrados; el detalle de sus CI y alcance se conserva en [seguimiento del Hito 3](milestones/milestone-3.md). El modo directo permanece por defecto, la ruta task es optativa y experimental. Por decisión del usuario se adelantó memoria agéntica para recuperación antes de SDD ([ADR-004](adr/ADR-004-optional-agent-memory.md)); YTK no es obligatorio. OpenSpec puede consultarse explícitamente mediante la inspección experimental local; no hay workflow SDD ejecutable.
+Los PR #13–27 están integrados; el detalle de su CI y alcance se conserva en [seguimiento del Hito 3](milestones/milestone-3.md). El modo directo permanece por defecto, la ruta task es optativa y experimental. Por decisión del usuario se adelantó memoria agéntica para recuperación antes de SDD ([ADR-004](adr/ADR-004-optional-agent-memory.md)); YTK no es obligatorio. OpenSpec permite inspección estructural y revisión explícita, ambas experimentales; revisión no llama modelos, no persiste aprobación y no ejecuta cambios. No hay planificación ni aplicación SDD ejecutable.
 
 **Pendientes antes de declarar aceptación del Hito 3:** [guía del Hito 3](spikes/milestone-3-acceptance.md) (incluye recuperación con YTK), evaluación semántica con modelo real y smoke YTK real. La desviación acordada permite continuar incrementos acotados, no habilitar por defecto capacidades no validadas ni usar datos reales. No certificar seguridad de producción.
 
-**Siguiente:** 3.E, conectar la revisión experimental de artefactos al planificador y ejecutor mediante un contrato SDD y gates propios, y validar el workflow conforme a la [evaluación](spikes/3e-openspec-evaluation.md) y [ADR-006](decisions/ADR-006-optional-openspec.md). Mantener seguimiento explícito de la deuda de aceptación.
+**Siguiente:** 3.E.4, definir un contrato SDD que enlace artefactos revisados y su digest al plan y al ejecutor, con gates explícitos de divulgación, aprobación y cada efecto. Mantener la alternativa OpenSpec opcional, validar el workflow con pruebas y conservar seguimiento explícito de la deuda de aceptación.
 
 ## Hitos 4–10 — Evolución de producto acordada
 

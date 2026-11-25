@@ -1,6 +1,6 @@
 # Aceptación manual — Hito 3 (workflows)
 
-Estado al PR #22: pendiente de ejecución con modelo real y binario YTK real por el usuario. [CI #22](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165) pasó en Windows, Linux y macOS. CI valida contratos, integración SDK con modelo simulado, procesos Node reales, almacenamiento local y MCP fixture; no reemplaza estas pruebas.
+Estado al PR #27: pendiente de ejecución con modelo real y binario YTK real por el usuario. [CI #22](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165) pasó en Windows, Linux y macOS; PR #27 añade pruebas locales y un smoke interactivo de OpenSpec 2.2.0 en Windows. CI valida contratos, integración SDK con modelo simulado, procesos Node reales, almacenamiento local y MCP fixture; no reemplaza estas pruebas.
 
 ## Preparación (PowerShell, Windows)
 
@@ -143,6 +143,8 @@ Si se desea guardar los checkpoints del nuevo intento, incluir --memory inmediat
 ## Registro de resultados
 
 ### Revisión experimental OpenSpec
+
+**Ejecutado antes del PR #27:** smoke interactivo en Windows con OpenSpec 2.2.0 real y fixture descartable; revisión aprobada devolvió `reviewed`, rutas seleccionadas y digest. Las pruebas locales cubren rechazo, cancelación, artefactos requeridos, mutación durante revisión, validación estructural e inspección del proveedor simulado. No se ejecutó modelo ni workflow SDD; no hubo aceptación macOS.
 
 En un workspace descartable con OpenSpec 2.2.0 instalado por separado y Node compatible, preparar un change con proposal, design, tasks y una spec válida. Ejecutar `your-gear openspec review RUTA_JS CHANGE RUTAS...` con esas rutas explícitas. Confirmar que el primer gate identifica el ejecutable y el workspace; rechazarlo y comprobar que no se inicia el proveedor. Repetir, autorizar el proveedor y revisar el contenido presentado; rechazar y confirmar `cancelled`. Volver a ejecutar y confirmar la revisión: debe devolver rutas y digest, sin ejecutar el workflow ni enviar contenido a un modelo. Repetir con un change estructuralmente inválido y con un archivo modificado durante el gate: ambos deben rechazarse. Registrar versión, plataforma y resultados; esto no acepta el workflow SDD.
 

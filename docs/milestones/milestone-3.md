@@ -1,6 +1,6 @@
 # Hito 3 — Workflows con humanos en el circuito
 
-**Estado (2026-11-24):** 3.A–3.D.4 integrados con CI exitoso, incluidos PR #22 [run 45504735165](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165); aceptación real pendiente. 3.E sigue pendiente. El [Hito 2](milestone-2.md) está aceptado para el alcance validado, con los límites de evidencia allí registrados.
+**Estado (2026-11-25):** 3.A–3.D.4 integrados con CI exitoso, incluidos PR #22 [run 45504735165](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165); 3.E.1–3.E.3 integrados en PR #26 y [PR #27](https://github.com/lucasjaviluna/your-gear/pull/27). La inspección y revisión OpenSpec son experimentales; planificación/aplicación SDD y aceptación real del Hito 3 siguen pendientes. El [Hito 2](milestone-2.md) está aceptado para el alcance validado, con los límites de evidencia allí registrados.
 
 ## Referencias y decisiones
 
@@ -25,7 +25,8 @@ No clasificar por longitud del prompt. Una solicitud corta sobre permisos, contr
 | 3.B | Confirmación humana de ruta, selección configurable del clasificador y evaluación de calidad | Respuesta inválida o fallo no autoriza acciones; cancelación bloquea |
 | 3.C | Ruta task con plan, gate, ejecución y verificación | Rechazo/cancelación impide ejecución; cambios de alcance invalidan aprobación |
 | 3.D.1–3.D.4 | Estado, trazabilidad, recuperación guiada, adaptador YTK y checkpoints optativos | No reejecutar efectos por reanudar; distinguir verificación real de afirmaciones del modelo |
-| 3.E | Evaluar integración SDD/OpenSpec opcional | Verificar necesidad y compatibilidad, diseñar gates y tests antes de activar |
+| 3.E.1–3.E.3 | Evaluación, inspección estructural y revisión explícita de artefactos OpenSpec | Integradas como capacidades experimentales; ver [PR #27](https://github.com/lucasjaviluna/your-gear/pull/27) |
+| 3.E.4 | Planificación y aplicación SDD con gates propios | Pendiente; requiere contrato de artefactos, vínculo por digest, gates de divulgación y ejecución, y verificación |
 
 Las secciones siguientes describen la evolución por incremento; las limitaciones iniciales se conservan con su contexto temporal y se actualizan cuando cambia el comportamiento. El orden se revisará con evidencia. No introducir abstracciones públicas ni persistencia adicional sin una necesidad comprobada; evaluar entradas custom de Pi antes de decidir.
 
@@ -133,4 +134,4 @@ Decisión acordada: adelantar parte de la memoria avanzada (Hito 4 en el roadmap
 
 ## Próximo paso
 
-3.E: [evaluación y smoke aislado en Windows y Ubuntu/WSL](../spikes/3e-openspec-evaluation.md) documentados; [ADR-006](../decisions/ADR-006-optional-openspec.md) selecciona OpenSpec como opción experimental. La inspección local explícita está implementada, pero no hay workflow SDD ni aceptación completa. La aceptación real de YTK y workflows sigue pendiente; mantener experimental y no activar automáticamente. Tras 3.E, Hito 4: entrada unificada; Hito 5: gestión de conectores; Hito 6: resiliencia; Hito 7: recall contextual general, aprendizaje durable y RAG separado. Ver [roadmap ampliado](../roadmap.md). No declarar cerrado Hito 3 solo por CI.
+3.E: [evaluación y smoke aislado en Windows y Ubuntu/WSL](../spikes/3e-openspec-evaluation.md) documentados; [ADR-006](../decisions/ADR-006-optional-openspec.md) selecciona OpenSpec como opción experimental. Inspección y revisión explícitas están integradas, pero no hay planificación/aplicación SDD ni aceptación completa. La aceptación real de YTK y workflows sigue pendiente; mantener experimental y no activar automáticamente. Tras completar 3.E, Hito 4: entrada unificada; Hito 5: gestión de conectores; Hito 6: resiliencia; Hito 7: recall contextual general, aprendizaje durable y RAG separado. Ver [roadmap ampliado](../roadmap.md). No declarar cerrado Hito 3 solo por CI.
