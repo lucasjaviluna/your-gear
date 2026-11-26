@@ -41,13 +41,15 @@ Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramie
 | 3.E.1 | Evaluación y decisión de proveedor OpenSpec opcional | Integrado; [ADR-006](decisions/ADR-006-optional-openspec.md) |
 | 3.E.2 | Inspección estructural de change existente | Integrado experimentalmente en PR #26 |
 | 3.E.3 | Revisión explícita de artefactos OpenSpec | Integrado experimentalmente en [PR #27](https://github.com/lucasjaviluna/your-gear/pull/27) |
-| 3.E.4 | Planificación y aplicación SDD con gates propios | Pendiente; no hay workflow ejecutable |
+| 3.E.4.A | Planificación SDD desde change completo revisado | Propuesto; sin ejecución |
+| 3.E.4.B | Enlace a executor y contrato de verificación con gates propios | Pendiente |
+| 3.E.4.C | Verificación SDD, sync/archive evaluados por separado | Pendiente |
 
-Los PR #13–24 y #26–28 están integrados; #25 se cerró sin merge por quedar reemplazado por #26/#27. el detalle de su CI y alcance se conserva en [seguimiento del Hito 3](milestones/milestone-3.md). El modo directo permanece por defecto, la ruta task es optativa y experimental. Por decisión del usuario se adelantó memoria agéntica para recuperación antes de SDD ([ADR-004](adr/ADR-004-optional-agent-memory.md)); YTK no es obligatorio. OpenSpec permite inspección estructural y revisión explícita, ambas experimentales; revisión no llama modelos, no persiste aprobación y no ejecuta cambios. No hay planificación ni aplicación SDD ejecutable.
+Los PR #13–24 y #26–28 están integrados; #25 se cerró sin merge por quedar reemplazado por #26/#27. el detalle de su CI y alcance se conserva en [seguimiento del Hito 3](milestones/milestone-3.md). El modo directo permanece por defecto, la ruta task es optativa y experimental. Por decisión del usuario se adelantó memoria agéntica para recuperación antes de SDD ([ADR-004](adr/ADR-004-optional-agent-memory.md)); YTK no es obligatorio. OpenSpec permite inspección estructural y revisión explícita, ambas experimentales; revisión no llama modelos, no persiste aprobación y no ejecuta cambios. 3.E.4.A propone planificación SDD separada; no hay aplicación SDD ejecutable.
 
 **Pendientes antes de declarar aceptación del Hito 3:** [guía del Hito 3](spikes/milestone-3-acceptance.md) (incluye recuperación con YTK), ampliación de la evaluación semántica (12/12 casos iniciales aprobados) y aceptación integral YTK (smoke aprobado con binario compilado que incluye memory_list, no con release 0.1.12). La desviación acordada permite continuar incrementos acotados, no habilitar por defecto capacidades no validadas ni usar datos reales. No certificar seguridad de producción.
 
-**Siguiente:** prueba integral automatizada de task y recuperación (3.C.3.C/3.D.4), luego aceptación real con modelo y binario YTK compatible y continuar 3.E.4, definir un contrato SDD que enlace artefactos revisados y su digest al plan y al ejecutor, con gates explícitos de divulgación, aprobación y cada efecto. Mantener la alternativa OpenSpec opcional, validar el workflow con pruebas y conservar seguimiento explícito de la deuda de aceptación.
+**Siguiente:** PR #29 integrado con [CI exitoso](https://github.com/lucasjaviluna/your-gear/actions/runs/45737078328); se mantiene pendiente aceptación real con modelo y YTK compatible. Se adelanta un corte sin ejecución 3.E.4.A para definir un contrato SDD que enlace artefactos revisados y su digest al plan y al ejecutor, con gates explícitos de divulgación, aprobación y cada efecto. Mantener la alternativa OpenSpec opcional, validar el workflow con pruebas y conservar seguimiento explícito de la deuda de aceptación.
 
 ## Hitos 4–10 — Evolución de producto acordada
 
