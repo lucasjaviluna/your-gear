@@ -1,6 +1,6 @@
 # Aceptación manual — Hito 3 (workflows)
 
-Estado al PR #27: pendiente de ejecución con modelo real y binario YTK real por el usuario. [CI #22](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165) pasó en Windows, Linux y macOS; PR #27 añade pruebas locales y un smoke interactivo de OpenSpec 2.2.0 en Windows. CI valida contratos, integración SDK con modelo simulado, procesos Node reales, almacenamiento local y MCP fixture; no reemplaza estas pruebas.
+Estado al PR #28 (CI exitoso): pendiente de ejecución con modelo real y binario YTK real por el usuario. [CI #22](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165) pasó en Windows, Linux y macOS; PR #27 añade pruebas locales y un smoke interactivo de OpenSpec 2.2.0 en Windows. CI valida contratos, integración SDK con modelo simulado, procesos Node reales, almacenamiento local y MCP fixture; no reemplaza estas pruebas.
 
 ## Preparación (PowerShell, Windows)
 
@@ -39,6 +39,25 @@ test('retry once after a transient error', () => {
 });
 '@ | Set-Content retry.test.cjs -Encoding ascii
 ```
+
+## Laboratorio reproducible para A7 y recuperación
+
+Desde un checkout actualizado de Your Gear, con las dependencias instaladas y Node compatible:
+
+```powershell
+git rev-parse HEAD
+npm run build
+$gear = Join-Path (Get-Location).Path "dist/cli.js"
+$lab = node scripts/prepare-task-lab.mjs
+Push-Location $lab
+node $gear --run-task --record --context retry.cjs --context README.md --verify-test retry.test.cjs "Implementar un único reintento síncrono ante excepción y documentar el comportamiento en README.md. Mantener la firma y el test existente sin modificarlo. Verificar con retry.test.cjs las tres comprobaciones ya presentes: éxito sin reintento, recuperación tras una excepción y propagación del segundo error sin tercer intento."
+$LASTEXITCODE
+Pop-Location
+```
+
+El script crea una carpeta temporal nueva y no modifica el checkout. Usar el dist recién construido evita confundirlo con un tarball anterior. No ejecutar el test antes y usar esa salida como evidencia final: el harness debe obtenerla por su propio gate. El test contiene exactamente las tres comprobaciones citadas; inicialmente faltan dos comportamientos. No aprobar si el plan omite requisitos o exige evidencia no disponible, ni si la implementación modifica el test. La revisión final debe ser real, no simulada. El fixture no cambia la clasificación semántica: si recomienda simple/clarify, registrar el resultado y aclarar alcance, no forzar la ruta.
+
+Conservar el laboratorio si se desea inspeccionar o recuperar la tarea; eliminarlo manualmente solo cuando no se necesite. Para YTK y recuperación seguir las instrucciones Y1–Y9 sobre un laboratorio nuevo con binario compatible. No usar la memoria habitual. El contrato de verificación exige seleccionar nuevamente tests en cada recuperación.
 
 ## Matriz de aceptación
 

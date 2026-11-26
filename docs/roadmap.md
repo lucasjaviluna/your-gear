@@ -1,8 +1,8 @@
 # Roadmap evolutivo — Your Gear
 
-**Estado al 2026-11-25:** implementación integrada hasta 3.E (PR #27). OpenSpec permite inspección y revisión experimental de artefactos seleccionados; la integración SDD con planificación y ejecución sigue pendiente. La aceptación real del Hito 3 también sigue pendiente.
+**Estado al 2026-11-25:** implementación integrada hasta 3.E.3 (PR #27) y estabilización 3.C.3.C (PR #28). OpenSpec permite inspección y revisión experimental de artefactos seleccionados; la integración SDD con planificación y ejecución sigue pendiente. La aceptación real del Hito 3 también sigue pendiente.
 
-CI de implementación de referencia: [PR #22, run 45504735165](https://github.com/lucasjaviluna/your-gear/actions/runs/45504735165), exitoso en Windows, Linux y macOS: typecheck, tests, build, pack, instalación y smoke del CLI. No incluye inferencia real ni binario YTK real. El [CI del PR #23 documental](https://github.com/lucasjaviluna/your-gear/actions/runs/45506701591) también finalizó correctamente; se encuentra mergeado.
+CI de implementación de referencia: [PR #28, run 45735634433](https://github.com/lucasjaviluna/your-gear/actions/runs/45735634433), exitoso en Windows, Linux y macOS: typecheck, tests, build, pack, instalación y smoke del CLI. No incluye inferencia real ni binario YTK real. El [CI del PR #23 documental](https://github.com/lucasjaviluna/your-gear/actions/runs/45506701591) también finalizó correctamente; se encuentra mergeado.
 
 ## Hito 0 — Fundaciones (completado para el alcance validado)
 Visión, ADR, opciones de stack, riesgos de auth, seguridad, spike SDK Pi y scaffold mínimo. Entrega: decisiones reproducibles y criterios de aceptación.
@@ -33,7 +33,7 @@ Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramie
 | 3.C.2 | Context Engine de lectura acotada | [#16](https://github.com/lucasjaviluna/your-gear/pull/16) |
 | 3.C.3.A | Orquestador y executor read/write/edit | [#17](https://github.com/lucasjaviluna/your-gear/pull/17) |
 | 3.C.3.B | Pruebas Node explícitas y verificación basada en evidencia | [#18](https://github.com/lucasjaviluna/your-gear/pull/18) |
-| 3.C.3.C | Contrato verificable entre planificación, ejecución y evidencia | Propuesto; aceptación pendiente |
+| 3.C.3.C | Contrato verificable entre planificación, ejecución y evidencia | [#28](https://github.com/lucasjaviluna/your-gear/pull/28); CI exitoso, aceptación real pendiente |
 | 3.D.1 | Journal local JSONL y consulta | [#19](https://github.com/lucasjaviluna/your-gear/pull/19) |
 | 3.D.2 | Recuperación guiada con nuevo UUID y gates | [#20](https://github.com/lucasjaviluna/your-gear/pull/20) |
 | 3.D.3 | MemoryProvider y adaptador YTK MCP opcional | [#21](https://github.com/lucasjaviluna/your-gear/pull/21) |
@@ -43,11 +43,11 @@ Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramie
 | 3.E.3 | Revisión explícita de artefactos OpenSpec | Integrado experimentalmente en [PR #27](https://github.com/lucasjaviluna/your-gear/pull/27) |
 | 3.E.4 | Planificación y aplicación SDD con gates propios | Pendiente; no hay workflow ejecutable |
 
-Los PR #13–24, #26 y #27 están integrados; #25 se cerró sin merge por quedar reemplazado por #26/#27. el detalle de su CI y alcance se conserva en [seguimiento del Hito 3](milestones/milestone-3.md). El modo directo permanece por defecto, la ruta task es optativa y experimental. Por decisión del usuario se adelantó memoria agéntica para recuperación antes de SDD ([ADR-004](adr/ADR-004-optional-agent-memory.md)); YTK no es obligatorio. OpenSpec permite inspección estructural y revisión explícita, ambas experimentales; revisión no llama modelos, no persiste aprobación y no ejecuta cambios. No hay planificación ni aplicación SDD ejecutable.
+Los PR #13–24 y #26–28 están integrados; #25 se cerró sin merge por quedar reemplazado por #26/#27. el detalle de su CI y alcance se conserva en [seguimiento del Hito 3](milestones/milestone-3.md). El modo directo permanece por defecto, la ruta task es optativa y experimental. Por decisión del usuario se adelantó memoria agéntica para recuperación antes de SDD ([ADR-004](adr/ADR-004-optional-agent-memory.md)); YTK no es obligatorio. OpenSpec permite inspección estructural y revisión explícita, ambas experimentales; revisión no llama modelos, no persiste aprobación y no ejecuta cambios. No hay planificación ni aplicación SDD ejecutable.
 
-**Pendientes antes de declarar aceptación del Hito 3:** [guía del Hito 3](spikes/milestone-3-acceptance.md) (incluye recuperación con YTK), evaluación semántica con modelo real y smoke YTK real. La desviación acordada permite continuar incrementos acotados, no habilitar por defecto capacidades no validadas ni usar datos reales. No certificar seguridad de producción.
+**Pendientes antes de declarar aceptación del Hito 3:** [guía del Hito 3](spikes/milestone-3-acceptance.md) (incluye recuperación con YTK), ampliación de la evaluación semántica (12/12 casos iniciales aprobados) y aceptación integral YTK (smoke aprobado con binario compilado que incluye memory_list, no con release 0.1.12). La desviación acordada permite continuar incrementos acotados, no habilitar por defecto capacidades no validadas ni usar datos reales. No certificar seguridad de producción.
 
-**Siguiente:** estabilizar el flujo task (3.C.3.C), probar aceptación real con modelo y binario YTK real y luego continuar 3.E.4, definir un contrato SDD que enlace artefactos revisados y su digest al plan y al ejecutor, con gates explícitos de divulgación, aprobación y cada efecto. Mantener la alternativa OpenSpec opcional, validar el workflow con pruebas y conservar seguimiento explícito de la deuda de aceptación.
+**Siguiente:** prueba integral automatizada de task y recuperación (3.C.3.C/3.D.4), luego aceptación real con modelo y binario YTK compatible y continuar 3.E.4, definir un contrato SDD que enlace artefactos revisados y su digest al plan y al ejecutor, con gates explícitos de divulgación, aprobación y cada efecto. Mantener la alternativa OpenSpec opcional, validar el workflow con pruebas y conservar seguimiento explícito de la deuda de aceptación.
 
 ## Hitos 4–10 — Evolución de producto acordada
 
