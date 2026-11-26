@@ -166,12 +166,12 @@ El smoke usa una base y un workspace descartables, sin LLM. Luego, solo en un pr
 ```sh
 your-gear --run-task --memory --context src/retry.js --verify-test test/retry.test.mjs "Agregar reintentos HTTP"
 your-gear --recover
-your-gear --recover UUID
+your-gear --recover UUID --verify-test test/retry.test.mjs
 ```
 
 `--memory` implica journal y pide autorización explícita para guardar un resumen del plan aprobado y rutas; los checkpoints siguientes solo agregan estados y contadores. No guarda deliberadamente prompt crudo, código ni salidas de herramientas; el texto generado del plan puede contener datos sensibles o fragmentos, por lo que debe revisarse antes de consentir. El briefing general de YTK no se envía al modelo todavía. El binario y base deben quedar fuera del alcance editable (por ejemplo base en .ytk-memory). Se degrada a recuperación manual si falla YTK.
 
-`--recover` lista tareas sin cierre y, cuando hay memoria autorizada, objetivos de hasta cinco de ellas. `--recover UUID` sin prompt reconstruye el objetivo desde el último checkpoint por ID y digest. Revisa la información recuperada, selecciona contexto actual y requiere nuevos gates. No reutiliza pruebas ni permisos; seleccionar nuevos tests con `--verify-test`, reemplazar rutas con `--context`. Si se necesita un nuevo checkpoint, agregar `--memory` después del UUID. Si falta memoria válida, proporcionar el trabajo restante de forma explícita como antes.
+`--recover` lista tareas sin cierre y, cuando hay memoria autorizada, objetivos de hasta cinco de ellas. `--recover UUID` sin prompt reconstruye el objetivo desde el último checkpoint por ID y digest. Revisa la información recuperada, selecciona contexto actual y requiere nuevos gates. No reutiliza pruebas ni permisos; es obligatorio seleccionar nuevamente entre uno y tres tests existentes con `--verify-test`, reemplazar rutas con `--context`. Si se necesita un nuevo checkpoint, agregar `--memory` después del UUID. Si falta memoria válida, proporcionar el trabajo restante de forma explícita como antes.
 
 No reanuda automáticamente efectos ni tareas cerradas, no verifica que el proceso anterior terminó y no guarda cada operación del executor. El checkpoint puede estar desactualizado; inspeccioná el workspace. No usar con datos reales hasta validar interoperabilidad con YTK y aceptación integral.
 
@@ -183,10 +183,10 @@ No reanuda automáticamente efectos ni tareas cerradas, no verifica que el proce
 | `--persist` / `--continue` | Conversación del modo directo | Sí |
 | `--analyze-only` / `--review-route` | Recomendación / decisión sin efectos | Sí |
 | `--plan` | Plan task sin ejecutar | Sí |
-| `--run-task [--record] [--memory]` | Workflow task y verificación | Sí |
+| `--run-task [--record] [--memory] --verify-test archivo` | Workflow task y verificación | Sí |
 | `workflows` / `workflow ID` | Journal local | No |
 | `--recover` | Candidatos sin cierre, con objetivos si hay memoria | No |
-| `--recover ID` | Nuevo intento con memoria válida o solicitud explícita | Sí, tras revisión |
+| `--recover ID --verify-test archivo` | Nuevo intento con memoria válida o solicitud explícita | Sí, tras revisión |
 | `memory status/list/search/get` | Consulta local, arranque autorizado si configurado | No |
 
 Las opciones de contexto y pruebas van después de --record/--memory (si se usan) y antes de la solicitud. --memory debe ir después de --record o del UUID de recuperación. Los modos de revisión y recuperación requieren terminal interactiva. La ruta SDD solo se recomienda actualmente: no ejecuta workflows OpenSpec.
