@@ -28,7 +28,7 @@ try {
   assert.equal(packed[0].name, manifest.name);
   assert.equal(packed[0].version, manifest.version);
   const files = new Set(packed[0].files.map(file => file.path));
-  for (const required of ['package.json', 'README.md', 'dist/cli.js', 'dist/config.js', 'dist/openspec-inspect.js', 'dist/openspec-review.js', 'dist/assessment.js', 'dist/assessment-agent.js', 'dist/planner-agent.js', 'dist/plan.js', 'dist/tool-free-agent.js', 'dist/context-engine.js', 'dist/task-orchestrator.js', 'dist/executor-agent.js', 'dist/verification-evidence.js', 'dist/verification.js', 'dist/verifier-agent.js', 'dist/workflow-journal.js', 'dist/workflow-recovery.js', 'dist/memory/provider.js', 'dist/memory/config.js', 'dist/memory/ytk.js', 'dist/memory/commands.js', 'dist/memory/checkpoint.js', 'dist/memory/workflow-memory.js', 'docs/references.md']) {
+  for (const required of ['package.json', 'README.md', 'dist/cli.js', 'dist/config.js', 'dist/openspec-inspect.js', 'dist/openspec-review.js', 'dist/openspec-plan.js', 'dist/assessment.js', 'dist/assessment-agent.js', 'dist/planner-agent.js', 'dist/plan.js', 'dist/tool-free-agent.js', 'dist/context-engine.js', 'dist/task-orchestrator.js', 'dist/executor-agent.js', 'dist/verification-evidence.js', 'dist/verification.js', 'dist/verifier-agent.js', 'dist/workflow-journal.js', 'dist/workflow-recovery.js', 'dist/memory/provider.js', 'dist/memory/config.js', 'dist/memory/ytk.js', 'dist/memory/commands.js', 'dist/memory/checkpoint.js', 'dist/memory/workflow-memory.js', 'docs/references.md']) {
     assert.ok(files.has(required), `Falta en el tarball: ${required}`);
   }
   for (const file of files) {
@@ -59,6 +59,8 @@ try {
   assert.match(invoke(['--analyze-only', '--mcp', 'fixture', 'hola'], 1).stderr, /no admite otras opciones/);
   assert.match(invoke(['--analyze-only'], 1).stderr, /Uso/);
   assert.match(invoke(['--review-route', 'hola'], 1).stderr, /terminal interactiva/);
+  assert.match(invoke(['openspec','plan','missing.js','demo','proposal','design','tasks','spec'],1).stderr,/terminal interactiva/);
+  assert.match(invoke(['openspec','apply','missing.js','demo'],1).stderr,/Uso:/);
   assert.match(invoke(['--plan', 'hola'], 1).stderr, /terminal interactiva/);
   assert.match(invoke(['--run-task', 'hola'], 1).stderr, /terminal interactiva/);
   assert.match(invoke(['--run-task', '--record', 'hola'], 1).stderr, /terminal interactiva/);
