@@ -22,7 +22,7 @@ function fixture(t:{after:(fn:()=>void)=>void}) {
   const script=join(cwd,'fake.js');
   const writeProvider=(artifacts:unknown,valid=true)=>writeFileSync(script,
     'const a=process.argv.slice(2), root={path:process.cwd(),source:"nearest"};'+
-    'if(a[0]==="--version")console.log("2.2.0");else if(a[0]==="status")console.log(JSON.stringify({root,changeName:"demo",isPlanningComplete:true,artifacts:'+JSON.stringify(artifacts)+'}));'+
+    'if(a[0]==="--version")console.log("2.2.0");else if(a[0]==="status")console.log(JSON.stringify({root,changeName:"demo",schemaName:"spec-driven",isPlanningComplete:true,artifacts:'+JSON.stringify(artifacts)+'}));'+
     'else if(a[0]==="validate"){console.log(JSON.stringify({root,version:"1.0",items:[{id:"demo",type:"change",valid:'+valid+'}]}));process.exitCode='+Number(!valid)+';}else throw Error("unexpected command");');
   const artifacts=['proposal','design','tasks','specs'].map(id=>({id,status:'done'}));
   writeProvider(artifacts);
