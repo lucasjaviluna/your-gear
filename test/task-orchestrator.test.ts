@@ -72,3 +72,18 @@ test('cancelación tardía invalida inicio y fallo de executor no produce result
     execute: async () => { throw new Error('provider failure'); }
   }), /provider failure/);
 });
+
+
+test('selección de pruebas y contrato son obligatorios y no admiten mutación',async t=>{
+  const {input,refreshContext}=await fixture(t);
+  const fail=async()=>assert.fail('no ejecutar ni preguntar');
+  const legacy=await generatePlan(input.request,input.assessment,async()=>JSON.stringify({
+    objective:'Cambio',scope:'README',steps:['Editar'],acceptanceCriteria:['Texto actualizado'],risks:[],assumptions:[],unknowns:[]
+  }),undefined,input.context);
+  const approval=await reviewPlan(legacy,async()=> 's');
+  assert.equal((await executeApprovedTask({...input,plan:legacy,planDecision:approval},{refreshContext,ask:fail,execute:fail})).status,'blocked');
+  assert.equal((await executeApprovedTask(input,{refreshContext,ask:async()=>{
+    input.plan.evidenceRequirements![0].files=[];
+    return 's';
+  },execute:fail})).status,'blocked');
+});
