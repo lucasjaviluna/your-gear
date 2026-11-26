@@ -36,6 +36,36 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     return;
   }
   if (args[0] === 'openspec') {
+    if (args[1] === 'plan' && args.length >= 8) {
+      if (!stdin.isTTY || !stdout.isTTY) throw new Error('La planificación SDD requiere terminal interactiva.');
+      const { planOpenSpec, SDD_PLANNER_SYSTEM_PROMPT } = await import('./openspec-plan.ts');
+      const { safePreview } = await import('./verification-evidence.ts');
+      const cwd = resolve(process.cwd()), agentDir = join(homedir(), '.your-gear');
+      const result = await planOpenSpec({cwd, script:args[2], change:args[3], files:args.slice(4), interactive:true,
+        signal:controller.signal, approve:description => requestApproval(description, controller.signal, () => controller.abort()),
+        ask:async description => (await requestApproval(description, controller.signal, () => controller.abort())) ? 's' : 'n',
+        complete:async message => {
+          const config = readConfiguration(['plan'], process.env, readSettings(cwd,agentDir), 'planner');
+          const { ModelRuntime } = await import('@earendil-works/pi-coding-agent');
+          const { createToolFreeSession, runToolFreeSession } = await import('./tool-free-agent.ts');
+          if (controller.signal.aborted) throw new Error('La ejecución fue cancelada.');
+          const modelRuntime = config.authMode === 'pi-subscription' ? await ModelRuntime.create() : await (async () => {
+            mkdirSync(agentDir, {recursive:true,mode:0o700});
+            return ModelRuntime.create({authPath:join(agentDir,'auth.json'),modelsPath:join(agentDir,'models.json')});
+          })();
+          const model = await selectModel(config, modelRuntime);
+          if (controller.signal.aborted) throw new Error('La ejecución fue cancelada.');
+          stderr.write(`Your Gear SDD planner: ${model.provider}/${model.id} (${config.authMode})\n`);
+          const session = await createToolFreeSession({cwd,agentDir,modelRuntime,model},SDD_PLANNER_SYSTEM_PROMPT);
+          return runToolFreeSession(session, async complete => {
+            if (controller.signal.aborted) throw new Error('La ejecución fue cancelada.');
+            return complete(message);
+          }, controller.signal);
+        }});
+      stdout.write(safePreview(result) + '\n');
+      if (result.status !== 'planned') process.exitCode = 1;
+      return;
+    }
     if (args[1] === 'review' && args.length >= 8) {
       if (!stdin.isTTY || !stdout.isTTY) throw new Error('La revisión requiere terminal interactiva.');
       const { reviewOpenSpec } = await import('./openspec-review.ts');
@@ -47,7 +77,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
       if (result.status !== 'reviewed') process.exitCode = 1;
       return;
     }
-    if (args.length !== 4 || args[1] !== 'inspect') throw new Error('Uso: your-gear openspec inspect RUTA_ABSOLUTA_JS CHANGE | openspec review RUTA_ABSOLUTA_JS CHANGE ARCHIVOS...');
+    if (args.length !== 4 || args[1] !== 'inspect') throw new Error('Uso: your-gear openspec inspect RUTA_ABSOLUTA_JS CHANGE | openspec review RUTA_ABSOLUTA_JS CHANGE ARCHIVOS... | openspec plan RUTA_ABSOLUTA_JS CHANGE ARCHIVOS...');
     const { inspectOpenSpec } = await import('./openspec-inspect.ts');
     const { safePreview } = await import('./verification-evidence.ts');
     const result = await inspectOpenSpec({cwd:process.cwd(), script:args[2], change:args[3], interactive:Boolean(stdin.isTTY && stdout.isTTY), signal:controller.signal, approve:description => requestApproval(description, controller.signal, () => controller.abort())});
