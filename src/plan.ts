@@ -29,7 +29,7 @@ export const PLANNER_SYSTEM_PROMPT = [
   'Si falta información indispensable, incluye preguntas en unknowns. Separa riesgos y supuestos; no amplíes el alcance.',
   'Antes de listar unknowns, contrasta cada posible duda con request y context. No declares desconocido ningún dato explícito allí. La versión de Node, formatos, firmas, rutas, límites y preferencias indicados por el usuario son datos confirmados. unknowns solo contiene datos decisivos ausentes o contradictorios; no preguntes por ellos de nuevo.',
   'Devuelve exclusivamente JSON con objective, scope (cadenas), steps, acceptanceCriteria, risks, assumptions, unknowns (listas de cadenas).',
-  'Usa exactamente las claves objective, scope, steps, acceptanceCriteria, risks, assumptions, unknowns. No traduzcas ni renombres claves. Incluye siempre todas; usa [] para listas vacías. No uses Markdown ni bloques de código.',
+  'Usa las claves base objective, scope, steps, acceptanceCriteria, risks, assumptions, unknowns y únicamente la clave adicional condicionada descrita abajo. No traduzcas ni renombres claves. Incluye siempre todas; usa [] para listas vacías. No uses Markdown ni bloques de código.',
   'scope debe ser una sola cadena de texto, no una lista.',
   'Objective y scope: 1 a 2000 caracteres. Steps y acceptanceCriteria: entre 1 y 12 elementos; las otras listas pueden estar vacías, máximo 12. Cada elemento: 1 a 1000 caracteres.',
   'Solo cuando la entrada contiene verificationTests, añade evidenceRequirements: array en el mismo orden y longitud que acceptanceCriteria, con objetos {files: string[], tests: string[]}. Las rutas deben coincidir exactamente con context y verificationTests respectivamente. Cada criterio requiere al menos una fuente pertinente; si falta, deja ambas listas vacías y explica la evidencia faltante en unknowns. No inventes fuentes ni comandos. No elimines requisitos del usuario para ajustarte a las capacidades. No exijas comprobaciones externas que las fuentes no pueden observar. Un test con exit 0 no prueba por sí solo todos los criterios.',
@@ -141,7 +141,7 @@ export async function generatePlan(request: string, assessment: Assessment,
 export async function reviewPlan(plan: Plan, ask: (description: string) => Promise<string>, signal?: AbortSignal): Promise<PlanDecision> {
   if (signal?.aborted) throw new Error('La ejecución fue cancelada.');
   const snapshot = checkedPlan(plan);
-  if (snapshot.unknowns.length) return { status: 'needs-clarification' };
+  if (snapshot.unknowns.length || snapshot.evidenceRequirements?.some(row => !row.files.length && !row.tests.length)) return { status: 'needs-clarification' };
   const answer = await ask('Plan propuesto (sin ejecución):\n' + JSON.stringify(snapshot, null, 2).replace(/[\u007f-\u009f\u2028-\u202e\u2066-\u2069]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')) +
     '\n¿Aprobar exactamente esta versión del plan? [s/N] ');
   if (signal?.aborted) throw new Error('La ejecución fue cancelada.');
@@ -155,7 +155,7 @@ export async function reviewPlan(plan: Plan, ask: (description: string) => Promi
 export function isPlanApproved(plan: Plan, decision: PlanDecision): boolean {
   try {
     const current = checkedPlan(plan);
-    return current.unknowns.length === 0 && decision.status === 'approved' &&
+    return current.unknowns.length === 0 && !current.evidenceRequirements?.some(row => !row.files.length && !row.tests.length) && decision.status === 'approved' &&
       current.digest === decision.digest && current.version === decision.version;
   } catch { return false; }
 }
