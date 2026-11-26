@@ -12,15 +12,16 @@ async function fixture(t: { after: (fn: () => void) => void }) {
   const cwd = mkdtempSync(join(tmpdir(), 'gear-task-'));
   t.after(() => rmSync(cwd, { recursive: true, force: true }));
   writeFileSync(join(cwd, 'README.md'), 'original');
-  const context = collectContext(cwd);
+  writeFileSync(join(cwd, 'a.test.cjs'), 'fixture');
+  const context = collectContext(cwd,['a.test.cjs']);
   const assessment: Assessment = { recommendedRoute: 'task', source: 'llm', confidence: 'medium', reasons: ['Varios pasos'], affectedAreas: [], unknowns: [] };
   const request = 'Implementar un cambio y documentarlo';
   const plan = await generatePlan(request, assessment, async () => JSON.stringify({
-    objective: 'Cambio', scope: 'README', steps: ['Editar'], acceptanceCriteria: ['Texto actualizado'], risks: [], assumptions: [], unknowns: [],
-  }), undefined, context);
+    objective: 'Cambio', scope: 'README', steps: ['Editar'], acceptanceCriteria: ['Texto actualizado'], evidenceRequirements: [{files:['README.md'],tests:['a.test.cjs']}], risks: [], assumptions: [], unknowns: [],
+  }), undefined, context,['a.test.cjs']);
   const planDecision = await reviewPlan(plan, async () => 's');
   const input: ExecutionInput = { request, assessment, decision: { status: 'selected', route: 'task', source: 'accepted' }, context, plan, planDecision };
-  return { cwd, input, refreshContext: () => collectContext(cwd) };
+  return { cwd, input, refreshContext: () => collectContext(cwd,['a.test.cjs']) };
 }
 const report = { summary: 'Cambios propuestos', blockedCalls: 0, toolErrors: 0 };
 
