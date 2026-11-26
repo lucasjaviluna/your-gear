@@ -61,7 +61,7 @@ function invoke(script: string, args: string[], cwd: string, home: string, signa
   });
 }
 
-export async function inspectOpenSpec(options: Options): Promise<{provider:'openspec';version:'2.2.0';change:string;planningComplete:boolean;artifacts:{id:string;status:unknown}[];structurallyValid:boolean;treeDigest:string;note:string}> {
+export async function inspectOpenSpec(options: Options): Promise<{provider:'openspec';version:'2.2.0';change:string;planningComplete:boolean;artifacts:{id:string;status:unknown}[];structurallyValid:boolean;treeDigest:string;defaultSchema:boolean;note:string}> {
   const { cwd, script, change, signal } = options;
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(change) || change.length > 100) throw new Error('Identificador de change inválido.');
   if (!isAbsolute(script) || !/\.js$/i.test(script) || !lstatSync(script).isFile()) throw new Error('Indicá una ruta absoluta a openspec.js existente.');
@@ -99,6 +99,6 @@ export async function inspectOpenSpec(options: Options): Promise<{provider:'open
     if (final.root !== root || final.digest !== before.digest || scriptDigest(executable) !== beforeScript) throw new Error('Archivos modificados durante la inspección.');
     // Do not consume paths, instructions, diagnostics, or content from the external process.
     if (relative(root, realpathSync(join(root, 'openspec'))).startsWith('..')) throw new Error('Raíz OpenSpec inválida.');
-    return {provider:'openspec', version:'2.2.0', change, treeDigest:before.digest, planningComplete:s.isPlanningComplete, artifacts, structurallyValid:v.items[0].valid, note:'La planificación y validación estructural no prueban implementación ni aceptación.'};
+    return {provider:'openspec', version:'2.2.0', change, treeDigest:before.digest, defaultSchema:s.schemaName==='spec-driven', planningComplete:s.isPlanningComplete, artifacts, structurallyValid:v.items[0].valid, note:'La planificación y validación estructural no prueban implementación ni aceptación.'};
   } finally { rmSync(home, { recursive:true, force:true }); }
 }
