@@ -61,3 +61,18 @@ test('contexto cambiado durante revisión final impide aceptación', async () =>
     ask: async () => { if (calls++) digest = 'changed'; return 's'; } });
   assert.equal(result.status, 'inconclusive');
 });
+
+
+test('contrato exige citar todas las fuentes vinculadas y todas las pruebas seleccionadas',async()=>{
+  const base=fixture();
+  const {version,digest,inputDigest,verificationTests,...draft}=base.plan;
+  const plan=versionPlan({...draft,evidenceRequirements:[{files:['a.ts'],tests:['a.test.cjs']}]},1,undefined,['a.test.cjs']);
+  const opts={ask:async()=> 's',refreshDigest:()=> 'new',complete:async()=>response};
+  assert.equal((await verifyTask({...base,plan},opts)).status,'accepted');
+  const unsupported=await verifyTask({...base,plan},{...opts,complete:async()=>JSON.stringify({criteria:[{index:0,status:'supported',evidenceIds:['f1'],reason:'file only'}]})});
+  assert.equal(unsupported.status,'inconclusive');
+  assert.equal(unsupported.criteria[0].status,'insufficient');
+  const missing=versionPlan({...draft,evidenceRequirements:[{files:['a.ts'],tests:['a.test.cjs']}]},1,undefined,['a.test.cjs','b.test.cjs']);
+  assert.equal((await verifyTask({...base,plan:missing},opts)).status,'inconclusive');
+  assert.equal((await verifyTask({...base,plan,tests:[{...passed,exitCode:1}]},opts)).status,'inconclusive');
+});
