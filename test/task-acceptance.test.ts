@@ -85,7 +85,7 @@ async function attempt(f:Fixture, task:string, changes:{path:string;content:stri
     return opts.rejectFinal&&description.includes('Aceptar el resultado')?'n':'s';
   };
   const parentCheck=()=>{if(opts.recovery)assertRecoverySource(cwd,agentDir,opts.recovery);};
-  let memory:Awaited<ReturnType<typeof openWorkflowMemory>>;
+  let memory:Awaited<ReturnType<typeof openWorkflowMemory>> = undefined;
   try {
     if(opts.recovery)journal.record({kind:'recovery',...opts.recovery});
     journal.transition('classifying');
