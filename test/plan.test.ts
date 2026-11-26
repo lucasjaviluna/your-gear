@@ -80,3 +80,33 @@ test('el digest del plan vincula también la solicitud y el contexto de entrada'
   assert.notEqual(first.inputDigest, second.inputDigest);
   assert.equal(isPlanApproved(second, decision), false);
 });
+
+
+test('contrato de evidencia vincula fuentes y selección exacta al digest', async () => {
+  const context = {entries:[{path:'retry.cjs',content:'old'},{path:'retry.test.cjs',content:'test'}], bytes:0,digest:''};
+  const mapped = {...draft,evidenceRequirements:[{files:['retry.cjs'],tests:['retry.test.cjs']}]};
+  const plan = await generatePlan('tarea',assessment,async message=>{
+    assert.deepEqual(JSON.parse(message).verificationTests,['retry.test.cjs']);
+    return JSON.stringify(mapped);
+  },undefined,context,['retry.test.cjs']);
+  const decision = await reviewPlan(plan,async preview=>{
+    assert.match(preview,/evidenceRequirements/);
+    assert.match(preview,/retry.test.cjs/);
+    return 's';
+  });
+  assert.equal(isPlanApproved(plan,decision),true);
+  assert.equal(isPlanApproved({...plan,verificationTests:['other.test.cjs']},decision),false);
+  plan.evidenceRequirements![0].tests=[];
+  assert.equal(isPlanApproved(plan,decision),false);
+});
+test('sin fuentes disponibles no genera plan ejecutable ni permite inventarlas',async()=>{
+  const context = {entries:[{path:'retry.cjs',content:'old'},{path:'retry.test.cjs',content:'test'}],bytes:0,digest:''};
+  const make = (rows:unknown,unknowns:string[]=[])=>generatePlan('tarea',assessment,async()=>JSON.stringify({...draft,unknowns,evidenceRequirements:rows}),undefined,context,['retry.test.cjs']);
+  for(const rows of [[{files:[],tests:[]}],[{files:['no-existe.cjs'],tests:[]}],[{files:[],tests:['invented.test.cjs']}]]){
+    await assert.rejects(make(rows),/fuentes de evidencia/);
+  }
+  await assert.rejects(make([]),/plan inválido/);
+  await assert.rejects(generatePlan('tarea',assessment,async()=>JSON.stringify(draft),undefined,context,['retry.test.cjs']),/Contrato de verificación incompleto/);
+  const plan=await make([{files:[],tests:[]}],['Falta prueba de integración']);
+  assert.deepEqual(await reviewPlan(plan,async()=>assert.fail('no aprobar')),{status:'needs-clarification'});
+});
