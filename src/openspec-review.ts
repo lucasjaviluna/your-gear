@@ -25,7 +25,7 @@ export async function reviewOpenSpec(options:ReviewOptions):Promise<{status:'can
   }
   const inspection = await inspectOpenSpec(options);
   if (inspection.treeDigest !== snapshot.digest || snapshotOpenSpec(options.cwd, options.change).digest !== snapshot.digest) throw new Error('Los artefactos cambiaron durante la inspección.');
-  if (options.requireAllSpecs && !['proposal','design','tasks','specs'].every(id=>inspection.artifacts.filter(a=>a.id===id&&a.status==='done').length===1)) throw new Error('La planificación SDD exige los cuatro artefactos terminados, sin skip.');
+  if (options.requireAllSpecs && (!inspection.defaultSchema || inspection.artifacts.length!==4 || !['proposal','design','tasks','specs'].every(id=>inspection.artifacts.some(a=>a.id===id&&a.status==='done')))) throw new Error('La planificación SDD exige el schema spec-driven y los cuatro artefactos terminados, sin skip.');
   if (!inspection.planningComplete || !inspection.structurallyValid) throw new Error('El change no completó planificación o validación estructural.');
   const context = collectContext(options.cwd, files, options.signal);
   const answer = await options.ask('confirmar revisión de estos artefactos y contexto, sin autorizar ejecución ni enviar datos al modelo:\n' + safePreview(context.entries));
