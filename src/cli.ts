@@ -90,7 +90,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
   if (review && (!stdin.isTTY || !stderr.isTTY)) {
     throw new Error('La revisión de ruta requiere una terminal interactiva.');
   }
-  if (recovering && args.length > 1 && (!args[1] || args[1].startsWith('-'))) throw new Error('Uso: your-gear --recover ID --context archivo "trabajo pendiente"');
+  if (recovering && args.length > 1 && (!args[1] || args[1].startsWith('-'))) throw new Error('Uso: your-gear --recover ID --context archivo --verify-test archivo "trabajo pendiente"');
   const taskArgs = executing ? parseTaskArgs(args.slice(taskStart)) : undefined;
   const planningArgs = taskArgs ?? (planning ? parsePlanningArgs(args.slice(1)) : undefined);
   const assisted = recovering && taskArgs?.promptArgs.length === 0;
@@ -112,16 +112,17 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     const { listRecoveries } = await import('./memory/workflow-memory.ts');
     const { safePreview } = await import('./verification-evidence.ts');
     stdout.write(safePreview(await listRecoveries(memoryOptions)) + '\n');
-    stderr.write('Seleccioná un UUID y ejecutá --recover ID. Los registros sin cierre podrían seguir activos.\n');
+    stderr.write('Seleccioná un UUID y ejecutá --recover ID --verify-test archivo. Los registros sin cierre podrían seguir activos.\n');
     return;
   }
+  if (executing && !taskArgs?.tests.length) throw new Error('Para ejecutar o recuperar task seleccioná de una a tres pruebas Node existentes mediante --verify-test.');
   if (assisted && taskArgs) {
     const { recoverFromMemory } = await import('./memory/workflow-memory.ts');
     let restored;
     try { restored = await recoverFromMemory(memoryOptions,args[1],taskArgs.files); }
     catch (error) {
       if (controller.signal.aborted) throw error;
-      throw new Error('No se pudo recuperar memoria válida. Usá --recover ID --context archivo "trabajo pendiente" para recuperación manual.');
+      throw new Error('No se pudo recuperar memoria válida. Usá --recover ID --context archivo --verify-test archivo "trabajo pendiente" para recuperación manual.');
     }
     if (!restored) { stdout.write(JSON.stringify({status:'cancelled'}) + '\n'); process.exitCode=1; return; }
     request = restored.remaining;
