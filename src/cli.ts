@@ -227,7 +227,12 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
     if (planning && decision.status === 'selected' && decision.route === 'task' && plannerConfig) {
       if (controller.signal.aborted) throw new Error('La ejecución fue cancelada.');
       journal?.transition('context-review');
-      const context = collectContext(cwd, planningArgs?.files, controller.signal);
+      const verificationTests = executing ? (taskArgs?.tests ?? []).map(path => collectContext(cwd,[path],controller.signal).entries[0].path) : undefined;
+      if (executing && (!verificationTests?.length || new Set(verificationTests).size !== verificationTests.length)) {
+        throw new Error('Para ejecutar task, seleccioná de una a tres pruebas Node existentes y distintas mediante --verify-test.');
+      }
+      const contextFiles = [...new Set([...(planningArgs?.files ?? []),...(verificationTests ?? [])])];
+      const context = collectContext(cwd, contextFiles, controller.signal);
       const contextSummary = { paths: context.entries.map(entry => entry.path), bytes: context.bytes, digest: context.digest };
       const contextApproved = await approveContext(context, ask, controller.signal);
       journal?.record({ kind: 'context', digest: context.digest, files: context.entries.length, approved: contextApproved });
@@ -243,7 +248,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
       const { createPlannerSession, planWithSession } = await import('./planner-agent.ts');
       const { reviewPlan } = await import('./plan.ts');
       const planner = await createPlannerSession({ cwd, agentDir, modelRuntime, model: plannerModel });
-      const plan = await planWithSession(planner, classificationRequest, assessment, controller.signal, context);
+      const plan = await planWithSession(planner, classificationRequest, assessment, controller.signal, context, verificationTests);
       journal?.transition('plan-review');
       const planDecision = await reviewPlan(plan, ask, controller.signal);
       journal?.record({ kind: 'plan', digest: plan.digest, version: plan.version, criteria: plan.acceptanceCriteria.length, decision: planDecision.status });
@@ -255,7 +260,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
       if (executing && executorConfig) {
         const { executeApprovedTask } = await import('./task-orchestrator.ts');
         const { createExecutorSession, executeWithSession } = await import('./executor-agent.ts');
-        const refreshContext = () => collectContext(cwd, planningArgs?.files, controller.signal);
+        const refreshContext = () => collectContext(cwd, contextFiles, controller.signal);
         if (recovery) assertRecoverySource(cwd, agentDir, recovery);
         journal?.transition('execution-review');
         const execution = await executeApprovedTask({ request: classificationRequest, assessment, decision, context, plan, planDecision }, {
@@ -292,7 +297,7 @@ async function main(controller: AbortController, state: { journal?: WorkflowJour
           journal?.transition('verifying');
           try {
             if (!execution.report.blockedCalls && !execution.report.toolErrors) {
-              for (const path of taskArgs?.tests ?? []) {
+              for (const path of plan.verificationTests ?? []) {
                 const test = await runSelectedTest(cwd, path, async description => {
                   const answer = await ask(description);
                   if (answer.trim().toLowerCase() === 's' && recovery) assertRecoverySource(cwd, agentDir, recovery);
