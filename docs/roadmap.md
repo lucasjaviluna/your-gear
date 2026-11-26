@@ -1,6 +1,6 @@
 # Roadmap evolutivo — Your Gear
 
-**Estado al 2026-11-25:** implementación integrada hasta 3.E.3 (PR #27) y estabilización 3.C.3.C (PR #28). OpenSpec permite inspección y revisión experimental de artefactos seleccionados; la integración SDD con planificación y ejecución sigue pendiente. La aceptación real del Hito 3 también sigue pendiente.
+**Estado al 2026-11-25:** implementación integrada hasta 3.E.3 (PR #27), estabilización 3.C.3.C (PR #28) y pruebas integrales (PR #29). OpenSpec permite inspección y revisión experimental de artefactos seleccionados; la integración SDD con planificación y ejecución sigue pendiente. La aceptación real del Hito 3 también sigue pendiente.
 
 CI de implementación de referencia: [PR #28, run 45735634433](https://github.com/lucasjaviluna/your-gear/actions/runs/45735634433), exitoso en Windows, Linux y macOS: typecheck, tests, build, pack, instalación y smoke del CLI. No incluye inferencia real ni binario YTK real. El [CI del PR #23 documental](https://github.com/lucasjaviluna/your-gear/actions/runs/45506701591) también finalizó correctamente; se encuentra mergeado.
 
@@ -45,11 +45,11 @@ Skills y MCP bajo policy, configuración por usuario/proyecto, tests de herramie
 | 3.E.4.B | Enlace a executor y contrato de verificación con gates propios | Pendiente |
 | 3.E.4.C | Verificación SDD, sync/archive evaluados por separado | Pendiente |
 
-Los PR #13–24 y #26–28 están integrados; #25 se cerró sin merge por quedar reemplazado por #26/#27. el detalle de su CI y alcance se conserva en [seguimiento del Hito 3](milestones/milestone-3.md). El modo directo permanece por defecto, la ruta task es optativa y experimental. Por decisión del usuario se adelantó memoria agéntica para recuperación antes de SDD ([ADR-004](adr/ADR-004-optional-agent-memory.md)); YTK no es obligatorio. OpenSpec permite inspección estructural y revisión explícita, ambas experimentales; revisión no llama modelos, no persiste aprobación y no ejecuta cambios. 3.E.4.A propone planificación SDD separada; no hay aplicación SDD ejecutable.
+Los PR #13–24 y #26–29 están integrados; #25 se cerró sin merge por quedar reemplazado por #26/#27. el detalle de su CI y alcance se conserva en [seguimiento del Hito 3](milestones/milestone-3.md). El modo directo permanece por defecto, la ruta task es optativa y experimental. Por decisión del usuario se adelantó memoria agéntica para recuperación antes de SDD ([ADR-004](adr/ADR-004-optional-agent-memory.md)); YTK no es obligatorio. OpenSpec permite inspección estructural y revisión explícita, ambas experimentales; revisión no llama modelos, no persiste aprobación y no ejecuta cambios. 3.E.4.A propone planificación SDD separada; no hay aplicación SDD ejecutable.
 
 **Pendientes antes de declarar aceptación del Hito 3:** [guía del Hito 3](spikes/milestone-3-acceptance.md) (incluye recuperación con YTK), ampliación de la evaluación semántica (12/12 casos iniciales aprobados) y aceptación integral YTK (smoke aprobado con binario compilado que incluye memory_list, no con release 0.1.12). La desviación acordada permite continuar incrementos acotados, no habilitar por defecto capacidades no validadas ni usar datos reales. No certificar seguridad de producción.
 
-**Siguiente:** PR #29 integrado con [CI exitoso](https://github.com/lucasjaviluna/your-gear/actions/runs/45737078328); se mantiene pendiente aceptación real con modelo y YTK compatible. Se adelanta un corte sin ejecución 3.E.4.A para definir un contrato SDD que enlace artefactos revisados y su digest al plan y al ejecutor, con gates explícitos de divulgación, aprobación y cada efecto. Mantener la alternativa OpenSpec opcional, validar el workflow con pruebas y conservar seguimiento explícito de la deuda de aceptación.
+**Siguiente:** PR #29 integrado con [CI exitoso](https://github.com/lucasjaviluna/your-gear/actions/runs/45737078328); se mantiene pendiente aceptación real con modelo y YTK compatible. Se adelanta un corte sin ejecución 3.E.4.A que enlaza artefactos revisados y su digest al plan, con gates de divulgación y aprobación. Antes de 3.E.4.B validar aceptación real de task/YTK y definir contrato de ejecución y evidencia. Mantener la alternativa OpenSpec opcional, validar el workflow con pruebas y conservar seguimiento explícito de la deuda de aceptación.
 
 ## Hitos 4–10 — Evolución de producto acordada
 
