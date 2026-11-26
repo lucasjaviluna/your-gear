@@ -9,9 +9,11 @@ type Options = { cwd: string; script: string; change: string; interactive: boole
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 
 // Deliberately accept only the default local schema, with no external stores or custom rules.
-function preflight(cwd: string, change: string): {root:string; digest:string} {
+export function snapshotOpenSpec(cwd: string, change: string): {root:string; digest:string; specPaths:string[]} {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(change) || change.length > 100 || change === 'archive') throw new Error('Identificador de change inválido.');
   const root = realpathSync(cwd);
   const tree = join(root, 'openspec');
+  const specPaths: string[] = [];
   let count = 0;
   let bytes = 0;
   const hash = createHash('sha256');
@@ -23,7 +25,11 @@ function preflight(cwd: string, change: string): {root:string; digest:string} {
     if (st.isDirectory()) for (const name of readdirSync(path).sort()) visit(join(path, name));
     else {
       if (!st.isFile() || st.nlink !== 1 || st.size > 1024 * 1024 || (bytes += st.size) > 16 * 1024 * 1024) throw new Error('Archivo OpenSpec no admitido (tamaño o enlaces).');
+      const rel = relative(root, path).split('\\').join('/');
+      const prefix = 'openspec/changes/' + change + '/specs/';
+      if (rel.startsWith(prefix)) specPaths.push(rel);
       const contents = readFileSync(path);
+      if (contents.length > 1024 * 1024 || contents.length !== st.size) throw new Error('Archivo OpenSpec modificado durante lectura.');
       hash.update(JSON.stringify(contents.length));
       hash.update(contents);
     }
@@ -35,7 +41,7 @@ function preflight(cwd: string, change: string): {root:string; digest:string} {
   }
   if (!lstatSync(join(tree, 'changes', change)).isDirectory()) throw new Error('Change no disponible.');
   if (readdirSync(tree).includes('schemas')) throw new Error('Esquemas locales no admitidos.');
-  return {root, digest:hash.digest('hex')};
+  return {root, digest:hash.digest('hex'), specPaths:specPaths.sort()};
 }
 
 function scriptDigest(path:string): string {
@@ -55,19 +61,19 @@ function invoke(script: string, args: string[], cwd: string, home: string, signa
   });
 }
 
-export async function inspectOpenSpec(options: Options): Promise<unknown> {
+export async function inspectOpenSpec(options: Options): Promise<{provider:'openspec';version:'2.2.0';change:string;planningComplete:boolean;artifacts:{id:string;status:unknown}[];structurallyValid:boolean;treeDigest:string;note:string}> {
   const { cwd, script, change, signal } = options;
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(change) || change.length > 100) throw new Error('Identificador de change inválido.');
   if (!isAbsolute(script) || !/\.js$/i.test(script) || !lstatSync(script).isFile()) throw new Error('Indicá una ruta absoluta a openspec.js existente.');
   const executable = realpathSync(script);
-  const before = preflight(cwd, change);
+  const before = snapshotOpenSpec(cwd, change);
   const {root} = before;
   const beforeScript = scriptDigest(executable);
   if (!options.interactive) throw new Error('La inspección requiere terminal interactiva.');
   if (signal?.aborted) throw new Error('La ejecución fue cancelada.');
   if (!await options.approve('ejecutar OpenSpec local con permisos del usuario, sin sandbox (puede leer o modificar archivos):\n' + safePreview({script: executable, node: process.execPath, workspace: root, change, commands: ['--version', 'status', 'validate']}))) throw new Error('Inspección no autorizada.');
   if (signal?.aborted) throw new Error('La ejecución fue cancelada.');
-  const after = preflight(root, change);
+  const after = snapshotOpenSpec(root, change);
   if (after.root !== root || after.digest !== before.digest || realpathSync(script) !== executable || scriptDigest(executable) !== beforeScript) throw new Error('Archivos modificados durante la aprobación.');
   const home = mkdtempSync(join(tmpdir(), 'your-gear-openspec-'));
   try {
@@ -83,16 +89,16 @@ export async function inspectOpenSpec(options: Options): Promise<unknown> {
       return {id:item.id, status:item.status};
     });
     // Recheck the tree after the external status process, before starting another process.
-    const current = preflight(root, change);
+    const current = snapshotOpenSpec(root, change);
     if (current.root !== root || current.digest !== before.digest || scriptDigest(executable) !== beforeScript) throw new Error('Archivos modificados durante la inspección.');
     const validation = await invoke(executable, ['validate', change, '--json'], root, home, signal);
     let v: unknown;
     try { v = JSON.parse(validation.output); } catch { throw new Error('Respuesta OpenSpec inválida.'); }
     if (!record(v) || !validRoot(v) || v.version !== '1.0' || !Array.isArray(v.items) || v.items.length !== 1 || !record(v.items[0]) || v.items[0].id !== change || v.items[0].type !== 'change' || typeof v.items[0].valid !== 'boolean' || validation.code !== (v.items[0].valid ? 0 : 1)) throw new Error('Respuesta o raíz OpenSpec no admitida.');
-    const final = preflight(root, change);
+    const final = snapshotOpenSpec(root, change);
     if (final.root !== root || final.digest !== before.digest || scriptDigest(executable) !== beforeScript) throw new Error('Archivos modificados durante la inspección.');
     // Do not consume paths, instructions, diagnostics, or content from the external process.
     if (relative(root, realpathSync(join(root, 'openspec'))).startsWith('..')) throw new Error('Raíz OpenSpec inválida.');
-    return {provider:'openspec', version:'2.2.0', change, planningComplete:s.isPlanningComplete, artifacts, structurallyValid:v.items[0].valid, note:'La planificación y validación estructural no prueban implementación ni aceptación.'};
+    return {provider:'openspec', version:'2.2.0', change, treeDigest:before.digest, planningComplete:s.isPlanningComplete, artifacts, structurallyValid:v.items[0].valid, note:'La planificación y validación estructural no prueban implementación ni aceptación.'};
   } finally { rmSync(home, { recursive:true, force:true }); }
 }
