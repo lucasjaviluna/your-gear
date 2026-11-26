@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Assessment } from './assessment.ts';
 import type { ContextSnapshot } from './context-engine.ts';
-import { isPlanApproved, type Plan, type PlanDecision } from './plan.ts';
+import { hasVerificationContract, isPlanApproved, type Plan, type PlanDecision } from './plan.ts';
 import type { RouteDecision } from './route-review.ts';
 
 export type ExecutionInput = {
@@ -19,7 +19,7 @@ export type ExecutionOutcome =
 
 export function executionInputDigest(input: ExecutionInput): string {
   return createHash('sha256').update(JSON.stringify({
-    request: input.request, assessment: input.assessment, selectedRoute: 'task', context: input.context.entries,
+    request: input.request, assessment: input.assessment, selectedRoute: 'task', context: input.context.entries, ...(input.plan.verificationTests !== undefined ? {verificationTests:input.plan.verificationTests} : {}),
   })).digest('hex');
 }
 
@@ -36,8 +36,8 @@ export async function executeApprovedTask(input: ExecutionInput, options: {
   checkCancelled();
   const valid = () => input.assessment.recommendedRoute === 'task' &&
     input.decision.status === 'selected' && input.decision.route === 'task' &&
-    isPlanApproved(input.plan, input.planDecision) && input.plan.inputDigest === executionInputDigest(input);
-  if (!valid()) return { status: 'blocked', reason: 'La ruta task y el plan vigente deben estar aprobados.' };
+    hasVerificationContract(input.plan,input.context) && isPlanApproved(input.plan, input.planDecision) && input.plan.inputDigest === executionInputDigest(input);
+  if (!valid()) return { status: 'blocked', reason: 'La ruta task, el plan vigente y su contrato de verificación deben estar aprobados.' };
   const approvedDigest = input.plan.digest;
   const contextDigest = input.context.digest;
   const contextHash = () => createHash('sha256').update(JSON.stringify(input.context.entries)).digest('hex');

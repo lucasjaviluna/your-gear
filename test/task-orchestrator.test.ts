@@ -12,15 +12,16 @@ async function fixture(t: { after: (fn: () => void) => void }) {
   const cwd = mkdtempSync(join(tmpdir(), 'gear-task-'));
   t.after(() => rmSync(cwd, { recursive: true, force: true }));
   writeFileSync(join(cwd, 'README.md'), 'original');
-  const context = collectContext(cwd);
+  writeFileSync(join(cwd, 'a.test.cjs'), 'fixture');
+  const context = collectContext(cwd,['a.test.cjs']);
   const assessment: Assessment = { recommendedRoute: 'task', source: 'llm', confidence: 'medium', reasons: ['Varios pasos'], affectedAreas: [], unknowns: [] };
   const request = 'Implementar un cambio y documentarlo';
   const plan = await generatePlan(request, assessment, async () => JSON.stringify({
-    objective: 'Cambio', scope: 'README', steps: ['Editar'], acceptanceCriteria: ['Texto actualizado'], risks: [], assumptions: [], unknowns: [],
-  }), undefined, context);
+    objective: 'Cambio', scope: 'README', steps: ['Editar'], acceptanceCriteria: ['Texto actualizado'], evidenceRequirements: [{files:['README.md'],tests:['a.test.cjs']}], risks: [], assumptions: [], unknowns: [],
+  }), undefined, context,['a.test.cjs']);
   const planDecision = await reviewPlan(plan, async () => 's');
   const input: ExecutionInput = { request, assessment, decision: { status: 'selected', route: 'task', source: 'accepted' }, context, plan, planDecision };
-  return { cwd, input, refreshContext: () => collectContext(cwd) };
+  return { cwd, input, refreshContext: () => collectContext(cwd,['a.test.cjs']) };
 }
 const report = { summary: 'Cambios propuestos', blockedCalls: 0, toolErrors: 0 };
 
@@ -70,4 +71,19 @@ test('cancelación tardía invalida inicio y fallo de executor no produce result
   await assert.rejects(executeApprovedTask(input, { refreshContext, ask: async () => 's',
     execute: async () => { throw new Error('provider failure'); }
   }), /provider failure/);
+});
+
+
+test('selección de pruebas y contrato son obligatorios y no admiten mutación',async t=>{
+  const {input,refreshContext}=await fixture(t);
+  const fail=async()=>assert.fail('no ejecutar ni preguntar');
+  const legacy=await generatePlan(input.request,input.assessment,async()=>JSON.stringify({
+    objective:'Cambio',scope:'README',steps:['Editar'],acceptanceCriteria:['Texto actualizado'],risks:[],assumptions:[],unknowns:[]
+  }),undefined,input.context);
+  const approval=await reviewPlan(legacy,async()=> 's');
+  assert.equal((await executeApprovedTask({...input,plan:legacy,planDecision:approval},{refreshContext,ask:fail,execute:fail})).status,'blocked');
+  assert.equal((await executeApprovedTask(input,{refreshContext,ask:async()=>{
+    input.plan.evidenceRequirements![0].files=[];
+    return 's';
+  },execute:fail})).status,'blocked');
 });

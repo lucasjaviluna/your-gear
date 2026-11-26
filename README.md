@@ -88,7 +88,7 @@ Opcionalmente agregá `"planner": { "model": "MODELO_PLANIFICADOR" }` dentro de 
 ### Ejecutar una tarea (experimental)
 
 ```sh
-your-gear --run-task --context src/retry.ts "Agregar reintentos HTTP y documentar su comportamiento"
+your-gear --run-task --context src/retry.js --verify-test test/retry.test.mjs "Agregar reintentos HTTP y documentar su comportamiento"
 ```
 
 Usar únicamente un workspace descartable, sin datos sensibles. Requiere terminal interactiva, recomendación y selección de `task`, autorización del contexto, plan aprobado y confirmación adicional de inicio. El harness revalida el snapshot de contexto antes de ejecutar. El Executor Agent recibe el plan y dispone únicamente de read/write/edit, cada llamada con autorización humana. No admite shell, skills, herramientas MCP del modelo ni sesiones conversacionales persistidas en este modo. El harness puede ejecutar pruebas Node seleccionadas y, opcionalmente, usar YTK fuera del registro de tools del modelo. Opcionalmente configurar `agents.executor.model` o `YOUR_GEAR_EXECUTOR_MODEL` siguiendo la misma precedencia que classifier/planner.
@@ -101,9 +101,9 @@ La ejecución produce `awaiting-verification` y después pasa a verificación. N
 your-gear --run-task --context src/retry.js --verify-test test/retry.test.mjs "Agregar reintentos HTTP y documentarlos"
 ```
 
-Seleccioná hasta tres archivos de test Node (.test/.spec.js/.mjs/.cjs), existentes en el workspace cuando se ejecuten. Cada prueba se aprueba por separado tras ver su contenido y el comando exacto; el modelo no puede proponer comandos ejecutables automáticamente. Se ejecutan mediante Node sin shell, con timeout y límite de salida. **Un test puede ejecutar código arbitrario y tener efectos fuera del workspace**, acceder al entorno y crear procesos; revisá también sus imports. Solo usar código confiable en workspaces descartables.
+Seleccioná entre uno y tres archivos de test Node (.test/.spec.js/.mjs/.cjs), existentes en el workspace antes de planificar. Se incorporan automáticamente al contexto sujeto a consentimiento, dentro del límite total de ocho archivos y presupuesto de contexto. El Planner recibe las rutas exactas y debe asignar a cada criterio las fuentes de evidencia disponibles (`evidenceRequirements`: `files` y `tests`). El plan aprobado vincula tanto el contrato como las pruebas seleccionadas. Si faltan fuentes o hay incógnitas bloqueantes, no se inicia la ejecución. `--plan` sigue siendo una consulta sin ejecución y no requiere tests. Cada prueba se aprueba por separado tras ver su contenido y el comando exacto; el modelo no puede proponer comandos ejecutables automáticamente. Se ejecutan mediante Node sin shell, con timeout y límite de salida. **Un test puede ejecutar código arbitrario y tener efectos fuera del workspace**, acceder al entorno y crear procesos; revisá también sus imports. Solo usar código confiable en workspaces descartables.
 
-El harness observa el snapshot de contexto posterior y los resultados de los procesos. Tras autorizar el envío de esa evidencia, un Verifier Agent independiente evalúa cada criterio del plan. Opcionalmente configurar `agents.verifier.model` o `YOUR_GEAR_VERIFIER_MODEL`. El reporte del executor no prueba que un criterio se cumpla. El estado `accepted` requiere pruebas seleccionadas con código 0, sin salida truncada ni errores o bloqueos del executor, criterios respaldados y aceptación humana final. Sin tests o con evidencia insuficiente, devuelve `inconclusive`. Código 0 no significa por sí solo que se hayan ejecutado pruebas relevantes. Se verifica solo el contexto seleccionado, no todo el repositorio. La salida incluye estados de tests y criterios, no los extractos completos de stdout/stderr. El flujo con modelo real sigue pendiente de aceptación.
+El harness observa el snapshot de contexto posterior y los resultados de los procesos. Tras autorizar el envío de esa evidencia, un Verifier Agent independiente evalúa cada criterio del plan. Opcionalmente configurar `agents.verifier.model` o `YOUR_GEAR_VERIFIER_MODEL`. El reporte del executor no prueba que un criterio se cumpla. El estado `accepted` requiere pruebas seleccionadas con código 0, sin salida truncada ni errores o bloqueos del executor, criterios respaldados con todas sus fuentes requeridas citadas y aceptación humana final. La selección de tests ejecutados debe coincidir con la aprobada. Sin evidencia suficiente, devuelve `inconclusive`. La asociación de fuentes por criterio comprueba disponibilidad y citas, no relevancia semántica de forma determinista: el modelo y la revisión humana deben evaluarla. Código 0 no significa por sí solo que se hayan ejecutado pruebas relevantes. Se verifica solo el contexto seleccionado, no todo el repositorio. La salida incluye estados de tests y criterios, no los extractos completos de stdout/stderr. El flujo con modelo real sigue pendiente de aceptación.
 
 ### Registrar y consultar workflows (experimental)
 
@@ -166,12 +166,12 @@ El smoke usa una base y un workspace descartables, sin LLM. Luego, solo en un pr
 ```sh
 your-gear --run-task --memory --context src/retry.js --verify-test test/retry.test.mjs "Agregar reintentos HTTP"
 your-gear --recover
-your-gear --recover UUID
+your-gear --recover UUID --verify-test test/retry.test.mjs
 ```
 
 `--memory` implica journal y pide autorización explícita para guardar un resumen del plan aprobado y rutas; los checkpoints siguientes solo agregan estados y contadores. No guarda deliberadamente prompt crudo, código ni salidas de herramientas; el texto generado del plan puede contener datos sensibles o fragmentos, por lo que debe revisarse antes de consentir. El briefing general de YTK no se envía al modelo todavía. El binario y base deben quedar fuera del alcance editable (por ejemplo base en .ytk-memory). Se degrada a recuperación manual si falla YTK.
 
-`--recover` lista tareas sin cierre y, cuando hay memoria autorizada, objetivos de hasta cinco de ellas. `--recover UUID` sin prompt reconstruye el objetivo desde el último checkpoint por ID y digest. Revisa la información recuperada, selecciona contexto actual y requiere nuevos gates. No reutiliza pruebas ni permisos; seleccionar nuevos tests con `--verify-test`, reemplazar rutas con `--context`. Si se necesita un nuevo checkpoint, agregar `--memory` después del UUID. Si falta memoria válida, proporcionar el trabajo restante de forma explícita como antes.
+`--recover` lista tareas sin cierre y, cuando hay memoria autorizada, objetivos de hasta cinco de ellas. `--recover UUID` sin prompt reconstruye el objetivo desde el último checkpoint por ID y digest. Revisa la información recuperada, selecciona contexto actual y requiere nuevos gates. No reutiliza pruebas ni permisos; es obligatorio seleccionar nuevamente entre uno y tres tests existentes con `--verify-test`, reemplazar rutas con `--context`. Si se necesita un nuevo checkpoint, agregar `--memory` después del UUID. Si falta memoria válida, proporcionar el trabajo restante de forma explícita como antes.
 
 No reanuda automáticamente efectos ni tareas cerradas, no verifica que el proceso anterior terminó y no guarda cada operación del executor. El checkpoint puede estar desactualizado; inspeccioná el workspace. No usar con datos reales hasta validar interoperabilidad con YTK y aceptación integral.
 
@@ -183,10 +183,10 @@ No reanuda automáticamente efectos ni tareas cerradas, no verifica que el proce
 | `--persist` / `--continue` | Conversación del modo directo | Sí |
 | `--analyze-only` / `--review-route` | Recomendación / decisión sin efectos | Sí |
 | `--plan` | Plan task sin ejecutar | Sí |
-| `--run-task [--record] [--memory]` | Workflow task y verificación | Sí |
+| `--run-task [--record] [--memory] --verify-test archivo` | Workflow task y verificación | Sí |
 | `workflows` / `workflow ID` | Journal local | No |
 | `--recover` | Candidatos sin cierre, con objetivos si hay memoria | No |
-| `--recover ID` | Nuevo intento con memoria válida o solicitud explícita | Sí, tras revisión |
+| `--recover ID --verify-test archivo` | Nuevo intento con memoria válida o solicitud explícita | Sí, tras revisión |
 | `memory status/list/search/get` | Consulta local, arranque autorizado si configurado | No |
 
 Las opciones de contexto y pruebas van después de --record/--memory (si se usan) y antes de la solicitud. --memory debe ir después de --record o del UUID de recuperación. Los modos de revisión y recuperación requieren terminal interactiva. La ruta SDD solo se recomienda actualmente: no ejecuta workflows OpenSpec.

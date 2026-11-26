@@ -66,6 +66,8 @@ Comando de workflow:
 your-gear --run-task --record --context retry.cjs --context retry.test.cjs --verify-test retry.test.cjs "Implementar un único reintento síncrono ante excepción en retry.cjs y documentarlo en README.md. Mantener firma y test existente; no modificar retry.test.cjs."
 ```
 
+**Contrato de verificación (3.C.3.C, pendiente de aceptación):** antes del gate del plan, comprobar que la prueba elegida aparece en el contexto enviado con consentimiento, que `verificationTests` contiene la ruta seleccionada y que cada criterio tiene un elemento de `evidenceRequirements` con rutas reales y pertinentes. No aprobar si la asociación no permite comprobar el criterio, aunque el parser la acepte. Repetir A7 en un fixture limpio; incluir todas las comprobaciones exigidas por la solicitud en las pruebas seleccionadas. Repetir sin tests, con un test inexistente y con una fuente requerida no disponible: no debe iniciarse el executor. Modificar un archivo después de aprobar el plan: debe bloquearse. Rechazar el test o comprobar que falta evidencia requerida: nunca accepted. Al recuperar, seleccionar nuevamente tests existentes. Registrar resultado real; no inferir aceptación a partir de CI.
+
 Conservar UUID y códigos de salida (`$LASTEXITCODE`). Ejecutar `node --test retry.test.cjs` separadamente si se necesita inspeccionar el resultado; no confundir esa prueba externa con evidencia registrada por el workflow.
 
 ## Recuperación sin replay
