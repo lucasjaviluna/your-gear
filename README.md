@@ -189,11 +189,19 @@ No reanuda automáticamente efectos ni tareas cerradas, no verifica que el proce
 | `--recover ID --verify-test archivo` | Nuevo intento con memoria válida o solicitud explícita | Sí, tras revisión |
 | `memory status/list/search/get` | Consulta local, arranque autorizado si configurado | No |
 
-Las opciones de contexto y pruebas van después de --record/--memory (si se usan) y antes de la solicitud. --memory debe ir después de --record o del UUID de recuperación. Los modos de revisión y recuperación requieren terminal interactiva. La ruta SDD solo se recomienda actualmente: no ejecuta workflows OpenSpec.
+Las opciones de contexto y pruebas van después de --record/--memory (si se usan) y antes de la solicitud. --memory debe ir después de --record o del UUID de recuperación. Los modos de revisión y recuperación requieren terminal interactiva. La ruta SDD admite inspección, revisión y planificación explícitas de un change existente; no ejecuta workflows OpenSpec.
 
 La inspección experimental `your-gear openspec inspect RUTA_ABSOLUTA_JS CHANGE` consulta un change existente con OpenSpec 2.2.0 y requiere terminal y autorización. La ruta apunta a `bin/openspec.js` instalado por el usuario. Solo admite `openspec/config.yaml` con `schema: spec-driven` y comentarios, sin esquemas locales ni enlaces bajo `openspec/`. Ejecuta Node y el script con permisos del usuario, no como sandbox; puede leer o modificar archivos. No instala ni inicializa OpenSpec y no envía contenido al modelo. El resultado de planificación y validación estructural no acredita implementación ni aceptación. Requiere Node compatible con OpenSpec (>=22.20.0); se probó el CLI interactivo en un fixture temporal de Windows, y la aceptación en macOS sigue pendiente.
 
 Para revisar un change ya preparado, `your-gear openspec review RUTA_ABSOLUTA_JS CHANGE ARCHIVOS...` requiere las rutas relativas a `openspec/changes/CHANGE/` de `proposal.md`, `design.md`, `tasks.md` y al menos una `specs/.../spec.md` (hasta ocho archivos en total). Primero inspecciona OpenSpec con autorización; después muestra los archivos seleccionados y el contexto predeterminado acotado y solicita confirmar su revisión. El resultado identifica rutas y digest, no guarda aprobación ni envía contenido a un modelo. No inicia planificación ni ejecución SDD. Se aplican los límites de contexto de task.
+
+**Planificación SDD experimental (3.E.4.A):**
+
+```sh
+your-gear openspec plan /ruta/absoluta/openspec.js add-retry openspec/changes/add-retry/proposal.md openspec/changes/add-retry/design.md openspec/changes/add-retry/tasks.md openspec/changes/add-retry/specs/retry/spec.md
+```
+
+Usar todas las specs del change (no solo la del ejemplo), dentro del límite de ocho archivos explícitos y 24 KB de contexto. Exige schema `spec-driven`, los cuatro artefactos `done` sin skips y validación estructural. Primero se autoriza el proceso de OpenSpec, luego la revisión local, el envío exacto de contexto al Planner configurado y finalmente el plan. Solo después del consentimiento de envío se inicializa el modelo. El resultado `planned` incluye el plan, la decisión y el origen (change, versión, digest del árbol y del contexto); el `inputDigest` vincula exactamente la entrada del modelo. Si cambian los artefactos o contexto durante la revisión, generación o aprobación, repetir el flujo. No permite selección parcial ni carga automática de skills. No incorpora búsqueda de código fuente, pruebas de ejecución, journal SDD, generación de propuestas ni apply/sync/archive. El plan puede pedir aclaración si falta contexto; no es aprobación reutilizable ni un plan ejecutable por `--run-task`. CI y prueba con OpenSpec/modelo reales de esta capacidad pendientes.
 
 ### Continuar una sesión
 

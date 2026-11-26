@@ -14,6 +14,7 @@
 | Contexto task | Selección acotada, vista previa y consentimiento de envío | Archivos seleccionados únicamente, no DLP ni inventario completo |
 | Executor task | Ruta task recomendada y elegida, plan/entrada y snapshot vigentes, contrato de evidencia y selección de tests (3.C.3.C), gate de inicio y por read/write/edit | Alcance semántico supervisado, no enforcement exhaustivo; efectos previos pueden persistir |
 | Tests task | Archivo Node explícito, preview, gate, relectura, timeout y límite de salida | Código/imports arbitrarios, red, filesystem, entorno y procesos; no sandbox |
+| Planificación SDD (3.E.4.A) | Proceso externo autorizado, schema y specs completas, revisión local, divulgación explícita y revisión de plan, relectura de digests | Sin sandbox del proveedor, sin garantía contra TOCTOU ni inyección semántica; no ejecución ni aprobación reutilizable |
 | Verificación | Consentimiento de envío de evidencia, esquema por criterio, fuentes aprobadas citadas (3.C.3.C) y aceptación final humana | Exit-zero no prueba cobertura ni relevancia; evaluación parcial |
 | YTK | Registro exclusivo del usuario, scope, autorización de inicio; checkpoints opt-in con preview | Binario confiable puede migrar DB y acceder a recursos; sin aprobación por checkpoint tras consentir |
 | Recuperación | Journal del mismo workspace, referencia exacta, revisión humana y nuevos gates | Sin lock global, rollback, replay ni garantía de que el padre dejó de ejecutar |
